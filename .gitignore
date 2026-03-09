@@ -30,6 +30,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Linux / KDE (Dolphin)
+.directory
+
 # local env files
 .env*.local
 
