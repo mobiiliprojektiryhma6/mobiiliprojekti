@@ -1,25 +1,41 @@
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import Login from './components/Login';
 import './firebase/config';
+import AuthStatus from './components/AuthStatus';
+import Logout from './components/Logout';
+import { useAuth } from './src/hooks/useAuth';
+
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState<boolean>(false);
+  const { email, loading } = useAuth();
 
-  if (!loggedIn) {
+
+  if (loading) {
     return (
       <View style={styles.container}>
-        <Login setLoggedIn={setLoggedIn} />
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (!email) {
+    return (
+      <View style={styles.container}>
+        <Login />
         <StatusBar style="auto" />
       </View>
     );
   }
 
+
   return (
     <View style={styles.container}>
       <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>
       <Text> YOU'RE LOGGED IN! 😈 </Text>
+      <AuthStatus />
+      <Logout />
       <StatusBar style="auto" />
     </View>
   );

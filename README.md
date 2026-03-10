@@ -6,6 +6,8 @@ Run these:
 
 - *npm install*
 - *npm install firebase*
+- *npm install @react-native-async-storage/async-storage*
+
 
 
 Create:
