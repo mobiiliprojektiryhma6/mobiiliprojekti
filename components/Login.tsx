@@ -21,6 +21,8 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
                 password);
             const user = userCredential.user;
 
+            console.log("✅ User logged in: ", user.email); // user log to terminal
+
             if (setLoggedIn) setLoggedIn(true);
 
         } catch (error: any) {
