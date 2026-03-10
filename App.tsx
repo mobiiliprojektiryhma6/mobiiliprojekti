@@ -1,7 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
 import Login from './components/Login';
 import './firebase/config';
 import AuthStatus from './components/AuthStatus';
@@ -10,7 +9,7 @@ import { useAuth } from './src/hooks/useAuth';
 
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { email, loading } = useAuth();
 
 
   if (loading) {
@@ -20,8 +19,8 @@ export default function App() {
       </View>
     );
   }
-  
-  if (!user) {
+
+  if (!email) {
     return (
       <View style={styles.container}>
         <Login />
@@ -30,7 +29,7 @@ export default function App() {
     );
   }
 
-  
+
   return (
     <View style={styles.container}>
       <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>

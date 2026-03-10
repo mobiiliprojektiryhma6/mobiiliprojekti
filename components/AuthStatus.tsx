@@ -1,24 +1,26 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useAuth } from '../src/hooks/useAuth';
- 
+
 const AuthStatus: React.FC = () => {
-    const { user, loading } = useAuth();
-    
+    const { email, loading } = useAuth();
+
+    console.log('AuthStatus email:', email);
+
     if (loading) {
         return (
-        <View>
-            <Text>Loading...</Text>
-        </View>
+            <View>
+                <Text>Loading...</Text>
+            </View>
         );
     }
 
     return (
-     <View>
-        <Text>
-            {user ? `Logged in as ${user.displayName}` : 'Not logged in'}
-        </Text>
-    </View>
+        <View>
+            <Text>
+                {email ? `Logged in as ${email}` : 'Not logged in'}
+            </Text>
+        </View>
     );
 
 };

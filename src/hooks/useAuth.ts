@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 
 export const useAuth = () => {
-    const [user, setUser] = useState<User | null>(null);
+    const [email, setEmail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
+            setEmail(user ? user.email : null);
             setLoading(false);
         });
 
@@ -19,7 +19,7 @@ export const useAuth = () => {
         await signOut(auth);
     }
 
-    return { user, loading, logout };
+    return { email, loading, logout };
 };
 
 
