@@ -1,6 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 type Props = {
   onOpenScanner: () => void;
