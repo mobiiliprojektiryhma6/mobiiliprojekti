@@ -58,7 +58,7 @@ export default function FoodDiaryScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
 
       <Text style={styles.title}>Food Diary</Text>
       <Text style={styles.date}>{diary.date}</Text>
@@ -68,7 +68,7 @@ export default function FoodDiaryScreen() {
           key={meal.id}
           meal={meal}
           onAddFood={handleAddFood}
-          onDeleteFood={handleDeleteFood} // pass delete handler
+          onDeleteFood={handleDeleteFood}
         />
       ))}
 
@@ -78,7 +78,11 @@ export default function FoodDiaryScreen() {
 
 const styles = StyleSheet.create({
 
-  container: { padding: 10 },
+  container: { 
+    padding: 10,
+    width: '100%',
+    alignItems: 'stretch' 
+  },
 
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 5 },
 

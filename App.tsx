@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Login from './components/Login';
 import './firebase/config';
 import AuthStatus from './components/AuthStatus';
 import Logout from './components/Logout';
 import { useAuth } from './src/hooks/useAuth';
 
+import FoodDiaryScreen from './screens/FoodDiaryScreen';   // ✅ your diary
 
 export default function App() {
   const { email, loading } = useAuth();
 
+  const [showDiary, setShowDiary] = useState(false);
 
   if (loading) {
     return (
@@ -29,13 +31,25 @@ export default function App() {
     );
   }
 
-
   return (
     <View style={styles.container}>
       <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>
       <Text> YOU'RE LOGGED IN! 😈 </Text>
+
       <AuthStatus />
       <Logout />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => setShowDiary(!showDiary)}
+      >
+        <Text style={styles.buttonText}>
+          {showDiary ? "Hide Food Diary" : "Open Food Diary"}
+        </Text>
+      </TouchableOpacity>
+
+      {showDiary && <FoodDiaryScreen />}
+
       <StatusBar style="auto" />
     </View>
   );
@@ -45,8 +59,36 @@ const styles = StyleSheet.create({
   container: {
     fontFamily: 'Avenir',
     flex: 1,
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#E5F7FD',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  topBar: {
+    width: '100%',
+    height: 60,
+    backgroundColor: '#009FE3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 15,
+  },
+
+  topBarText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+
+  button: {
+    backgroundColor: '#009FE3',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
