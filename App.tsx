@@ -1,16 +1,12 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import Login from './components/Login';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import './firebase/config';
-import AuthStatus from './components/AuthStatus';
-import Logout from './components/Logout';
 import { useAuth } from './src/hooks/useAuth';
-
+import Loginscreen from './screens/Loginscreen';
+import Homescreen from './screens/Homescreen';
 
 export default function App() {
   const { email, loading } = useAuth();
-
 
   if (loading) {
     return (
@@ -21,24 +17,10 @@ export default function App() {
   }
 
   if (!email) {
-    return (
-      <View style={styles.container}>
-        <Login />
-        <StatusBar style="auto" />
-      </View>
-    );
+    return <Loginscreen />;
   }
 
-
-  return (
-    <View style={styles.container}>
-      <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>
-      <Text> YOU'RE LOGGED IN! 😈 </Text>
-      <AuthStatus />
-      <Logout />
-      <StatusBar style="auto" />
-    </View>
-  );
+  return <Homescreen />;
 }
 
 const styles = StyleSheet.create({
