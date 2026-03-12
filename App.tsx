@@ -1,9 +1,15 @@
-import React from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
-import './firebase/config';
-import { useAuth } from './src/hooks/useAuth';
-import Loginscreen from './screens/Loginscreen';
-import Homescreen from './screens/Homescreen';
+import React from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
+import "./firebase/config";
+import { useAuth } from "./src/hooks/useAuth";
+import Loginscreen from "./screens/Loginscreen";
+import Homescreen from "./screens/Homescreen";
+import FoodDiaryScreen from "./screens/FoodDiaryScreen";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   const { email, loading } = useAuth();
@@ -16,48 +22,40 @@ export default function App() {
     );
   }
 
-  if (!email) {
-    return <Loginscreen />;
-  }
-
-
-  return <Homescreen />;
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {!email ? (
+          <Stack.Screen
+            name="Login"
+            component={Loginscreen}
+            options={{ headerShown: false }}
+          />
+        ) : (
+          <>
+            <Stack.Screen
+              name="Home"
+              component={Homescreen}
+              options={{ title: "Home" }}
+            />
+            <Stack.Screen
+              name="FoodDiary"
+              component={FoodDiaryScreen}
+              options={{ title: "Food Diary" }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    fontFamily: 'Avenir',
+    fontFamily: "Avenir",
     flex: 1,
-    backgroundColor: '#E5F7FD',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  topBar: {
-    width: '100%',
-    height: 60,
-    backgroundColor: '#009FE3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 15,
-  },
-
-  topBarText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-
-  button: {
-    backgroundColor: '#009FE3',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: "#E5F7FD",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
