@@ -8,6 +8,7 @@ import { useAuth } from "./src/hooks/useAuth";
 import Loginscreen from "./screens/Loginscreen";
 import Homescreen from "./screens/Homescreen";
 import FoodDiaryScreen from "./screens/FoodDiaryScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +43,11 @@ export default function App() {
               name="FoodDiary"
               component={FoodDiaryScreen}
               options={{ title: "Food Diary" }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ title: "Profile" }}
             />
           </>
         )}
