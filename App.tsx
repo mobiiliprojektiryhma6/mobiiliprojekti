@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Login from './components/Login';
 import './firebase/config';
 import AuthStatus from './components/AuthStatus';
 import Logout from './components/Logout';
 import { useAuth } from './src/hooks/useAuth';
 
+import FoodDiaryScreen from './screens/FoodDiaryScreen';   // ✅ your diary
 
 export default function App() {
   const { email, loading } = useAuth();
 
+  const [showDiary, setShowDiary] = useState(false);
 
   if (loading) {
     return (
@@ -29,13 +31,25 @@ export default function App() {
     );
   }
 
-
   return (
     <View style={styles.container}>
       <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>
       <Text> YOU'RE LOGGED IN! 😈 </Text>
+
       <AuthStatus />
       <Logout />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => setShowDiary(!showDiary)}
+      >
+        <Text style={styles.buttonText}>
+          {showDiary ? "Hide Food Diary" : "Open Food Diary"}
+        </Text>
+      </TouchableOpacity>
+
+      {showDiary && <FoodDiaryScreen />}
+
       <StatusBar style="auto" />
     </View>
   );
