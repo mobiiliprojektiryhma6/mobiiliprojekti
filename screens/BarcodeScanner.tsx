@@ -2,12 +2,13 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { BarCodeScannerResult } from 'expo-barcode-scanner';
+import { useNavigation } from '@react-navigation/native';
 
-type Props = {
-    onScanned: (code: string) => void;
-};
 
-export const BarcodeScannerScreen: React.FC<Props> = ({ onScanned }) => {
+export const BarcodeScannerScreen = ()=> {
+    const navigation = useNavigation<any>();
+    const [scanned, setScanned] = React.useState(false);
+
     const [permission, requestPermission] = useCameraPermissions();
     
     useEffect(() => {
@@ -31,8 +32,11 @@ export const BarcodeScannerScreen: React.FC<Props> = ({ onScanned }) => {
                 barcodeScannerSettings={{
                     barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128'],
                 }}
-                onBarcodeScanned={(result: BarCodeScannerResult) => {
-                    onScanned(result.data);
+                onBarcodeScanned={(result) => {
+                    if (scanned) return;
+                    setScanned(true);
+                    console.log("Scanned barcode:", result.data);
+                    navigation.navigate("Home");
                 }}
             />
         </View>

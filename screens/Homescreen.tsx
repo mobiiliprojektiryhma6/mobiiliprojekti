@@ -18,6 +18,13 @@ export default function Homescreen({ navigation }: { navigation: any }) {
         <Text style={styles.buttonText}>Open Food Diary</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate("Scanner")}
+      >
+        <Text style={styles.buttonText}>Open Barcode Scanner</Text>
+      </TouchableOpacity>
+
       <Logout />
     </View>
   );

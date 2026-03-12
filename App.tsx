@@ -1,17 +1,28 @@
-import React from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, StyleSheet, View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import "./firebase/config";
 import { useAuth } from "./src/hooks/useAuth";
+
 import Loginscreen from "./screens/Loginscreen";
 import Homescreen from "./screens/Homescreen";
 import FoodDiaryScreen from "./screens/FoodDiaryScreen";
+
+import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
+import { FoodInput } from "./components/FoodInput";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const { email, loading } = useAuth();
+  
+  const [barcode, setBarcode] = useState<string | null>(null);
+
+  const handleScanned = (code: string) => {
+    setBarcode(code);
+    console.log("Scanned barcode:", code);
+  };
 
   if (loading) {
     return (
@@ -24,6 +35,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
+
         {!email ? (
           <Stack.Screen
             name="Login"
@@ -37,13 +49,22 @@ export default function App() {
               component={Homescreen}
               options={{ title: "Home" }}
             />
+
             <Stack.Screen
               name="FoodDiary"
               component={FoodDiaryScreen}
               options={{ title: "Food Diary" }}
             />
+
+            <Stack.Screen name="Scanner">
+              {() => (
+                <BarcodeScannerScreen onScanned={handleScanned} />
+              )}
+            </Stack.Screen>
+
           </>
         )}
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
