@@ -20,6 +20,9 @@ export default function Homescreen({ navigation }: { navigation: any }) {
 
       <TouchableOpacity
         style={styles.button}
+        onPress={() => navigation.navigate("Scanner")}
+      >
+        <Text style={styles.buttonText}>Open Barcode Scanner</Text>
         onPress={() => navigation.navigate("Profile")}
       >
         <Text style={styles.buttonText}>Go to Profile</Text>
