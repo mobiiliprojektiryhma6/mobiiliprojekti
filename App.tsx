@@ -8,6 +8,7 @@ import { useAuth } from "./src/hooks/useAuth";
 import Loginscreen from "./screens/Loginscreen";
 import Homescreen from "./screens/Homescreen";
 import FoodDiaryScreen from "./screens/FoodDiaryScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import { FoodInput } from "./components/FoodInput";
@@ -62,6 +63,11 @@ export default function App() {
               )}
             </Stack.Screen>
 
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ title: "Profile" }}
+            />
           </>
         )}
         
