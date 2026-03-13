@@ -1,10 +1,11 @@
-import { exp } from "firebase/firestore/pipelines";
 import React from "react";
 import { View, Text, StyleSheet, Linking, TouchableOpacity } from "react-native";
-import AuthStatus from "../components/AuthStatus";
+import { useAuth } from "../src/hooks/useAuth";
 
 export default function ProfileScreen(
 ) {
+
+    const { user } = useAuth();
 
     const openLink = (url: string) => {
         Linking.openURL(url);
@@ -12,11 +13,13 @@ export default function ProfileScreen(
 
     return (
         <View style={styles.container}>
-            <Text> Profile Screen </Text>
+            <Text style={styles.profileName}>
+                {user?.displayName ? `${user.displayName}'s Profile` : "Profile Screen"}
+            </Text>
 
-            <AuthStatus />
+            <View style={styles.profileImage}>
+            </View>
 
-            <Text> Tärkeitä linkkejä </Text>
 
             <View style={styles.row}>
                 <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
@@ -42,15 +45,33 @@ const styles = StyleSheet.create({
         alignItems: "center",
         backgroundColor: "#E5F7FD"
     },
-    row: {
-        flexDirection: "row",
-        marginTop: 20,
+    profileName: {
+        position: "absolute",
+        top: 40,
+        left: 20,
+        fontSize: 24,
+        fontWeight: "bold",
     },
+
+    profileImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginBottom: 20,
+    },
+    row: {
+        position: "absolute",
+        bottom: 20,
+        left: 0,
+        right: 0,
+        flexDirection: "row",
+        justifyContent: "center",
+    },
+
     button: {
         backgroundColor: "#009FE3",
         padding: 12,
         borderRadius: 8,
-        marginTop: 20,
         marginHorizontal: 6,
         color: "#FFFFFF",
     },
