@@ -8,7 +8,6 @@ import { useAuth } from "./src/hooks/useAuth";
 import Loginscreen from "./screens/Loginscreen";
 import Homescreen from "./screens/Homescreen";
 import FoodDiaryScreen from "./screens/FoodDiaryScreen";
-import ProfileScreen from "./screens/ProfileScreen";
 
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import { FoodInput } from "./components/FoodInput";
@@ -57,20 +56,22 @@ export default function App() {
               options={{ title: "Food Diary" }}
             />
 
-            <Stack.Screen name="Scanner">
-              {() => (
-                <BarcodeScannerScreen onScanned={handleScanned} />
-              )}
-            </Stack.Screen>
-
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={{ title: "Profile" }}
+            <Stack.Screen 
+              name="Scanner"
+              component={BarcodeScannerScreen}
+              options={{ title: "Barcode Scanner" }}
             />
+
+            <Stack.Screen 
+              name="Scanner"
+              component={BarcodeScannerScreen}
+              options={{ title: "Barcode Scanner" }}
+            />
+
+
           </>
         )}
-        
+
       </Stack.Navigator>
     </NavigationContainer>
   );
