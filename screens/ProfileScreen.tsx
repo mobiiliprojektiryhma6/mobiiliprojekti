@@ -1,79 +1,37 @@
 import React, { useState, useEffect } from "react"
-import { View, Text, StyleSheet, Linking, TouchableOpacity, TextInput, Keyboard, Image, Alert } from "react-native"
+import { View, Text, StyleSheet, Linking, TouchableOpacity, TextInput, Keyboard, Image, Alert, Modal } from "react-native"
 import { useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
 
 export default function ProfileScreen() {
 
-    const [weightInput, setWeightInput] = useState("")
     const [weights, setWeights] = useState<string[]>([])
-    const [heightInput, setHeightInput] = useState("")
     const [heights, setHeights] = useState<string[]>([])
-    const [diseaseInput, setDiseaseInput] = useState("")
     const [diseases, setDiseases] = useState<string[]>([])
-    const [allergyInput, setAllergyInput] = useState("")
     const [allergies, setAllergies] = useState<string[]>([])
     const [profileImage, setProfileImage] = useState<string | null>(null)
     const [permission, requestPermission] = useCameraPermissions()
+    const [modalVisible, setModalVisible] = useState(false)
+    const [modalTitle, setModalTitle] = useState("")
+    const [modalValue, setModalValue] = useState("")
+    const [modalType, setModalType] = useState<"height" | "weight" | "disease" | "allergy" | null>(null)
 
-    const { user } = useAuth();
+    const { user } = useAuth()
 
-    const openLink = (url: string) => {
-        Linking.openURL(url);
-    }
+    const openLink = (url: string) => Linking.openURL(url)
 
     useEffect(() => {
-        if (!permission) {
-            requestPermission();
-        }
-    }, [permission]);
+        if (!permission) requestPermission()
+    }, [permission])
 
-    if (!permission) {
-        return <Text>Requesting camera permission...</Text>;
-    }
-    if (!permission.granted) {
-        return <Text>No access to camera</Text>;
-    }
-
-
-
-    const addDisease = () => {
-        if (diseaseInput.trim() !== "") {
-            setDiseases([...diseases, diseaseInput]);
-            setDiseaseInput("");
-            Keyboard.dismiss();
-        }
-    }
-
-    const addAllergy = () => {
-        if (allergyInput.trim() !== "") {
-            setAllergies([...allergies, allergyInput]);
-            setAllergyInput("");
-            Keyboard.dismiss();
-        }
-    }
-
-    const addWeight = () => {
-        if (weightInput.trim() !== "") {
-            setWeights([...weights, weightInput]);
-            setWeightInput("");
-            Keyboard.dismiss();
-        }
-    }
-
-    const addHeight = () => {
-        if (heightInput.trim() !== "") {
-            setHeights([...heights, heightInput]);
-            setHeightInput("");
-            Keyboard.dismiss();
-        }
-    }
+    if (!permission) return <Text>Requesting camera permission...</Text>
+    if (!permission.granted) return <Text>No access to camera</Text>
 
     const pickFromLibrary = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (!permission.granted) {
-            alert("Salli kuvien käyttö asetuksista.");
+            alert("Salli kuvien käyttö asetuksista.")
             return
         }
 
@@ -82,17 +40,15 @@ export default function ProfileScreen() {
             allowsEditing: true,
             aspect: [1, 1],
             quality: 1,
-        });
+        })
 
-        if (!result.canceled) {
-            setProfileImage(result.assets[0].uri);
-        }
+        if (!result.canceled) setProfileImage(result.assets[0].uri)
     }
 
     const takePhoto = async () => {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        const permission = await ImagePicker.requestCameraPermissionsAsync()
         if (!permission.granted) {
-            alert("Salli kameran käyttö asetuksista.");
+            alert("Salli kameran käyttö asetuksista.")
             return
         }
 
@@ -102,9 +58,7 @@ export default function ProfileScreen() {
             quality: 1,
         })
 
-        if (!result.canceled) {
-            setProfileImage(result.assets[0].uri);
-        }
+        if (!result.canceled) setProfileImage(result.assets[0].uri)
     }
 
     const chooseImageOption = () => {
@@ -119,25 +73,66 @@ export default function ProfileScreen() {
         )
     }
 
+    const openModal = (type: "height" | "weight" | "disease" | "allergy", title: string) => {
+        setModalType(type)
+        setModalTitle(title)
+        setModalValue("")
+        setModalVisible(true)
+    }
+
+    const saveModalValue = () => {
+        if (!modalValue.trim()) return
+
+        if (modalType === "height") setHeights([...heights, modalValue])
+        if (modalType === "weight") setWeights([...weights, modalValue])
+        if (modalType === "disease") setDiseases([...diseases, modalValue])
+        if (modalType === "allergy") setAllergies([...allergies, modalValue])
+
+        setModalVisible(false)
+    }
 
     return (
         <View style={styles.container}>
 
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>{modalTitle}</Text>
+
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="Kirjoita tieto"
+                            value={modalValue}
+                            onChangeText={setModalValue}
+                            autoFocus
+                        />
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Text style={styles.modalCancel}>Peruuta</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={saveModalValue}>
+                                <Text style={styles.modalSave}>Lisää</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             <View style={styles.headerLeft}>
-                <Text style={styles.profileName}>
-                    {user?.displayName || "Profile Screen"}
-                </Text>
-                <Text style={styles.emailName}>
-                    {user?.email || "N/A"}
-                </Text>
+                <Text style={styles.profileName}>{user?.displayName || "Profile"}</Text>
+                <Text style={styles.emailName}>{user?.email || "Email"}</Text>
             </View>
 
             <TouchableOpacity style={styles.profileImage} onPress={chooseImageOption}>
                 {profileImage ? (
-                    <Image
-                        source={{ uri: profileImage }}
-                        style={{ width: "100%", height: "100%", borderRadius: 30 }}
-                    />
+                    <Image source={{ uri: profileImage }} style={{ width: "100%", height: "100%", borderRadius: 30 }} />
                 ) : (
                     <Text style={{ color: "#009FE3", fontSize: 32 }}>+</Text>
                 )}
@@ -151,14 +146,10 @@ export default function ProfileScreen() {
                     <View style={styles.column}>
                         <Text>Pituus (cm):</Text>
                         <View style={styles.rowCenter}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Lisää pituus"
-                                value={heightInput}
-                                onChangeText={setHeightInput}
-                                keyboardType="numeric"
-                            />
-                            <TouchableOpacity style={styles.smallButton} onPress={addHeight}>
+                            <TouchableOpacity
+                                style={styles.smallButton}
+                                onPress={() => openModal("height", "Lisää pituus")}
+                            >
                                 <Text style={styles.smallButtonText}>+</Text>
                             </TouchableOpacity>
                         </View>
@@ -171,14 +162,10 @@ export default function ProfileScreen() {
                     <View style={styles.column}>
                         <Text>Paino (kg):</Text>
                         <View style={styles.rowCenter}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Lisää paino"
-                                value={weightInput}
-                                onChangeText={setWeightInput}
-                                keyboardType="numeric"
-                            />
-                            <TouchableOpacity style={styles.smallButton} onPress={addWeight}>
+                            <TouchableOpacity
+                                style={styles.smallButton}
+                                onPress={() => openModal("weight", "Lisää paino")}
+                            >
                                 <Text style={styles.smallButtonText}>+</Text>
                             </TouchableOpacity>
                         </View>
@@ -192,16 +179,13 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Perussairaudet:</Text>
+                <Text style={styles.sectionTitle}>Sairaudet:</Text>
 
                 <View style={styles.rowCenter}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Lisää perussairaus"
-                        value={diseaseInput}
-                        onChangeText={setDiseaseInput}
-                    />
-                    <TouchableOpacity style={styles.smallButton} onPress={addDisease}>
+                    <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={() => openModal("disease", "Lisää sairaus")}
+                    >
                         <Text style={styles.smallButtonText}>+</Text>
                     </TouchableOpacity>
                 </View>
@@ -215,13 +199,10 @@ export default function ProfileScreen() {
                 <Text style={styles.sectionTitle}>Allergiat:</Text>
 
                 <View style={styles.rowCenter}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Lisää allergia"
-                        value={allergyInput}
-                        onChangeText={setAllergyInput}
-                    />
-                    <TouchableOpacity style={styles.smallButton} onPress={addAllergy}>
+                    <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={() => openModal("allergy", "Lisää allergia")}
+                    >
                         <Text style={styles.smallButtonText}>+</Text>
                     </TouchableOpacity>
                 </View>
@@ -249,7 +230,6 @@ export default function ProfileScreen() {
 
         </View>
     )
-
 }
 
 const styles = StyleSheet.create({
@@ -313,17 +293,7 @@ const styles = StyleSheet.create({
         width: "48%",
     },
 
-    input: {
-        flex: 1,
-        padding: 10,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        backgroundColor: "#fff",
-    },
-
     smallButton: {
-        marginLeft: 8,
         backgroundColor: "#009FE3",
         width: 40,
         height: 40,
@@ -365,5 +335,44 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginHorizontal: 6,
         color: "#FFFFFF",
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalBox: {
+        width: "80%",
+        backgroundColor: "#fff",
+        padding: 20,
+        borderRadius: 12,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 12,
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 20,
+    },
+    modalButtons: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    modalCancel: {
+        fontSize: 16,
+        color: "#888",
+    },
+    modalSave: {
+        fontSize: 16,
+        color: "#009FE3",
+        fontWeight: "bold",
     },
 })
