@@ -57,11 +57,11 @@ export default function App() {
               options={{ title: "Food Diary" }}
             />
 
-            <Stack.Screen name="Scanner">
-              {() => (
-                <BarcodeScannerScreen onScanned={handleScanned} />
-              )}
-            </Stack.Screen>
+            <Stack.Screen 
+              name="Scanner"
+              component={BarcodeScannerScreen}
+              options={{ title: "Barcode Scanner" }}
+            />
 
             <Stack.Screen
               name="Profile"
