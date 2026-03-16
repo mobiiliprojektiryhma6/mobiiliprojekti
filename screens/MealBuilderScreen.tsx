@@ -9,38 +9,89 @@ import {
   FlatList,
 } from "react-native";
 
-export default function MealBuilderScreen() {
-  const [servingSize, setServingSize] = useState("");
-  const [mealType, setMealType] = useState("Lunch");
+import { db } from "../firebase/config";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
+export default function MealBuilderScreen() {
+  const [mealType, setMealType] = useState("Lunch");
   const [foods, setFoods] = useState<any[]>([]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [tempFoodName, setTempFoodName] = useState("");
   const [tempFoodAmount, setTempFoodAmount] = useState("");
+  const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
 
-  const addFoodToMeal = () => {
+  const openAddModal = () => {
+    setTempFoodName("");
+    setTempFoodAmount("");
+    setEditingFoodId(null);
+    setModalVisible(true);
+  };
+
+  const startEditingFood = (food: any) => {
+    setTempFoodName(food.name);
+    setTempFoodAmount(food.amount);
+    setEditingFoodId(food.id);
+    setModalVisible(true);
+  };
+
+  const addOrEditFood = () => {
     if (!tempFoodName.trim()) return;
 
-    const newFood = {
-      id: Date.now().toString(),
-      name: tempFoodName,
-      amount: tempFoodAmount || "1",
-    };
+    if (editingFoodId) {
+      setFoods(
+        foods.map((f) =>
+          f.id === editingFoodId
+            ? { ...f, name: tempFoodName, amount: tempFoodAmount }
+            : f
+        )
+      );
+      setEditingFoodId(null);
+    } else { 
+      const newFood = {
+        id: Date.now().toString(),
+        name: tempFoodName,
+        amount: tempFoodAmount || "1",
+      };
+      setFoods([...foods, newFood]);
+    }
 
-    setFoods([...foods, newFood]);
     setTempFoodName("");
     setTempFoodAmount("");
     setModalVisible(false);
   };
 
-  const saveMeal = () => {
-    console.log("Saving meal:", {
-      mealType,
-      foods,
-    });
+  const deleteFood = (foodId: string) => {
+    setFoods(foods.filter((f) => f.id !== foodId));
+  };
 
-    alert("Meal saved (placeholder)");
+  const saveMeal = async () => {
+    const user = getAuth().currentUser;
+
+    if (!user) {
+      alert("You must be logged in.");
+      return;
+    }
+
+    if (foods.length === 0) {
+      alert("Add at least one food.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "meals", user.uid, "entries"), {
+        mealType,
+        timestamp: serverTimestamp(),
+        foods: foods,
+      });
+
+      alert("Meal saved!");
+      setFoods([]);
+    } catch (error) {
+      console.error("Error saving meal:", error);
+      alert("Could not save meal.");
+    }
   };
 
   return (
@@ -73,10 +124,7 @@ export default function MealBuilderScreen() {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.addFoodButton}
-        onPress={() => setModalVisible(true)}
-      >
+      <TouchableOpacity style={styles.addFoodButton} onPress={openAddModal}>
         <Text style={styles.addFoodButtonText}>Add Food</Text>
       </TouchableOpacity>
 
@@ -93,6 +141,16 @@ export default function MealBuilderScreen() {
               <Text style={styles.foodText}>
                 {item.name} — {item.amount}
               </Text>
+
+              <View style={{ flexDirection: "row", gap: 15 }}>
+                <TouchableOpacity onPress={() => startEditingFood(item)}>
+                  <Text style={{ color: "blue" }}>Edit</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => deleteFood(item.id)}>
+                  <Text style={{ color: "red" }}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         />
@@ -105,7 +163,9 @@ export default function MealBuilderScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Food</Text>
+            <Text style={styles.modalTitle}>
+              {editingFoodId ? "Edit Food" : "Add Food"}
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -121,8 +181,10 @@ export default function MealBuilderScreen() {
               onChangeText={setTempFoodAmount}
             />
 
-            <TouchableOpacity style={styles.modalAddButton} onPress={addFoodToMeal}>
-              <Text style={styles.modalAddButtonText}>Add</Text>
+            <TouchableOpacity style={styles.modalAddButton} onPress={addOrEditFood}>
+              <Text style={styles.modalAddButtonText}>
+                {editingFoodId ? "Save Changes" : "Add"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -199,6 +261,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   foodText: {
     fontSize: 16,
