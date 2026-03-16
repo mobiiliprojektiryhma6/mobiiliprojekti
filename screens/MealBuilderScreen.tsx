@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,62 +10,107 @@ import {
 } from "react-native";
 
 import { db } from "../firebase/config";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
+import MealCard from "../components/MealCard";
+import { FoodItem } from "../types/FoodItem";
+
 export default function MealBuilderScreen() {
+  // -----------------------------
+  // ALL STATE HOOKS AT THE TOP
+  // -----------------------------
   const [mealType, setMealType] = useState("Lunch");
-  const [foods, setFoods] = useState<any[]>([]);
+  const [foods, setFoods] = useState<FoodItem[]>([]);
+
+  const [products, setProducts] = useState<FoodItem[]>([]);
+  const [productModalVisible, setProductModalVisible] = useState(false);
+  const [chooseModalVisible, setChooseModalVisible] = useState(false);
+
+  const [authReady, setAuthReady] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [tempFoodName, setTempFoodName] = useState("");
-  const [tempFoodAmount, setTempFoodAmount] = useState("");
+
+  const [tempName, setTempName] = useState("");
+  const [tempEnergy, setTempEnergy] = useState("");
+  const [tempCarbs, setTempCarbs] = useState("");
+  const [tempProtein, setTempProtein] = useState("");
+  const [tempFat, setTempFat] = useState("");
+
   const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
 
-  const openAddModal = () => {
-    setTempFoodName("");
-    setTempFoodAmount("");
-    setEditingFoodId(null);
-    setModalVisible(true);
-  };
+  // -----------------------------
+  // WAIT FOR FIREBASE AUTH READY
+  // -----------------------------
+  useEffect(() => {
+    const unsub = getAuth().onAuthStateChanged(() => {
+      setAuthReady(true);
+    });
+    return unsub;
+  }, []);
 
-  const startEditingFood = (food: any) => {
-    setTempFoodName(food.name);
-    setTempFoodAmount(food.amount);
-    setEditingFoodId(food.id);
+  // -----------------------------
+  // LOAD PRODUCTS AFTER AUTH READY
+  // -----------------------------
+  useEffect(() => {
+    if (!authReady) return;
+
+    const loadProducts = async () => {
+      const snapshot = await getDocs(collection(db, "products"));
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as FoodItem[];
+
+      setProducts(items);
+    };
+
+    loadProducts();
+  }, [authReady]);
+
+  // -----------------------------
+  // FOOD EDITING
+  // -----------------------------
+  const startEditingFood = (food: FoodItem) => {
+    setTempName(food.name);
+    setTempEnergy(String(food.energy));
+    setTempCarbs(String(food.carbohydrates));
+    setTempProtein(String(food.protein));
+    setTempFat(String(food.fat));
+    setEditingFoodId(food.id ?? null);
     setModalVisible(true);
   };
 
   const addOrEditFood = () => {
-    if (!tempFoodName.trim()) return;
+    if (!tempName.trim()) return;
+
+    const foodData: FoodItem = {
+      id: editingFoodId ?? Date.now().toString(),
+      name: tempName,
+      energy: Number(tempEnergy),
+      carbohydrates: Number(tempCarbs),
+      protein: Number(tempProtein),
+      fat: Number(tempFat),
+    };
 
     if (editingFoodId) {
-      setFoods(
-        foods.map((f) =>
-          f.id === editingFoodId
-            ? { ...f, name: tempFoodName, amount: tempFoodAmount }
-            : f
-        )
+      setFoods((prev) =>
+        prev.map((f) => (f.id === editingFoodId ? foodData : f))
       );
-      setEditingFoodId(null);
-    } else { 
-      const newFood = {
-        id: Date.now().toString(),
-        name: tempFoodName,
-        amount: tempFoodAmount || "1",
-      };
-      setFoods([...foods, newFood]);
+    } else {
+      setFoods((prev) => [...prev, foodData]);
     }
 
-    setTempFoodName("");
-    setTempFoodAmount("");
     setModalVisible(false);
   };
 
   const deleteFood = (foodId: string) => {
-    setFoods(foods.filter((f) => f.id !== foodId));
+    setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
 
+  // -----------------------------
+  // SAVE MEAL
+  // -----------------------------
   const saveMeal = async () => {
     const user = getAuth().currentUser;
 
@@ -83,7 +128,7 @@ export default function MealBuilderScreen() {
       await addDoc(collection(db, "meals", user.uid, "entries"), {
         mealType,
         timestamp: serverTimestamp(),
-        foods: foods,
+        foods,
       });
 
       alert("Meal saved!");
@@ -94,6 +139,9 @@ export default function MealBuilderScreen() {
     }
   };
 
+  // -----------------------------
+  // UI
+  // -----------------------------
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Build Your Meal</Text>
@@ -124,7 +172,10 @@ export default function MealBuilderScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.addFoodButton} onPress={openAddModal}>
+      <TouchableOpacity
+        style={styles.addFoodButton}
+        onPress={() => setChooseModalVisible(true)}
+      >
         <Text style={styles.addFoodButtonText}>Add Food</Text>
       </TouchableOpacity>
 
@@ -137,21 +188,9 @@ export default function MealBuilderScreen() {
           data={foods}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.foodItem}>
-              <Text style={styles.foodText}>
-                {item.name} — {item.amount}
-              </Text>
-
-              <View style={{ flexDirection: "row", gap: 15 }}>
-                <TouchableOpacity onPress={() => startEditingFood(item)}>
-                  <Text style={{ color: "blue" }}>Edit</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => deleteFood(item.id)}>
-                  <Text style={{ color: "red" }}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <TouchableOpacity onPress={() => startEditingFood(item)}>
+              <MealCard food={item} onDelete={deleteFood} />
+            </TouchableOpacity>
           )}
         />
       )}
@@ -160,6 +199,75 @@ export default function MealBuilderScreen() {
         <Text style={styles.saveButtonText}>Save Meal</Text>
       </TouchableOpacity>
 
+      {/* CHOOSE MODAL */}
+      <Modal visible={chooseModalVisible} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Add Food</Text>
+
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={() => {
+                setChooseModalVisible(false);
+                setProductModalVisible(true);
+              }}
+            >
+              <Text style={styles.modalAddButtonText}>Pick from products</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={() => {
+                setChooseModalVisible(false);
+                setModalVisible(true);
+              }}
+            >
+              <Text style={styles.modalAddButtonText}>Add custom food</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setChooseModalVisible(false)}
+            >
+              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* PRODUCT LIST MODAL */}
+      <Modal visible={productModalVisible} animationType="slide">
+        <View style={{ flex: 1, padding: 20 }}>
+          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
+            Choose a Food
+          </Text>
+
+          <FlatList
+            data={products}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.productItem}
+                onPress={() => {
+                  setFoods((prev) => [...prev, item]);
+                  setProductModalVisible(false);
+                }}
+              >
+                <Text style={styles.productName}>{item.name}</Text>
+                <Text style={styles.productInfo}>{item.energy} kcal</Text>
+              </TouchableOpacity>
+            )}
+          />
+
+          <TouchableOpacity onPress={() => setProductModalVisible(false)}>
+            <Text style={{ textAlign: "center", marginTop: 20, color: "gray" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* CUSTOM FOOD MODAL */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -169,16 +277,41 @@ export default function MealBuilderScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Food name"
-              value={tempFoodName}
-              onChangeText={setTempFoodName}
+              placeholder="Name"
+              value={tempName}
+              onChangeText={setTempName}
             />
 
             <TextInput
               style={styles.input}
-              placeholder="Amount (e.g. 1 piece, 150g)"
-              value={tempFoodAmount}
-              onChangeText={setTempFoodAmount}
+              placeholder="Energy (kcal)"
+              keyboardType="numeric"
+              value={tempEnergy}
+              onChangeText={setTempEnergy}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Carbs (g)"
+              keyboardType="numeric"
+              value={tempCarbs}
+              onChangeText={setTempCarbs}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Protein (g)"
+              keyboardType="numeric"
+              value={tempProtein}
+              onChangeText={setTempProtein}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Fat (g)"
+              keyboardType="numeric"
+              value={tempFat}
+              onChangeText={setTempFat}
             />
 
             <TouchableOpacity style={styles.modalAddButton} onPress={addOrEditFood}>
@@ -256,17 +389,6 @@ const styles = StyleSheet.create({
     color: "gray",
     marginBottom: 20,
   },
-  foodItem: {
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  foodText: {
-    fontSize: 16,
-  },
   saveButton: {
     backgroundColor: "#009FE3",
     padding: 14,
@@ -321,5 +443,20 @@ const styles = StyleSheet.create({
   modalCancelButtonText: {
     color: "gray",
     fontSize: 16,
+  },
+
+  productItem: {
+    padding: 12,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  productInfo: {
+    fontSize: 14,
+    color: "gray",
   },
 });
