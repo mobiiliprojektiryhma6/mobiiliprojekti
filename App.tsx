@@ -11,6 +11,7 @@ import FoodDiaryScreen from "./screens/FoodDiaryScreen";
 
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import { FoodInput } from "./components/FoodInput";
+import ProfileScreen from "./screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -58,14 +59,8 @@ export default function App() {
 
             <Stack.Screen 
               name="Scanner"
-              component={BarcodeScannerScreen}
-              options={{ title: "Barcode Scanner" }}
-            />
-
-            <Stack.Screen 
-              name="Scanner"
-              component={BarcodeScannerScreen}
-              options={{ title: "Barcode Scanner" }}
+              component={ProfileScreen}
+              options={{ title: "Profile Screen" }}
             />
 
 
