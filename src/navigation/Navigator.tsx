@@ -6,6 +6,7 @@ import LoginScreen from "../../screens/Loginscreen";
 import HomeScreen from "../../screens/Homescreen";
 import FoodDiaryScreen from "../../screens/FoodDiaryScreen";
 import ProfileScreen from "../../screens/ProfileScreen";
+import MealBuilderScreen from "../../screens/MealBuilderScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,13 @@ export default function AppNavigator() {
           component={FoodDiaryScreen} 
           options={{ title: "Food Diary" }}
         />
+
+        <Stack.Screen
+          name="MealBuilder"
+          component={MealBuilderScreen}
+          options={{ title: "Meal Builder" }}
+        />
+
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}

@@ -1,36 +1,23 @@
 import React from "react"
 import { View, Text, Button, StyleSheet } from "react-native"
-import { Meal } from "../types/Meals"
 
 type Props = {
-  meal: Meal
-  onAddFood: (mealId: string) => void
-  onDeleteFood: (mealId: string, foodId: string) => void
+  food: {
+    id: string
+    name: string
+    amount: string
+  }
+  onDelete: (foodId: string) => void
 }
 
-export default function MealCard({ meal, onAddFood, onDeleteFood }: Props) {
+export default function MealCard({ food, onDelete }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={styles.mealTitle}>{meal.type}</Text>
+      <Text style={styles.foodText}>
+        • {food.name} — {food.amount}
+      </Text>
 
-      {meal.foods.length === 0 ? (
-        <Text style={styles.emptyText}>No foods added yet</Text>
-      ) : (
-        meal.foods.map((food) => (
-          <View key={food.id} style={styles.foodRow}>
-            <Text style={styles.foodText}>
-              • {food.name} — {food.grams} g{" "}
-              {food.carbs !== undefined ? `(${food.carbs}g carbs)` : ""}
-            </Text>
-            <Button
-              title="Delete"
-              onPress={() => onDeleteFood(meal.id, food.id)}
-            />
-          </View>
-        ))
-      )}
-
-      <Button title="Add Food" onPress={() => onAddFood(meal.id)} />
+      <Button title="Delete" onPress={() => onDelete(food.id)} />
     </View>
   )
 }
@@ -43,22 +30,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#ccc",
     backgroundColor: "#f9f9f9",
-  },
-  mealTitle: {
-    fontWeight: "bold",
-    marginBottom: 5,
-    fontSize: 16,
-  },
-  emptyText: {
-    fontStyle: "italic",
-    marginBottom: 5,
-    color: "#666",
-  },
-  foodRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 2,
   },
   foodText: {
     fontSize: 14,
