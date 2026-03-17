@@ -17,9 +17,7 @@ import MealCard from "../components/MealCard";
 import { FoodItem } from "../types/FoodItem";
 
 export default function MealBuilderScreen() {
-  // -----------------------------
-  // ALL STATE HOOKS AT THE TOP
-  // -----------------------------
+
   const [mealType, setMealType] = useState("Lunch");
   const [foods, setFoods] = useState<FoodItem[]>([]);
 
@@ -39,9 +37,11 @@ export default function MealBuilderScreen() {
 
   const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
 
-  // -----------------------------
-  // WAIT FOR FIREBASE AUTH READY
-  // -----------------------------
+  const [servingSizeModalVisible, setServingSizeModalVisible] = useState(false);
+  const [servingSizeInput, setServingSizeInput] = useState("100");
+  const [selectedProduct, setSelectedProduct] = useState<FoodItem | null>(null);
+
+
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
       setAuthReady(true);
@@ -49,9 +49,7 @@ export default function MealBuilderScreen() {
     return unsub;
   }, []);
 
-  // -----------------------------
-  // LOAD PRODUCTS AFTER AUTH READY
-  // -----------------------------
+
   useEffect(() => {
     if (!authReady) return;
 
@@ -68,9 +66,7 @@ export default function MealBuilderScreen() {
     loadProducts();
   }, [authReady]);
 
-  // -----------------------------
-  // FOOD EDITING
-  // -----------------------------
+
   const startEditingFood = (food: FoodItem) => {
     setTempName(food.name);
     setTempEnergy(String(food.energy));
@@ -108,9 +104,7 @@ export default function MealBuilderScreen() {
     setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
 
-  // -----------------------------
-  // SAVE MEAL
-  // -----------------------------
+ 
   const saveMeal = async () => {
     const user = getAuth().currentUser;
 
@@ -139,9 +133,34 @@ export default function MealBuilderScreen() {
     }
   };
 
-  // -----------------------------
-  // UI
-  // -----------------------------
+  const scaleValue = (value: number, grams: number) => {
+  const scaled = value * (grams / 100);
+  return Math.round(scaled * 10) / 10;
+};
+
+const handleAddWithServingSize = () => {
+  if (!selectedProduct) return;
+
+  const grams = parseInt(servingSizeInput, 10);
+  if (!grams || grams <= 0) return;
+
+  const scaledFood: FoodItem = {
+    ...selectedProduct,
+    id: `${selectedProduct.id}-${Date.now()}`,
+    servingSize: grams,
+    per100g: false,
+    energy: scaleValue(selectedProduct.energy, grams),
+    carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
+    protein: scaleValue(selectedProduct.protein, grams),
+    fat: scaleValue(selectedProduct.fat, grams),
+  };
+
+  setFoods((prev) => [...prev, scaledFood]);
+
+  setServingSizeModalVisible(false);
+  setSelectedProduct(null);
+};
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Build Your Meal</Text>
@@ -199,7 +218,7 @@ export default function MealBuilderScreen() {
         <Text style={styles.saveButtonText}>Save Meal</Text>
       </TouchableOpacity>
 
-      {/* CHOOSE MODAL */}
+
       <Modal visible={chooseModalVisible} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -235,7 +254,7 @@ export default function MealBuilderScreen() {
         </View>
       </Modal>
 
-      {/* PRODUCT LIST MODAL */}
+  
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
@@ -249,12 +268,14 @@ export default function MealBuilderScreen() {
               <TouchableOpacity
                 style={styles.productItem}
                 onPress={() => {
-                  setFoods((prev) => [...prev, item]);
+                  setSelectedProduct(item);
+                  setServingSizeInput("100");
                   setProductModalVisible(false);
+                  setServingSizeModalVisible(true);
                 }}
               >
                 <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productInfo}>{item.energy} kcal</Text>
+                <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
               </TouchableOpacity>
             )}
           />
@@ -267,7 +288,7 @@ export default function MealBuilderScreen() {
         </View>
       </Modal>
 
-      {/* CUSTOM FOOD MODAL */}
+ 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -323,6 +344,44 @@ export default function MealBuilderScreen() {
             <TouchableOpacity
               style={styles.modalCancelButton}
               onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={servingSizeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>How many grams?</Text>
+
+            <TextInput
+              style={styles.input}
+              keyboardType="number-pad"
+              value={servingSizeInput}
+              onChangeText={setServingSizeInput}
+              autoFocus
+              selectTextOnFocus
+            />
+            <TouchableOpacity
+              style={[
+                styles.modalAddButton,
+                !(parseInt(servingSizeInput, 10) > 0) && { opacity: 0.4 },
+              ]}
+              disabled={!(parseInt(servingSizeInput, 10) > 0)}
+              onPress={handleAddWithServingSize}
+            >
+              <Text style={styles.modalAddButtonText}>Add</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setServingSizeModalVisible(false)}
             >
               <Text style={styles.modalCancelButtonText}>Cancel</Text>
             </TouchableOpacity>
