@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react"
-import { View, Text, StyleSheet, Linking, TouchableOpacity, TextInput, Keyboard, Image, Alert, Modal } from "react-native"
+import { View, Text, StyleSheet, Linking, TouchableOpacity, TextInput, Image, Alert, Modal } from "react-native"
 import { useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
+import { db } from "../firebase/config"
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function ProfileScreen() {
 
-    const [weights, setWeights] = useState<string[]>([])
-    const [heights, setHeights] = useState<string[]>([])
+    const [height, setHeight] = useState<string | null>(null)
+    const [weight, setWeight] = useState<string | null>(null)
     const [diseases, setDiseases] = useState<string[]>([])
     const [allergies, setAllergies] = useState<string[]>([])
     const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -21,14 +24,32 @@ export default function ProfileScreen() {
 
     const openLink = (url: string) => Linking.openURL(url)
 
-    useEffect(() => {
-        if (!permission) requestPermission()
-    }, [permission])
+    useEffect(() => { // Haetaan käyttäjään liittyvät tiedot Firestoresta, jos niitä on
+        const loadData = async () => {
+            if (!user) return
 
-    if (!permission) return <Text>Requesting camera permission...</Text>
-    if (!permission.granted) return <Text>No access to camera</Text>
+            const ref = doc(db, "users", user.uid)
+            const snap = await getDoc(ref)
 
-    const pickFromLibrary = async () => {
+            if (snap.exists()) {
+                const data = snap.data()
+                setHeight(data.height || null)
+                setWeight(data.weight || null)
+                setDiseases(data.diseases || [])
+                setAllergies(data.allergies || [])
+                setProfileImage(data.profileImage || null)
+            }
+        }
+
+        loadData()
+    }, [user])
+
+    const saveToFirestore = async (data: any) => {
+        if (!user) return
+        await setDoc(doc(db, "users", user.uid), data, { merge: true })
+    }
+
+    const pickFromLibrary = async () => { // Kuvan valinta gallerian kautta, tarkistetaan samalla kuvagallerian käyttöoikeudet
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (!permission.granted) {
             alert("Salli kuvien käyttö asetuksista.")
@@ -42,12 +63,16 @@ export default function ProfileScreen() {
             quality: 1,
         })
 
-        if (!result.canceled) setProfileImage(result.assets[0].uri)
+        if (!result.canceled) {
+            setProfileImage(result.assets[0].uri)
+            saveToFirestore({ profileImage: result.assets[0].uri })
+        }
     }
 
-    const takePhoto = async () => {
-        const permission = await ImagePicker.requestCameraPermissionsAsync()
-        if (!permission.granted) {
+    const takePhoto = async () => { // Kuvan otto, tarkistetaan samalla kameran käyttöoikeudet
+        const { status } = await requestPermission()
+
+        if (status !== "granted") {
             alert("Salli kameran käyttö asetuksista.")
             return
         }
@@ -58,10 +83,26 @@ export default function ProfileScreen() {
             quality: 1,
         })
 
-        if (!result.canceled) setProfileImage(result.assets[0].uri)
+        if (!result.canceled) {
+            setProfileImage(result.assets[0].uri)
+            saveToFirestore({ profileImage: result.assets[0].uri })
+        }
     }
 
-    const chooseImageOption = () => {
+    const removeDisease = async (index: number) => { // Poistetaan sairaus jos se on tarpeen
+        const updated = diseases.filter((_, i) => i !== index)
+        setDiseases(updated)
+        await saveToFirestore({ diseases: updated })
+    }
+
+    const removeAllergy = async (index: number) => { // Poistetaan allergia jos se on tarpeen
+        const updated = allergies.filter((_, i) => i !== index)
+        setAllergies(updated)
+        await saveToFirestore({ allergies: updated })
+    }
+
+
+    const chooseImageOption = () => { // Annetaan Alerti joka antaa käyttäjälle vaihtoehdon kuvagalleria tai kamera
         Alert.alert(
             "Valitse vaihtoehto",
             "",
@@ -73,28 +114,45 @@ export default function ProfileScreen() {
         )
     }
 
-    const openModal = (type: "height" | "weight" | "disease" | "allergy", title: string) => {
+    const openModal = (type: "height" | "weight" | "disease" | "allergy", title: string) => { // Modalin avaaminen, asetetaan modalin mahdolliset tyypit ja otsikko sen mukaan
         setModalType(type)
         setModalTitle(title)
         setModalValue("")
         setModalVisible(true)
     }
 
-    const saveModalValue = () => {
+    const saveModalValue = async () => { // tallenetaan modalissa annettu arvo, tarkistetaan että se ei ole tyhjä, ja päivitetään Firestoreen
         if (!modalValue.trim()) return
 
-        if (modalType === "height") setHeights([...heights, modalValue])
-        if (modalType === "weight") setWeights([...weights, modalValue])
-        if (modalType === "disease") setDiseases([...diseases, modalValue])
-        if (modalType === "allergy") setAllergies([...allergies, modalValue])
+        let update: any = {}
 
+        if (modalType === "height") {
+            setHeight(modalValue)
+            update.height = modalValue
+        }
+        if (modalType === "weight") {
+            setWeight(modalValue)
+            update.weight = modalValue
+        }
+        if (modalType === "disease") {
+            const updated = [...diseases, modalValue]
+            setDiseases(updated)
+            update.diseases = updated
+        }
+        if (modalType === "allergy") {
+            const updated = [...allergies, modalValue]
+            setAllergies(updated)
+            update.allergies = updated
+        }
+
+        await saveToFirestore(update)
         setModalVisible(false)
     }
 
     return (
         <View style={styles.container}>
 
-            <Modal
+            <Modal // Modalin käyttööntä
                 visible={modalVisible}
                 transparent
                 animationType="fade"
@@ -144,75 +202,95 @@ export default function ProfileScreen() {
                 <View style={styles.rowBetween}>
 
                     <View style={styles.column}>
-                        <Text>Pituus (cm):</Text>
-                        <View style={styles.rowCenter}>
+                        <Text>Pituus (cm):</Text> {/* Pituuden lisäys ja muokkaus */}
+                        {height ? (
+                            <>
+                                <Text style={styles.listItem}>• {height} cm</Text>
+                                <TouchableOpacity
+                                    style={styles.smallButton}
+                                    onPress={() => openModal("height", "Muokkaa pituutta")}
+                                >
+                                    <MaterialIcons name="edit" size={22} color="#fff" />
+                                </TouchableOpacity>
+                            </>
+                        ) : (
                             <TouchableOpacity
                                 style={styles.smallButton}
                                 onPress={() => openModal("height", "Lisää pituus")}
                             >
-                                <Text style={styles.smallButtonText}>+</Text>
+                                <MaterialIcons name="add" size={28} color="#fff" />
                             </TouchableOpacity>
-                        </View>
-
-                        {heights.map((item, index) => (
-                            <Text key={index} style={styles.listItem}>• {item} cm</Text>
-                        ))}
+                        )}
                     </View>
 
                     <View style={styles.column}>
-                        <Text>Paino (kg):</Text>
-                        <View style={styles.rowCenter}>
+                        <Text>Paino (kg):</Text> {/* Painon lisäys ja muokkaus */}
+                        {weight ? (
+                            <>
+                                <Text style={styles.listItem}>• {weight} kg</Text>
+                                <TouchableOpacity
+                                    style={styles.smallButton}
+                                    onPress={() => openModal("weight", "Muokkaa painoa")}
+                                >
+                                    <MaterialIcons name="edit" size={22} color="#fff" />
+                                </TouchableOpacity>
+                            </>
+                        ) : (
                             <TouchableOpacity
                                 style={styles.smallButton}
                                 onPress={() => openModal("weight", "Lisää paino")}
                             >
-                                <Text style={styles.smallButtonText}>+</Text>
+                                <MaterialIcons name="add" size={28} color="#fff" />
                             </TouchableOpacity>
-                        </View>
-
-                        {weights.map((item, index) => (
-                            <Text key={index} style={styles.listItem}>• {item} kg</Text>
-                        ))}
+                        )}
                     </View>
 
                 </View>
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Sairaudet:</Text>
+                <Text style={styles.sectionTitle}>Sairaudet:</Text> {/* Sairauksien lisäys ja poisto */}
 
-                <View style={styles.rowCenter}>
-                    <TouchableOpacity
-                        style={styles.smallButton}
-                        onPress={() => openModal("disease", "Lisää sairaus")}
-                    >
-                        <Text style={styles.smallButtonText}>+</Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={styles.smallButton}
+                    onPress={() => openModal("disease", "Lisää sairaus")}
+                >
+                    <MaterialIcons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
 
                 {diseases.map((item, index) => (
-                    <Text key={index} style={styles.listItem}>• {item}</Text>
+                    <View key={index} style={styles.listRow}>
+                        <Text style={styles.listItem}>• {item}</Text>
+
+                        <TouchableOpacity onPress={() => removeDisease(index)}>
+                            <MaterialIcons name="delete" size={24} color="#d11a2a" />
+                        </TouchableOpacity>
+                    </View>
                 ))}
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Allergiat:</Text>
+                <Text style={styles.sectionTitle}>Allergiat:</Text> {/* Allergioiden lisäys ja poisto */}
 
-                <View style={styles.rowCenter}>
-                    <TouchableOpacity
-                        style={styles.smallButton}
-                        onPress={() => openModal("allergy", "Lisää allergia")}
-                    >
-                        <Text style={styles.smallButtonText}>+</Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={styles.smallButton}
+                    onPress={() => openModal("allergy", "Lisää allergia")}
+                >
+                    <MaterialIcons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
 
                 {allergies.map((item, index) => (
-                    <Text key={index} style={styles.listItem}>• {item}</Text>
+                    <View key={index} style={styles.listRow}>
+                        <Text style={styles.listItem}>• {item}</Text>
+
+                        <TouchableOpacity onPress={() => removeAllergy(index)}>
+                            <MaterialIcons name="delete" size={24} color="#d11a2a" />
+                        </TouchableOpacity>
+                    </View>
                 ))}
             </View>
 
-            <Text style={styles.linksTitle}>Linkit:</Text>
+            <Text style={styles.linksTitle}>Linkit:</Text> {/* Linkit diabetesaiheisiin luotettaviin lähteisiin */}
 
             <View style={styles.rowCenterAbsolute}>
                 <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
@@ -278,12 +356,6 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         marginBottom: 6,
     },
-
-    rowCenter: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 6,
-    },
     rowBetween: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -300,18 +372,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
+        marginTop: 6,
     },
-    smallButtonText: {
-        color: "#fff",
-        fontSize: 24,
-        fontWeight: "bold",
-    },
-
     listItem: {
         marginTop: 4,
         fontSize: 16,
     },
-
     linksTitle: {
         position: "absolute",
         bottom: 80,
@@ -336,7 +402,6 @@ const styles = StyleSheet.create({
         marginHorizontal: 6,
         color: "#FFFFFF",
     },
-
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.6)",
@@ -374,5 +439,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#009FE3",
         fontWeight: "bold",
+    },
+    listRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: 4,
     },
 })
