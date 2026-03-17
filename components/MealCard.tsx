@@ -1,38 +1,25 @@
-import React from "react"
-import { View, Text, Button, StyleSheet } from "react-native"
-import { Meal } from "../types/Meals"
+import React from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
+import { FoodItem } from "../types/FoodItem";
 
 type Props = {
-  meal: Meal
-  onAddFood: (mealId: string) => void
-  onDeleteFood: (mealId: string, foodId: string) => void
-}
+  food: FoodItem;
+  onDelete: (foodId: string) => void;
+};
 
-export default function MealCard({ meal, onAddFood, onDeleteFood }: Props) {
+export default function MealCard({ food, onDelete }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={styles.mealTitle}>{meal.type}</Text>
+      <Text style={styles.name}>{food.name}</Text>
 
-      {meal.foods.length === 0 ? (
-        <Text style={styles.emptyText}>No foods added yet</Text>
-      ) : (
-        meal.foods.map((food) => (
-          <View key={food.id} style={styles.foodRow}>
-            <Text style={styles.foodText}>
-              • {food.name} — {food.grams} g{" "}
-              {food.carbs !== undefined ? `(${food.carbs}g carbs)` : ""}
-            </Text>
-            <Button
-              title="Delete"
-              onPress={() => onDeleteFood(meal.id, food.id)}
-            />
-          </View>
-        ))
-      )}
+      <Text style={styles.nutrition}>Energy: {food.energy} kcal</Text>
+      <Text style={styles.nutrition}>Carbs: {food.carbohydrates} g</Text>
+      <Text style={styles.nutrition}>Protein: {food.protein} g</Text>
+      <Text style={styles.nutrition}>Fat: {food.fat} g</Text>
 
-      <Button title="Add Food" onPress={() => onAddFood(meal.id)} />
+      <Button title="Delete" onPress={() => onDelete(food.id!)} />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -44,23 +31,11 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     backgroundColor: "#f9f9f9",
   },
-  mealTitle: {
-    fontWeight: "bold",
-    marginBottom: 5,
+  name: {
     fontSize: 16,
+    fontWeight: "bold",
   },
-  emptyText: {
-    fontStyle: "italic",
-    marginBottom: 5,
-    color: "#666",
-  },
-  foodRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  foodText: {
+  nutrition: {
     fontSize: 14,
   },
-})
+});
