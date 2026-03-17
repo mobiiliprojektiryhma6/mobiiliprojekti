@@ -6,8 +6,9 @@ import { useAuth } from "../src/hooks/useAuth"
 
 export default function ProfileScreen() {
 
-    const [weights, setWeights] = useState<string[]>([])
-    const [heights, setHeights] = useState<string[]>([])
+    const [weight, setWeight] = useState<string | null>(null)
+    const [height, setHeight] = useState<string | null>(null)
+
     const [diseases, setDiseases] = useState<string[]>([])
     const [allergies, setAllergies] = useState<string[]>([])
     const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -83,8 +84,8 @@ export default function ProfileScreen() {
     const saveModalValue = () => {
         if (!modalValue.trim()) return
 
-        if (modalType === "height") setHeights([...heights, modalValue])
-        if (modalType === "weight") setWeights([...weights, modalValue])
+        if (modalType === "height") setHeight(modalValue)
+        if (modalType === "weight") setWeight(modalValue)
         if (modalType === "disease") setDiseases([...diseases, modalValue])
         if (modalType === "allergy") setAllergies([...allergies, modalValue])
 
@@ -145,34 +146,47 @@ export default function ProfileScreen() {
 
                     <View style={styles.column}>
                         <Text>Pituus (cm):</Text>
-                        <View style={styles.rowCenter}>
+                        {height ? (
+                            <>
+                                <Text style={styles.listItem}>• {height} cm</Text>
+                                <TouchableOpacity
+                                    style={styles.smallButton}
+                                    onPress={() => openModal("height", "Muokkaa pituutta")}
+                                >
+                                    <Text style={styles.smallButtonText}>✎</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
                             <TouchableOpacity
                                 style={styles.smallButton}
                                 onPress={() => openModal("height", "Lisää pituus")}
                             >
                                 <Text style={styles.smallButtonText}>+</Text>
                             </TouchableOpacity>
-                        </View>
+                        )}
 
-                        {heights.map((item, index) => (
-                            <Text key={index} style={styles.listItem}>• {item} cm</Text>
-                        ))}
                     </View>
 
                     <View style={styles.column}>
                         <Text>Paino (kg):</Text>
-                        <View style={styles.rowCenter}>
+                        {weight ? (
+                            <>
+                                <Text style={styles.listItem}>• {weight} kg</Text>
+                                <TouchableOpacity
+                                    style={styles.smallButton}
+                                    onPress={() => openModal("weight", "Muokkaa painoa")}
+                                >
+                                    <Text style={styles.smallButtonText}>✎</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
                             <TouchableOpacity
                                 style={styles.smallButton}
                                 onPress={() => openModal("weight", "Lisää paino")}
                             >
                                 <Text style={styles.smallButtonText}>+</Text>
                             </TouchableOpacity>
-                        </View>
-
-                        {weights.map((item, index) => (
-                            <Text key={index} style={styles.listItem}>• {item} kg</Text>
-                        ))}
+                        )}
                     </View>
 
                 </View>
