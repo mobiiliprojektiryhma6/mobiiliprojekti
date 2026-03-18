@@ -1,4 +1,4 @@
-import { FoodItem } from "./FoodTypes"
+import { FoodItem } from "./FoodItem"
 
 export type Meal = {
   id: string
