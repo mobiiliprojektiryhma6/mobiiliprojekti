@@ -3,7 +3,13 @@ import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { BottomSheet } from "react-native-btr";
 
-type MenuRoute = "Home" | "FoodDiary" | "MealBuilder" | "Profile" | "Scanner" | "Logout";
+type MenuRoute =
+    | "Home"
+    | "FoodDiary"
+    | "MealBuilder"
+    | "Scanner"
+    | "Profile"
+    | "Logout";
 
 type HamburgerMenuButtonProps = {
     onNavigate: (screenName: MenuRoute) => void;

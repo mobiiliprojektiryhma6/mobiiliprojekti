@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getAuth, signOut } from "firebase/auth";
 import "./firebase/config";
 import { useAuth } from "./src/hooks/useAuth";
-
 import Loginscreen from "./screens/Loginscreen";
 import Homescreen from "./screens/Homescreen";
 import FoodDiaryScreen from "./screens/FoodDiaryScreen";
@@ -13,8 +12,6 @@ import ProfileScreen from "./screens/ProfileScreen";
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import MealBuilderScreen from "./screens/MealBuilderScreen";
 import HamburgerMenuButton from "./components/navigation/HamburgerMenuButton";
-import { FoodInput } from "./components/FoodInput";
-import ProfileScreen from "./screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -26,7 +23,7 @@ export default function App() {
     try {
       const auth = getAuth();
       await signOut(auth);
-      console.log("User signed out!");
+      console.log("User signed out! ✅");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -70,18 +67,12 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
 
-            <Stack.Screen 
-              name="Scanner"
-              component={ProfileScreen}
-              options={{ title: "Profile Screen" }}
-            />
-
-
-          </>
-        )}
-
-      </Stack.Navigator>
-    </NavigationContainer>
+      {!!email && (
+        <View pointerEvents="box-none" style={styles.fab}>
+          <HamburgerMenuButton onNavigate={handleNavigation} />
+        </View>
+      )}
+    </View>
   );
 }
 
