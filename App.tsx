@@ -13,6 +13,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import { FoodInput } from "./components/FoodInput";
 import MealBuilderScreen from "./screens/MealBuilderScreen";
+import FoodSearchScreen from "./screens/FoodSearchScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -64,11 +65,18 @@ export default function App() {
                 options={{ title: "Meal Builder" }}
               />
 
-            <Stack.Screen 
+            <Stack.Screen
+              name="FoodSearch"
+              component={FoodSearchScreen}
+              options={{ title: "What are you eating?" }}
+            />
+
+            <Stack.Screen
               name="Scanner"
               component={BarcodeScannerScreen}
               options={{ title: "Barcode Scanner" }}
             />
+
 
             <Stack.Screen
               name="Profile"
