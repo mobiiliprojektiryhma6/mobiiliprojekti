@@ -1,48 +1,17 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import AuthStatus from "../components/AuthStatus";
-import Logout from "../components/Logout";
 
-export default function Homescreen({ navigation }: { navigation: any }) {
+export default function Homescreen() {
   return (
     <View style={styles.container}>
       <Text>💊💊 Welcome to Diabetes App! 💊💊</Text>
       <Text> YOU'RE LOGGED IN! 😈 </Text>
-
-      <AuthStatus />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("FoodDiary")}
-      >
-        <Text style={styles.buttonText}>Open Food Diary</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("MealBuilder")}
-      >
-        <Text style={styles.buttonText}>Open Meal Builder</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Scanner")}
-      >
-        <Text style={styles.buttonText}>Open Barcode Scanner</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Profile")}
-      >
-        <Text style={styles.buttonText}>Go to Profile</Text>
-      </TouchableOpacity>
-
-      <Logout />
+    <AuthStatus />
     </View>
-  );
+);
 }
+ 
 
 const styles = StyleSheet.create({
   container: {
