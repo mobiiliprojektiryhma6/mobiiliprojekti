@@ -11,34 +11,11 @@ import {
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
-import { useRoute } from "@react-navigation/native";
 
 export default function FoodSearchScreen({ navigation }: { navigation: any }) {
-  const route = useRoute<any>();
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<FoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
-  const [scannedProduct, setScannedProduct] = useState<FoodItem | null>(null);
-
-  // Handle scanned product from BarcodeScanner
-  useEffect(() => {
-    if (route.params?.scannedProduct) {
-      const p = route.params.scannedProduct;
-      const item: FoodItem = {
-        id: p.barcode || String(Math.random()),
-        name: p.name,
-        energy: p.energy,
-        carbohydrates: p.carbohydrates,
-        protein: p.protein,
-        fat: p.fat,
-        barcode: p.barcode,
-      };
-      setScannedProduct(item);
-      setSelectedItem(item);
-      // Clear the param so it doesn't persist on re-focus
-      navigation.setParams({ scannedProduct: undefined });
-    }
-  }, [route.params?.scannedProduct]);
 
   // Firestore results (instant)
   const [localBest, setLocalBest] = useState<FoodItem[]>([]);
@@ -234,14 +211,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
           <Text style={{ fontSize: 22, color: "#fff" }}>📷</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Scanned product result */}
-      {scannedProduct && !selectedItem && (
-        <View style={styles.resultsSection}>
-          <Text style={styles.sectionTitle}>Scanned Product</Text>
-          {renderFoodItem(scannedProduct, "scanned")}
-        </View>
-      )}
 
       {/* Selected item detail view */}
       {selectedItem ? (
