@@ -13,6 +13,8 @@ import ProfileScreen from "./screens/ProfileScreen";
 import { BarcodeScannerScreen } from "./screens/BarcodeScanner";
 import MealBuilderScreen from "./screens/MealBuilderScreen";
 import HamburgerMenuButton from "./components/navigation/HamburgerMenuButton";
+import { FoodInput } from "./components/FoodInput";
+import ProfileScreen from "./screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -68,12 +70,18 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
 
-      {!!email && (
-        <View pointerEvents="box-none" style={styles.fab}>
-          <HamburgerMenuButton onNavigate={handleNavigation} />
-        </View>
-      )}
-    </View>
+            <Stack.Screen 
+              name="Scanner"
+              component={ProfileScreen}
+              options={{ title: "Profile Screen" }}
+            />
+
+
+          </>
+        )}
+
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
