@@ -111,56 +111,38 @@ export default function MealBuilderScreen() {
     setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
 
- 
-const saveMeal = async () => {
-  const user = getAuth().currentUser;
 
+  const saveMeal = async () => {
+    const user = getAuth().currentUser;
 
-  if (!user) {
-    alert("You must be logged in.");
-    return;
-  }
+    if (!user) {
+      alert("You must be logged in.");
+      return;
+    }
 
-  if (foods.length === 0) {
-    alert("Add at least one food.");
-    return;
-  }
+    if (foods.length === 0) {
+      alert("Add at least one food.");
+      return;
+    }
 
-  
-  const dateString = new Date().toISOString().split("T")[0];
+    const dateString = getDayKey();
 
- 
-  const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
-  const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
-  const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
-  const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
-
-  try {
-    await addDoc(collection(db, "meals", user.uid, "entries"), {
-      mealType,
-      timestamp: serverTimestamp(),
-      dateString,
-      foods,
-      totalEnergy,
-      totalCarbohydrates,
-      totalProtein,
-      totalFat,
-    });
-
-    alert("Meal saved!");
-    setFoods([]);
-  } catch (error) {
-    console.error("Error saving meal:", error);
-    alert("Could not save meal.");
-  }
-};
+    const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
+    const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
+    const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
+    const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
 
     try {
       await addDoc(collection(db, "meals", user.uid, "entries"), {
         mealType,
-        dayKey: getDayKey(),
         timestamp: serverTimestamp(),
+        dateString,
+        dayKey: dateString,
         foods,
+        totalEnergy,
+        totalCarbohydrates,
+        totalProtein,
+        totalFat,
       });
 
       alert("Meal saved!");

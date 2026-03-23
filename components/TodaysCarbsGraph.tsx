@@ -50,7 +50,7 @@ export default function TodayCarbsChart() {
             const todayKey = getDayKey();
 
             const entriesRef = collection(db, "meals", uid, "entries");
-            const q = query(entriesRef, where("dayKey", "==", todayKey));
+            const q = query(entriesRef, where("dateString", "==", todayKey));
 
             const snap = await getDocs(q);
 

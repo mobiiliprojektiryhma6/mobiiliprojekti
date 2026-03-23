@@ -17,15 +17,20 @@ type Meal = {
   totalFat?: number;
 };
 
+const getDayKey = (date = new Date()) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function FoodDiaryScreen() {
   const user = getAuth().currentUser;
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedDate, setSelectedDate] = useState(
-  new Date().toISOString().split("T")[0]
-);
+  const [selectedDate, setSelectedDate] = useState(getDayKey());
 
   useEffect(() => {
     if (!user) return;
@@ -46,7 +51,7 @@ export default function FoodDiaryScreen() {
     });
 
     return unsubscribe;
- }, [user, selectedDate]);
+  }, [user, selectedDate]);
 
   if (loading) {
     return (
@@ -70,35 +75,35 @@ export default function FoodDiaryScreen() {
   });
 
   const dailyTotals = meals.reduce(
-  (acc, m) => ({
-    carbs: acc.carbs + (m.totalCarbohydrates ?? 0),
-    energy: acc.energy + (m.totalEnergy ?? 0),
-    protein: acc.protein + (m.totalProtein ?? 0),
-    fat: acc.fat + (m.totalFat ?? 0),
-  }),
-  { carbs: 0, energy: 0, protein: 0, fat: 0 }
-);
+    (acc, m) => ({
+      carbs: acc.carbs + (m.totalCarbohydrates ?? 0),
+      energy: acc.energy + (m.totalEnergy ?? 0),
+      protein: acc.protein + (m.totalProtein ?? 0),
+      fat: acc.fat + (m.totalFat ?? 0),
+    }),
+    { carbs: 0, energy: 0, protein: 0, fat: 0 }
+  );
 
   const goToPreviousDay = () => {
-  const d = new Date(selectedDate);
-  d.setDate(d.getDate() - 1);
-  setSelectedDate(d.toISOString().split("T")[0]);
-};
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(getDayKey(d));
+  };
 
-const goToNextDay = () => {
-  const d = new Date(selectedDate);
-  d.setDate(d.getDate() + 1);
-  setSelectedDate(d.toISOString().split("T")[0]);
-};
+  const goToNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(getDayKey(d));
+  };
 
 
   return (
-  <View style={{ flex: 1 }}>
-    
-    <View style={styles.dateRow}>
-      <Text style={styles.dateButton} onPress={goToPreviousDay}>◀</Text>
-      <Text style={styles.dateText}>{selectedDate}</Text>
-      <Text style={styles.dateButton} onPress={goToNextDay}>▶</Text>
+    <View style={{ flex: 1 }}>
+
+      <View style={styles.dateRow}>
+        <Text style={styles.dateButton} onPress={goToPreviousDay}>◀</Text>
+        <Text style={styles.dateText}>{selectedDate}</Text>
+        <Text style={styles.dateButton} onPress={goToNextDay}>▶</Text>
       </View>
 
       <ScrollView style={styles.container}>
@@ -122,15 +127,15 @@ const goToNextDay = () => {
 
 
         {mealTypes.map((type) => (
-        <View key={type} style={{ marginBottom: 25 }}>
-          {grouped[type].length > 0 && (
-            <DiaryMealCard meal={grouped[type][0]} />
-          )}
-        </View>
-      ))}
-    </ScrollView>
+          <View key={type} style={{ marginBottom: 25 }}>
+            {grouped[type].length > 0 && (
+              <DiaryMealCard meal={grouped[type][0]} />
+            )}
+          </View>
+        ))}
+      </ScrollView>
 
-  </View>
+    </View>
   );
 }
 
@@ -148,50 +153,50 @@ const styles = StyleSheet.create({
   },
 
   dateRow: {
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 10,
-},
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 
-dateButton: {
-  fontSize: 22,
-  paddingHorizontal: 20,
-  color: "#4A90E2",
-},
+  dateButton: {
+    fontSize: 22,
+    paddingHorizontal: 20,
+    color: "#4A90E2",
+  },
 
-dateText: {
-  fontSize: 18,
-  fontWeight: "600",
-},
-summaryCard: {
-  backgroundColor: "#fff",
-  padding: 16,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "#d0d0d0",
-  marginBottom: 20,
-},
+  dateText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    marginBottom: 20,
+  },
 
-summaryTitle: {
-  fontSize: 18,
-  fontWeight: "600",
-  marginBottom: 12,
-  textAlign: "center",
-},
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+    textAlign: "center",
+  },
 
-summaryGrid: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-},
+  summaryGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 
-summaryColumn: {
-  flex: 1,
-},
+  summaryColumn: {
+    flex: 1,
+  },
 
-summaryItem: {
-  fontSize: 14,
-  marginBottom: 6,
-},
+  summaryItem: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
 
 });
