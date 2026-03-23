@@ -16,6 +16,13 @@ import { getAuth } from "firebase/auth";
 import MealCard from "../components/MealCard";
 import { FoodItem } from "../types/FoodItem";
 
+const getDayKey = (date = new Date()) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function MealBuilderScreen() {
 
   const [mealType, setMealType] = useState("Lunch");
@@ -104,7 +111,7 @@ export default function MealBuilderScreen() {
     setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
 
- 
+
   const saveMeal = async () => {
     const user = getAuth().currentUser;
 
@@ -121,6 +128,7 @@ export default function MealBuilderScreen() {
     try {
       await addDoc(collection(db, "meals", user.uid, "entries"), {
         mealType,
+        dayKey: getDayKey(),
         timestamp: serverTimestamp(),
         foods,
       });
@@ -134,32 +142,32 @@ export default function MealBuilderScreen() {
   };
 
   const scaleValue = (value: number, grams: number) => {
-  const scaled = value * (grams / 100);
-  return Math.round(scaled * 10) / 10;
-};
-
-const handleAddWithServingSize = () => {
-  if (!selectedProduct) return;
-
-  const grams = parseInt(servingSizeInput, 10);
-  if (!grams || grams <= 0) return;
-
-  const scaledFood: FoodItem = {
-    ...selectedProduct,
-    id: `${selectedProduct.id}-${Date.now()}`,
-    servingSize: grams,
-    per100g: false,
-    energy: scaleValue(selectedProduct.energy, grams),
-    carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
-    protein: scaleValue(selectedProduct.protein, grams),
-    fat: scaleValue(selectedProduct.fat, grams),
+    const scaled = value * (grams / 100);
+    return Math.round(scaled * 10) / 10;
   };
 
-  setFoods((prev) => [...prev, scaledFood]);
+  const handleAddWithServingSize = () => {
+    if (!selectedProduct) return;
 
-  setServingSizeModalVisible(false);
-  setSelectedProduct(null);
-};
+    const grams = parseInt(servingSizeInput, 10);
+    if (!grams || grams <= 0) return;
+
+    const scaledFood: FoodItem = {
+      ...selectedProduct,
+      id: `${selectedProduct.id}-${Date.now()}`,
+      servingSize: grams,
+      per100g: false,
+      energy: scaleValue(selectedProduct.energy, grams),
+      carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
+      protein: scaleValue(selectedProduct.protein, grams),
+      fat: scaleValue(selectedProduct.fat, grams),
+    };
+
+    setFoods((prev) => [...prev, scaledFood]);
+
+    setServingSizeModalVisible(false);
+    setSelectedProduct(null);
+  };
 
   return (
     <View style={styles.container}>
@@ -254,7 +262,7 @@ const handleAddWithServingSize = () => {
         </View>
       </Modal>
 
-  
+
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
@@ -288,7 +296,7 @@ const handleAddWithServingSize = () => {
         </View>
       </Modal>
 
- 
+
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -354,7 +362,7 @@ const handleAddWithServingSize = () => {
         visible={servingSizeModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => {}}
+        onRequestClose={() => { }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>

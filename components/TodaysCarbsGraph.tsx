@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, AppState } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 
 type PieSlice = {
@@ -13,17 +13,27 @@ type PieSlice = {
 };
 
 const COLORS = ["#009FE3", "#4CAF50", "#FF9800", "#E91E63", "#9C27B0", "#607D8B"];
+const getDayKey = (date = new Date()) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function TodayCarbsChart() {
     const [loadingChart, setLoadingChart] = useState(false);
     const [chartError, setChartError] = useState<string | null>(null);
     const [pieData, setPieData] = useState<PieSlice[]>([]);
-    const TARGET_CARBS = 1000;
-
+    const dayKeyRef = useRef(getDayKey());
+    const TARGET_CARBS = 1000;  // Hardcoded target for demo. Will be replaced with real data.
     const chartWidth = useMemo(() => Math.min(Dimensions.get("window").width - 30, 420), []);
     const totalCarbs = useMemo(() => pieData.reduce((sum, item) => sum + item.carbs, 0), [pieData]);
     const progress = useMemo(() => Math.min(totalCarbs / TARGET_CARBS, 1), [totalCarbs]);
     const remainingCarbs = useMemo(() => Math.max(0, TARGET_CARBS - totalCarbs), [totalCarbs]);
+    const chartKey = useMemo(() => {
+        const sig = pieData.map((p) => `${p.name}:${p.carbs}`).join("|");
+        return `${dayKeyRef.current}-${sig}-${totalCarbs}`;
+    }, [pieData, totalCarbs]);
 
     const loadTodayPieData = useCallback(async () => {
         try {
@@ -37,16 +47,10 @@ export default function TodayCarbsChart() {
                 return;
             }
 
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+            const todayKey = getDayKey();
 
             const entriesRef = collection(db, "meals", uid, "entries");
-            const q = query(
-                entriesRef,
-                where("timestamp", ">=", Timestamp.fromDate(startOfDay)),
-                where("timestamp", "<", Timestamp.fromDate(endOfDay))
-            );
+            const q = query(entriesRef, where("dayKey", "==", todayKey));
 
             const snap = await getDocs(q);
 
@@ -68,9 +72,9 @@ export default function TodayCarbsChart() {
                         color: COLORS[index % COLORS.length],
                         legendFontColor: "#1F2937",
                         legendFontSize: 12,
-                    };
+                    } satisfies PieSlice;
                 })
-                .filter((item) => item.carbs > 0);
+                .filter((item): item is PieSlice => !!item && item.carbs > 0);
 
             setPieData(mapped);
         } catch (err: any) {
@@ -83,6 +87,34 @@ export default function TodayCarbsChart() {
 
     useEffect(() => {
         loadTodayPieData();
+    }, [loadTodayPieData]);
+
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (state) => {
+            if (state !== "active") return;
+
+            const nowKey = getDayKey();
+            if (nowKey !== dayKeyRef.current) {
+                dayKeyRef.current = nowKey;
+                setPieData([]);
+            }
+
+            loadTodayPieData();
+        });
+
+        const interval = setInterval(() => {
+            const nowKey = getDayKey();
+            if (nowKey !== dayKeyRef.current) {
+                dayKeyRef.current = nowKey;
+                setPieData([]);
+                loadTodayPieData();
+            }
+        }, 60_000);
+
+        return () => {
+            sub.remove();
+            clearInterval(interval);
+        };
     }, [loadTodayPieData]);
 
     return (
@@ -105,6 +137,7 @@ export default function TodayCarbsChart() {
             {!loadingChart && !chartError && pieData.length > 0 && (
                 <>
                     <PieChart
+                        key={chartKey}
                         data={pieData}
                         width={chartWidth}
                         height={200}
@@ -119,7 +152,13 @@ export default function TodayCarbsChart() {
                 </>
             )}
 
-            <TouchableOpacity style={styles.refreshButton} onPress={loadTodayPieData}>
+            <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={() => {
+                    console.log("Button pressed: Refreshing chart data.");
+                    loadTodayPieData();
+                }}
+            >
                 <Text style={styles.buttonText}>Refresh Chart</Text>
             </TouchableOpacity>
         </View>
