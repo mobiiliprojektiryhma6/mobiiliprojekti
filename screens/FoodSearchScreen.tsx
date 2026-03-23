@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+
+/* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
+- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
+- BarcodeScanner: camera page  where users can scan a product's barcode to look its nutritional info. After scanning the product data is sent back to FoodSearchScreen
+
+1. FoodSearchScreen - User taps camera button -> BarcodeScanner (navigation.navigate("Scanner"))
+2. BarcodeScanner - User scans barcode -> API lookup (navigation.navigate("FoodSearch", { scannedProduct }))
+3. FoodSearchScreen - useEffect picks up (route.params.scannedProduct) and displays product's nutritional info
+
+The data is passed through navigation, small data package is attacked to the navigation action
+*/
 
 export default function FoodSearchScreen({ navigation }: { navigation: any }) {
   const route = useRoute<any>();
@@ -20,7 +23,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [scannedProduct, setScannedProduct] = useState<FoodItem | null>(null);
 
-  // Handle scanned product from BarcodeScanner
+  // Handle scanned product from BarcodeScanner - When BarcodeScanner navigates back with a scanned product
+  /* if (route.params?.scannedProduct) {
+        setScannedProduct(item); // save it
+        setSelectedItem(item); // auto-expand its detail card
+        navigation.setParams({ scannedProduct: undefined }); // clean up so it does not trigger again
+  */
+
   useEffect(() => {
     if (route.params?.scannedProduct) {
       const p = route.params.scannedProduct;
@@ -49,7 +58,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load Firestore products once
+  // Load local data from Firestore, convert to array and save to state
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -66,7 +75,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     loadProducts();
   }, []);
 
-  // Filter Firestore products instantly when query changes
+  /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"                                                                                                                                                                                                                                       
+    - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)                                                                                                                                                                          
+    - Starts with?     "chocolate".startsWith("ch")  → also "best"                                                                                                                                                                                         
+    - Contains?        "white chocolate".includes("ch") → goes to "similar" list                                                                                                                                                                           
+    - No match?        → doesn't show 
+Fast because product is loaded in memory -> no network call needed
+  */
   useEffect(() => {
     if (query.trim().length === 0) {
       setLocalBest([]);
@@ -95,7 +110,17 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     setLocalSimilar(similar);
   }, [query, products]);
 
-  // Debounced Open Food Facts API search
+  /* Debounced Open Food Facts API search - At the same time the app searched Open Food Facts online DB but with 300ms delay (debounce)
+  - User types "c"     → timer starts (300ms)                                                                                                                                                                                                                
+  - User types "ch"    → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
+  - User types "cho"   → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
+  - User stops typing  → 300ms passes → API call fires for "cho" 
+  
+  Why debounce? Without it, the app would make an API call for every single keystroke (c, ch, cho, ...) = Wasteful and slow
+  The debounce waits until the user pauses typing, then makes one call
+
+  The API returns data (calories, carbs, protein, and fat per 100 g and it is displayed in the results)
+  */
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -157,12 +182,16 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
   const hasAny = hasLocal || apiResults.length > 0;
   const showNoResults = query.trim().length > 0 && !hasAny && !apiLoading;
 
+/* The UI - tap to expand/collapse
+- Each food item shows a compact view (name + one-line summary)
+- When tapped, it expands into a detail card showing nutritional info
+- Tap again to close the card */
+
   const handleSelect = (item: FoodItem) => {
-    // Toggle: tap again to close
     if (selectedItem?.id === item.id) {
-      setSelectedItem(null);
+      setSelectedItem(null); // already selected -> close it
     } else {
-      setSelectedItem(item);
+      setSelectedItem(item); // select and expand 
     }
   };
 
