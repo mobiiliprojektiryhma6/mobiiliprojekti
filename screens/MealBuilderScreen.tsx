@@ -105,33 +105,48 @@ export default function MealBuilderScreen() {
   };
 
  
-  const saveMeal = async () => {
-    const user = getAuth().currentUser;
+const saveMeal = async () => {
+  const user = getAuth().currentUser;
 
-    if (!user) {
-      alert("You must be logged in.");
-      return;
-    }
+  if (!user) {
+    alert("You must be logged in.");
+    return;
+  }
 
-    if (foods.length === 0) {
-      alert("Add at least one food.");
-      return;
-    }
+  if (foods.length === 0) {
+    alert("Add at least one food.");
+    return;
+  }
 
-    try {
-      await addDoc(collection(db, "meals", user.uid, "entries"), {
-        mealType,
-        timestamp: serverTimestamp(),
-        foods,
-      });
+  
+  const dateString = new Date().toISOString().split("T")[0];
 
-      alert("Meal saved!");
-      setFoods([]);
-    } catch (error) {
-      console.error("Error saving meal:", error);
-      alert("Could not save meal.");
-    }
-  };
+ 
+  const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
+  const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
+  const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
+  const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
+
+  try {
+    await addDoc(collection(db, "meals", user.uid, "entries"), {
+      mealType,
+      timestamp: serverTimestamp(),
+      dateString,
+      foods,
+      totalEnergy,
+      totalCarbohydrates,
+      totalProtein,
+      totalFat,
+    });
+
+    alert("Meal saved!");
+    setFoods([]);
+  } catch (error) {
+    console.error("Error saving meal:", error);
+    alert("Could not save meal.");
+  }
+};
+
 
   const scaleValue = (value: number, grams: number) => {
   const scaled = value * (grams / 100);
@@ -198,21 +213,22 @@ const handleAddWithServingSize = () => {
         <Text style={styles.addFoodButtonText}>Add Food</Text>
       </TouchableOpacity>
 
-      <Text style={styles.label}>Foods in this meal:</Text>
+      {foods.length > 0 && (
+        <>
+          <Text style={styles.label}>Foods in this meal:</Text>
 
-      {foods.length === 0 ? (
-        <Text style={styles.emptyText}>No foods added yet.</Text>
-      ) : (
-        <FlatList
-          data={foods}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => startEditingFood(item)}>
-              <MealCard food={item} onDelete={deleteFood} />
-            </TouchableOpacity>
-          )}
-        />
+          <FlatList
+            data={foods}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => startEditingFood(item)}>
+                <MealCard food={item} onDelete={deleteFood} />
+              </TouchableOpacity>
+            )}
+          />
+        </>
       )}
+
 
       <TouchableOpacity style={styles.saveButton} onPress={saveMeal}>
         <Text style={styles.saveButtonText}>Save Meal</Text>
