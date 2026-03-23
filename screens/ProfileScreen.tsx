@@ -181,7 +181,7 @@ export default function ProfileScreen() {
 
                             <TextInput
                                 style={styles.modalInput}
-                                placeholder="Kirjoita tieto"
+                                placeholder="Write here..."
                                 value={modalValue}
                                 onChangeText={setModalValue}
                                 autoFocus
@@ -189,11 +189,11 @@ export default function ProfileScreen() {
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                    <Text style={styles.modalCancel}>Peruuta</Text>
+                                    <Text style={styles.modalCancel}>Cancel</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity onPress={saveModalValue}>
-                                    <Text style={styles.modalSave}>Lisää</Text>
+                                    <Text style={styles.modalSave}>Add</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -214,13 +214,13 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Perustiedot:</Text>
+                    <Text style={styles.sectionTitle}>Personal Information:</Text>
 
                     <View style={styles.rowBetween}>
 
                         {/* Pituuden lisäys ja muokkaus */}
                         <View style={styles.column}>
-                            <Text>Pituus (cm):</Text>
+                            <Text>Height (cm):</Text>
                             {height ? (
                                 <>
                                     <Text style={styles.listItem}>• {height} cm</Text>
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
 
                         {/* Painon lisäys ja muokkaus */}
                         <View style={styles.column}>
-                            <Text>Paino (kg):</Text> 
+                            <Text>Weight (kg):</Text> 
                             {weight ? (
                                 <>
                                     <Text style={styles.listItem}>• {weight} kg</Text>
@@ -269,7 +269,7 @@ export default function ProfileScreen() {
 
                 {/* Sairauksien lisäys ja poisto */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Sairaudet:</Text> 
+                    <Text style={styles.sectionTitle}>Diseases:</Text> 
 
                     <TouchableOpacity
                         style={styles.smallButton}
@@ -291,7 +291,7 @@ export default function ProfileScreen() {
 
                 {/* Lääkityksen lisäys ja poisto */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Lääkitys:</Text> 
+                    <Text style={styles.sectionTitle}>Medication:</Text> 
 
                     <TouchableOpacity
                         style={styles.smallButton}
@@ -313,7 +313,7 @@ export default function ProfileScreen() {
 
                  {/* Allergioiden lisäys ja poisto */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Allergiat:</Text>
+                    <Text style={styles.sectionTitle}>Allergies:</Text>
 
                     <TouchableOpacity
                         style={styles.smallButton}
@@ -334,7 +334,7 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Linkit diabetesaiheisiin luotettaviin lähteisiin */}
-                <Text style={styles.linksTitle}>Linkit:</Text> 
+                <Text style={styles.linksTitle}>Links:</Text> 
 
                 <View style={styles.rowCenterAbsolute}>
                     <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
