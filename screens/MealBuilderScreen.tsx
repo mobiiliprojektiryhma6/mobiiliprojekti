@@ -16,6 +16,13 @@ import { getAuth } from "firebase/auth";
 import MealCard from "../components/MealCard";
 import { FoodItem } from "../types/FoodItem";
 
+const getDayKey = (date = new Date()) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function MealBuilderScreen() {
 
   const [mealType, setMealType] = useState("Lunch");
@@ -104,77 +111,76 @@ export default function MealBuilderScreen() {
     setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
 
- 
-const saveMeal = async () => {
-  const user = getAuth().currentUser;
 
-  if (!user) {
-    alert("You must be logged in.");
-    return;
-  }
+  const saveMeal = async () => {
+    const user = getAuth().currentUser;
 
-  if (foods.length === 0) {
-    alert("Add at least one food.");
-    return;
-  }
+    if (!user) {
+      alert("You must be logged in.");
+      return;
+    }
 
-  
-  const dateString = new Date().toISOString().split("T")[0];
+    if (foods.length === 0) {
+      alert("Add at least one food.");
+      return;
+    }
 
- 
-  const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
-  const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
-  const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
-  const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
+    const dateString = getDayKey();
 
-  try {
-    await addDoc(collection(db, "meals", user.uid, "entries"), {
-      mealType,
-      timestamp: serverTimestamp(),
-      dateString,
-      foods,
-      totalEnergy,
-      totalCarbohydrates,
-      totalProtein,
-      totalFat,
-    });
+    const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
+    const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
+    const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
+    const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
 
-    alert("Meal saved!");
-    setFoods([]);
-  } catch (error) {
-    console.error("Error saving meal:", error);
-    alert("Could not save meal.");
-  }
-};
+    try {
+      await addDoc(collection(db, "meals", user.uid, "entries"), {
+        mealType,
+        timestamp: serverTimestamp(),
+        dateString,
+        dayKey: dateString,
+        foods,
+        totalEnergy,
+        totalCarbohydrates,
+        totalProtein,
+        totalFat,
+      });
+
+      alert("Meal saved!");
+      setFoods([]);
+    } catch (error) {
+      console.error("Error saving meal:", error);
+      alert("Could not save meal.");
+    }
+  };
 
 
   const scaleValue = (value: number, grams: number) => {
-  const scaled = value * (grams / 100);
-  return Math.round(scaled * 10) / 10;
-};
-
-const handleAddWithServingSize = () => {
-  if (!selectedProduct) return;
-
-  const grams = parseInt(servingSizeInput, 10);
-  if (!grams || grams <= 0) return;
-
-  const scaledFood: FoodItem = {
-    ...selectedProduct,
-    id: `${selectedProduct.id}-${Date.now()}`,
-    servingSize: grams,
-    per100g: false,
-    energy: scaleValue(selectedProduct.energy, grams),
-    carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
-    protein: scaleValue(selectedProduct.protein, grams),
-    fat: scaleValue(selectedProduct.fat, grams),
+    const scaled = value * (grams / 100);
+    return Math.round(scaled * 10) / 10;
   };
 
-  setFoods((prev) => [...prev, scaledFood]);
+  const handleAddWithServingSize = () => {
+    if (!selectedProduct) return;
 
-  setServingSizeModalVisible(false);
-  setSelectedProduct(null);
-};
+    const grams = parseInt(servingSizeInput, 10);
+    if (!grams || grams <= 0) return;
+
+    const scaledFood: FoodItem = {
+      ...selectedProduct,
+      id: `${selectedProduct.id}-${Date.now()}`,
+      servingSize: grams,
+      per100g: false,
+      energy: scaleValue(selectedProduct.energy, grams),
+      carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
+      protein: scaleValue(selectedProduct.protein, grams),
+      fat: scaleValue(selectedProduct.fat, grams),
+    };
+
+    setFoods((prev) => [...prev, scaledFood]);
+
+    setServingSizeModalVisible(false);
+    setSelectedProduct(null);
+  };
 
   return (
     <View style={styles.container}>
@@ -270,7 +276,7 @@ const handleAddWithServingSize = () => {
         </View>
       </Modal>
 
-  
+
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
@@ -304,7 +310,7 @@ const handleAddWithServingSize = () => {
         </View>
       </Modal>
 
- 
+
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -370,7 +376,7 @@ const handleAddWithServingSize = () => {
         visible={servingSizeModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => {}}
+        onRequestClose={() => { }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
