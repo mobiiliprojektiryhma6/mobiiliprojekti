@@ -6,8 +6,8 @@ import { BottomSheet } from "react-native-btr";
 type MenuRoute =
     | "Home"
     | "FoodDiary"
+    | "FoodSearch"
     | "MealBuilder"
-    | "Scanner"
     | "Profile"
     | "Logout";
 
@@ -35,8 +35,8 @@ const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
                 <View style={styles.menu}>
                     <TouchableOpacity onPress={() => navigateToScreen("Home")}><Text style={styles.menuItem}>Home</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("FoodDiary")}><Text style={styles.menuItem}>Food Diary</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigateToScreen("FoodSearch")}><Text style={styles.menuItem}>Food Search</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("MealBuilder")}><Text style={styles.menuItem}>Meal Builder</Text></TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigateToScreen("Scanner")}><Text style={styles.menuItem}>Barcode Scanner</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Profile")}><Text style={styles.menuItem}>Profile</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Logout")}><Text style={styles.menuItem}>Logout</Text></TouchableOpacity>
                 </View>
