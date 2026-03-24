@@ -1,91 +1,202 @@
-import React, { useState } from "react"
-import { ScrollView, Text, StyleSheet } from "react-native"
-import { DiaryDay } from "../types/DiaryDay"
-import { Meal } from "../types/Meals"
-import { FoodItem } from "../types/FoodTypes"
-import MealCard from "../components/MealCard"
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase/config";
+import { getAuth } from "firebase/auth";
+import DiaryMealCard from "../components/DiaryMealCard";
+import { FoodItem } from "../types/FoodItem";
+
+type Meal = {
+  id: string;
+  mealType: string;
+  dateString: string;
+  foods: FoodItem[];
+  totalEnergy?: number;
+  totalCarbohydrates?: number;
+  totalProtein?: number;
+  totalFat?: number;
+};
+
+const getDayKey = (date = new Date()) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function FoodDiaryScreen() {
+  const user = getAuth().currentUser;
 
-  const today = new Date().toISOString().slice(0, 10)
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const initialMeals: Meal[] = [
-    { id: "b", type: "Breakfast", foods: [] },
-    { id: "s1", type: "Snack", foods: [] },
-    { id: "l", type: "Lunch", foods: [] },
-    { id: "s2", type: "Snack", foods: [] },
-    { id: "d", type: "Dinner", foods: [] },
-  ]
+  const [selectedDate, setSelectedDate] = useState(getDayKey());
 
-  const [diary, setDiary] = useState<DiaryDay>({
-    date: today,
-    meals: initialMeals
-  })
+  useEffect(() => {
+    if (!user) return;
 
-  const handleAddFood = (mealId: string) => {
+    const q = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "==", selectedDate)
+    );
 
-    const newFood: FoodItem = {
-      id: Date.now().toString(),
-      name: "Apple",
-      grams: 100,
-      carbs: 12,
-      barcode: ""
-    }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data: Meal[] = snapshot.docs.map((doc) => ({
+        ...(doc.data() as Meal),
+        id: doc.id,
+      }));
 
-    const updatedMeals = diary.meals.map((meal) => {
-      if (meal.id === mealId) {
-        return { ...meal, foods: [...meal.foods, newFood] }
-      }
-      return meal
-    })
+      setMeals(data);
+      setLoading(false);
+    });
 
-    setDiary({ ...diary, meals: updatedMeals })
+    return unsubscribe;
+  }, [user, selectedDate]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  const handleDeleteFood = (mealId: string, foodId: string) => {
+  const mealTypes = ["Breakfast", "Lunch", "Snack", "Dinner"];
 
-    const updatedMeals = diary.meals.map((meal) => {
-      if (meal.id === mealId) {
-        return {
-          ...meal,
-          foods: meal.foods.filter((food) => food.id !== foodId)
-        }
-      }
-      return meal
-    })
+  const grouped: Record<string, Meal[]> = {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: [],
+  };
 
-    setDiary({ ...diary, meals: updatedMeals })
-  }
+  mealTypes.forEach((type) => {
+    grouped[type] = meals.filter((m) => m.mealType === type);
+  });
+
+  const dailyTotals = meals.reduce(
+    (acc, m) => ({
+      carbs: acc.carbs + (m.totalCarbohydrates ?? 0),
+      energy: acc.energy + (m.totalEnergy ?? 0),
+      protein: acc.protein + (m.totalProtein ?? 0),
+      fat: acc.fat + (m.totalFat ?? 0),
+    }),
+    { carbs: 0, energy: 0, protein: 0, fat: 0 }
+  );
+
+  const goToPreviousDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(getDayKey(d));
+  };
+
+  const goToNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(getDayKey(d));
+  };
+
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={{ flex: 1 }}>
 
-      <Text style={styles.title}>Food Diary</Text>
-      <Text style={styles.date}>{diary.date}</Text>
+      <View style={styles.dateRow}>
+        <Text style={styles.dateButton} onPress={goToPreviousDay}>◀</Text>
+        <Text style={styles.dateText}>{selectedDate}</Text>
+        <Text style={styles.dateButton} onPress={goToNextDay}>▶</Text>
+      </View>
 
-      {diary.meals.map((meal) => (
-        <MealCard
-          key={meal.id}
-          meal={meal}
-          onAddFood={handleAddFood}
-          onDeleteFood={handleDeleteFood}
-        />
-      ))}
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Today's Meals</Text>
 
-    </ScrollView>
-  )
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Daily Totals</Text>
+
+          <View style={styles.summaryGrid}>
+            <View style={styles.summaryColumn}>
+              <Text style={styles.summaryItem}>Carbs: {dailyTotals.carbs.toFixed(1)} g</Text>
+              <Text style={styles.summaryItem}>Protein: {dailyTotals.protein.toFixed(1)} g</Text>
+            </View>
+
+            <View style={styles.summaryColumn}>
+              <Text style={styles.summaryItem}>Energy: {dailyTotals.energy.toFixed(0)} kcal</Text>
+              <Text style={styles.summaryItem}>Fat: {dailyTotals.fat.toFixed(1)} g</Text>
+            </View>
+          </View>
+        </View>
+
+
+        {mealTypes.map((type) => (
+          <View key={type} style={{ marginBottom: 25 }}>
+            {grouped[type].length > 0 && (
+              <DiaryMealCard meal={grouped[type][0]} />
+            )}
+          </View>
+        ))}
+      </ScrollView>
+
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-
-  container: { 
-    padding: 10,
-    width: '100%',
-    alignItems: 'stretch' 
+  container: {
+    flex: 1,
+    backgroundColor: "#E5F7FD",
+    padding: 20,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
   },
 
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 5 },
+  dateRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 
-  date: { marginBottom: 15, color: "#666" }
+  dateButton: {
+    fontSize: 22,
+    paddingHorizontal: 20,
+    color: "#4A90E2",
+  },
 
-})
+  dateText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    marginBottom: 20,
+  },
+
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+
+  summaryGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  summaryColumn: {
+    flex: 1,
+  },
+
+  summaryItem: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+
+});
