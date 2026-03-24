@@ -4,22 +4,28 @@ import { useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
 import { db } from "../firebase/config"
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc } from "firebase/firestore"
+import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function ProfileScreen() {
 
     const [height, setHeight] = useState<string | null>(null)
     const [weight, setWeight] = useState<string | null>(null)
+    const [personalHeight, setPersonalHeight] = useState("")
+    const [personalWeight, setPersonalWeight] = useState("")
     const [diseases, setDiseases] = useState<string[]>([])
     const [allergies, setAllergies] = useState<string[]>([])
     const [medicine, setMedicine] = useState<string[]>([])
+    const [showDiseases, setShowDiseases] = useState(false);
+    const [showMedicine, setShowMedicine] = useState(false);
+    const [showAllergies, setShowAllergies] = useState(false);
     const [profileImage, setProfileImage] = useState<string | null>(null)
     const [permission, requestPermission] = useCameraPermissions()
     const [modalVisible, setModalVisible] = useState(false)
     const [modalTitle, setModalTitle] = useState("")
     const [modalValue, setModalValue] = useState("")
-    const [modalType, setModalType] = useState<"height" | "weight" | "disease" | "allergy" | "medicine" | null>(null)
+    const [modalType, setModalType] = useState<"personal" | "disease" | "allergy" | "medicine" | null>(null)
 
     const { user } = useAuth()
 
@@ -54,7 +60,7 @@ export default function ProfileScreen() {
     const pickFromLibrary = async () => { // Kuvan valinta gallerian kautta, tarkistetaan samalla kuvagallerian käyttöoikeudet
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (!permission.granted) {
-            alert("Salli kuvien käyttö asetuksista.")
+            alert("Please allow image access in settings.")
             return
         }
 
@@ -75,7 +81,7 @@ export default function ProfileScreen() {
         const { status } = await requestPermission()
 
         if (status !== "granted") {
-            alert("Salli kameran käyttö asetuksista.")
+            alert("Please allow camera access in settings.")
             return
         }
 
@@ -91,68 +97,120 @@ export default function ProfileScreen() {
         }
     }
 
+    const confirmPassword = (callback: () => void) => { // Varmistetaan käyttäjältä salasana ennen kuin hän saa muuttaa tietojaan
+        Alert.prompt(
+            "Confirm Password",
+            "Please enter your password to continue",
+            async (password) => {
+                if (!password) {
+                    Alert.alert("Error", "Password cannot be empty")
+                    return
+                }
+
+                try {
+                    const credential = EmailAuthProvider.credential(user!.email!, password)
+                    await reauthenticateWithCredential(user!, credential)
+                    callback()
+                }
+
+                catch (error) {
+                    Alert.alert("Error", "Incorrect password. Please try again.")
+                }
+            },
+            "secure-text"
+        )
+    }
+
     const removeDisease = async (index: number) => { // Poistetaan sairaus jos se on tarpeen
-        const updated = diseases.filter((_, i) => i !== index)
-        setDiseases(updated)
-        await saveToFirestore({ diseases: updated })
+        confirmPassword(async () => {
+            const updated = diseases.filter((_, i) => i !== index)
+            setDiseases(updated)
+            await saveToFirestore({ diseases: updated })
+        })
     }
 
     const removeAllergy = async (index: number) => { // Poistetaan allergia jos se on tarpeen
-        const updated = allergies.filter((_, i) => i !== index)
-        setAllergies(updated)
-        await saveToFirestore({ allergies: updated })
+        confirmPassword(async () => {
+            const updated = allergies.filter((_, i) => i !== index)
+            setAllergies(updated)
+            await saveToFirestore({ allergies: updated })
+        })
     }
 
     const removeMedicine = async (index: number) => { // Poistetaan lääkitys jos se on tarpeen
-        const updated = medicine.filter((_, i) => i !== index)
-        setMedicine(updated)
-        await saveToFirestore({ medicine: updated })
+        confirmPassword(async () => {
+            const updated = medicine.filter((_, i) => i !== index)
+            setMedicine(updated)
+            await saveToFirestore({ medicine: updated })
+        })
     }
 
     const chooseImageOption = () => { // Annetaan Alerti joka antaa käyttäjälle vaihtoehdon kuvagalleria tai kamera
         Alert.alert(
-            "Valitse vaihtoehto",
+            "Choose Image Option",
             "",
             [
-                { text: "Ota kuva", onPress: takePhoto },
-                { text: "Valitse kirjastosta", onPress: pickFromLibrary },
-                { text: "Peruuta", style: "cancel" }
+                { text: "Take Photo", onPress: takePhoto },
+                { text: "Choose from Library", onPress: pickFromLibrary },
+                { text: "Cancel", style: "cancel" }
             ]
         )
     }
 
-    const openModal = (type: "height" | "weight" | "disease" | "allergy" | "medicine", title: string) => { // Modalin avaaminen, asetetaan modalin mahdolliset tyypit ja otsikko sen mukaan
+    const openModal = (type: "personal" | "disease" | "allergy" | "medicine", title: string) => { // Modalin avaaminen, asetetaan modalin mahdolliset tyypit ja otsikko sen mukaan
         setModalType(type)
         setModalTitle(title)
-        setModalValue("")
+
+        if (type === "personal") {
+            setPersonalHeight(height || "")
+            setPersonalWeight(weight || "")
+        } else {
+            setModalValue("")
+        }
+
         setModalVisible(true)
     }
 
     const saveModalValue = async () => { // tallenetaan modalissa annettu arvo, tarkistetaan että se ei ole tyhjä, ja päivitetään Firestoreen
-        if (!modalValue.trim()) return
-
         let update: any = {}
 
-        if (modalType === "height") {
-            setHeight(modalValue)
-            update.height = modalValue
+        if (modalType === "personal") {
+            const newHeight = personalHeight.trim() || null
+            const newWeight = personalWeight.trim() || null
+
+            setHeight(newHeight)
+            setWeight(newWeight)
+
+            update.height = newHeight
+            update.weight = newWeight
         }
-        if (modalType === "weight") {
-            setWeight(modalValue)
-            update.weight = modalValue
-        }
+
         if (modalType === "disease") {
-            const updated = [...diseases, modalValue]
+            if (!modalValue.trim()) {
+                setModalVisible(false)
+                return
+            }
+            const updated = [...diseases, modalValue.trim()]
             setDiseases(updated)
             update.diseases = updated
         }
+
         if (modalType === "allergy") {
-            const updated = [...allergies, modalValue]
+            if (!modalValue.trim()) {
+                setModalVisible(false)
+                return
+            }
+            const updated = [...allergies, modalValue.trim()]
             setAllergies(updated)
             update.allergies = updated
         }
+
         if (modalType === "medicine") {
-            const updated = [...medicine, modalValue]
+            if (!modalValue.trim()) {
+                setModalVisible(false)
+                return
+            }
+            const updated = [...medicine, modalValue.trim()]
             setMedicine(updated)
             update.medicine = updated
         }
@@ -167,9 +225,7 @@ export default function ProfileScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-
-
-                <Modal // Modalin käyttööntä
+                <Modal // Modalin käyttö
                     visible={modalVisible}
                     transparent
                     animationType="fade"
@@ -179,13 +235,31 @@ export default function ProfileScreen() {
                         <View style={styles.modalBox}>
                             <Text style={styles.modalTitle}>{modalTitle}</Text>
 
-                            <TextInput
-                                style={styles.modalInput}
-                                placeholder="Write here..."
-                                value={modalValue}
-                                onChangeText={setModalValue}
-                                autoFocus
-                            />
+                            {modalType === "personal" ? (
+                                <>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Height (cm)"
+                                        value={personalHeight}
+                                        onChangeText={setPersonalHeight}
+                                        keyboardType="numeric"
+                                    />
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Weight (kg)"
+                                        value={personalWeight}
+                                        onChangeText={setPersonalWeight}
+                                        keyboardType="numeric"
+                                    />
+                                </>
+                            ) : (
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="Write here..."
+                                    value={modalValue}
+                                    onChangeText={setModalValue}
+                                />
+                            )}
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -193,7 +267,7 @@ export default function ProfileScreen() {
                                 </TouchableOpacity>
 
                                 <TouchableOpacity onPress={saveModalValue}>
-                                    <Text style={styles.modalSave}>Add</Text>
+                                    <Text style={styles.modalSave}>Save</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -205,7 +279,7 @@ export default function ProfileScreen() {
                     <Text style={styles.emailName}>{user?.email || "Email"}</Text>
                 </View>
                 {/*Profiilikuvan valinta ja vaihto*/}
-                <TouchableOpacity style={styles.profileImage} onPress={chooseImageOption}> 
+                <TouchableOpacity style={styles.profileImage} onPress={chooseImageOption}>
                     {profileImage ? (
                         <Image source={{ uri: profileImage }} style={{ width: "100%", height: "100%", borderRadius: 30 }} />
                     ) : (
@@ -213,143 +287,157 @@ export default function ProfileScreen() {
                     )}
                 </TouchableOpacity>
 
+
+                {/* Personal Information */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Personal Information:</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Personal Information</Text>
+                        <TouchableOpacity
+                            style={styles.smallButton}
+                            onPress={() => openModal("personal", "Edit Personal Information")}
+                        >
+                            <MaterialIcons name="edit" size={22} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
 
                     <View style={styles.rowBetween}>
-
-                        {/* Pituuden lisäys ja muokkaus */}
                         <View style={styles.column}>
                             <Text>Height (cm):</Text>
-                            {height ? (
-                                <>
-                                    <Text style={styles.listItem}>• {height} cm</Text>
-                                    <TouchableOpacity
-                                        style={styles.smallButton}
-                                        onPress={() => openModal("height", "Muokkaa pituutta")}
-                                    >
-                                        <MaterialIcons name="edit" size={22} color="#fff" />
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.smallButton}
-                                    onPress={() => openModal("height", "Lisää pituus")}
-                                >
-                                    <MaterialIcons name="add" size={28} color="#fff" />
-                                </TouchableOpacity>
+                            {height && (
+                                <Text style={styles.listItem}>• {height} cm</Text>
                             )}
                         </View>
 
-                        {/* Painon lisäys ja muokkaus */}
                         <View style={styles.column}>
-                            <Text>Weight (kg):</Text> 
-                            {weight ? (
-                                <>
-                                    <Text style={styles.listItem}>• {weight} kg</Text>
-                                    <TouchableOpacity
-                                        style={styles.smallButton}
-                                        onPress={() => openModal("weight", "Muokkaa painoa")}
-                                    >
-                                        <MaterialIcons name="edit" size={22} color="#fff" />
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.smallButton}
-                                    onPress={() => openModal("weight", "Lisää paino")}
-                                >
-                                    <MaterialIcons name="add" size={28} color="#fff" />
-                                </TouchableOpacity>
+                            <Text>Weight (kg):</Text>
+                            {weight && (
+                                <Text style={styles.listItem}>• {weight} kg</Text>
                             )}
                         </View>
-
                     </View>
                 </View>
 
                 {/* Sairauksien lisäys ja poisto */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Diseases:</Text> 
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Diseases</Text>
 
-                    <TouchableOpacity
-                        style={styles.smallButton}
-                        onPress={() => openModal("disease", "Lisää sairaus")}
-                    >
-                        <MaterialIcons name="add" size={28} color="#fff" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <TouchableOpacity
+                            style={[styles.smallButton, , { marginRight: 35 }]}
+                            onPress={() => openModal("disease", "Add Disease")}
+                        >
+                            <MaterialIcons name="add" size={22} color="#fff" />
+                        </TouchableOpacity>
 
-                    {diseases.map((item, index) => (
-                        <View key={index} style={styles.listRow}>
-                            <Text style={styles.listItem}>• {item}</Text>
-
-                            <TouchableOpacity onPress={() => removeDisease(index)}>
-                                <MaterialIcons name="delete" size={24} color="#d11a2a" />
-                            </TouchableOpacity>
-                        </View>
-                    ))}
+                        <TouchableOpacity onPress={() => setShowDiseases(prev => !prev)}>
+                            <MaterialIcons
+                                name={showDiseases ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                size={28}
+                                color="#009FE3"
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+
+                {showDiseases && (
+                    <>
+                        {diseases.map((item, index) => (
+                            <View key={index} style={styles.listRow}>
+                                <Text style={styles.listItem}>• {item}</Text>
+
+                                <TouchableOpacity onPress={() => removeDisease(index)}>
+                                    <MaterialIcons name="delete" size={24} color="#d11a2a" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </>
+                )}
+
 
                 {/* Lääkityksen lisäys ja poisto */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Medication:</Text> 
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Medication</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <TouchableOpacity
+                            style={[styles.smallButton, , { marginRight: 35 }]}
+                            onPress={() => openModal("medicine", "Add Medication")}
+                        >
+                            <MaterialIcons name="add" size={22} color="#fff" />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.smallButton}
-                        onPress={() => openModal("medicine", "Lisää lääkitys")}
-                    >
-                        <MaterialIcons name="add" size={28} color="#fff" />
-                    </TouchableOpacity>
-
-                    {medicine.map((item, index) => (
-                        <View key={index} style={styles.listRow}>
-                            <Text style={styles.listItem}>• {item}</Text>
-
-                            <TouchableOpacity onPress={() => removeMedicine(index)}>
-                                <MaterialIcons name="delete" size={24} color="#d11a2a" />
-                            </TouchableOpacity>
-                        </View>
-                    ))}
+                        <TouchableOpacity onPress={() => setShowMedicine(prev => !prev)}>
+                            <MaterialIcons
+                                name={showMedicine ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                size={28}
+                                color="#009FE3"
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+                {showMedicine && (
+                    <>
+                        {medicine.map((item, index) => (
+                            <View key={index} style={styles.listRow}>
+                                <Text style={styles.listItem}>• {item}</Text>
 
-                 {/* Allergioiden lisäys ja poisto */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Allergies:</Text>
+                                <TouchableOpacity onPress={() => removeMedicine(index)}>
+                                    <MaterialIcons name="delete" size={24} color="#d11a2a" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </>
+                )}
 
-                    <TouchableOpacity
-                        style={styles.smallButton}
-                        onPress={() => openModal("allergy", "Lisää allergia")}
-                    >
-                        <MaterialIcons name="add" size={28} color="#fff" />
-                    </TouchableOpacity>
 
-                    {allergies.map((item, index) => (
-                        <View key={index} style={styles.listRow}>
-                            <Text style={styles.listItem}>• {item}</Text>
+                {/* Allergioiden lisäys ja poisto */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Allergies</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <TouchableOpacity
+                            style={[styles.smallButton, , { marginRight: 35 }]}
+                            onPress={() => openModal("allergy", "Add Allergy")}
+                        >
+                            <MaterialIcons name="add" size={22} color="#fff" />
+                        </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => removeAllergy(index)}>
-                                <MaterialIcons name="delete" size={24} color="#d11a2a" />
-                            </TouchableOpacity>
-                        </View>
-                    ))}
+                        <TouchableOpacity onPress={() => setShowAllergies(prev => !prev)}>
+                            <MaterialIcons
+                                name={showAllergies ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                size={28}
+                                color="#009FE3"
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+                {showAllergies && (
+                    <>
+                        {allergies.map((item, index) => (
+                            <View key={index} style={styles.listRow}>
+                                <Text style={styles.listItem}>• {item}</Text>
 
-                {/* Linkit diabetesaiheisiin luotettaviin lähteisiin */}
-                <Text style={styles.linksTitle}>Links:</Text> 
+                                <TouchableOpacity onPress={() => removeAllergy(index)}>
+                                    <MaterialIcons name="delete" size={24} color="#d11a2a" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </>
+                )}
 
-                <View style={styles.rowCenterAbsolute}>
-                    <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
-                        <Text style={styles.linkButton}>Diabetesliitto</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => openLink("https://www.kanta.fi/omakanta")}>
-                        <Text style={styles.linkButton}>omaKanta</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => openLink("https://www.terveyskyla.fi/diabetestalo")}>
-                        <Text style={styles.linkButton}>Diabetes Talo</Text>
-                    </TouchableOpacity>
-                </View>
             </ScrollView>
+            {/* Linkit diabetesaiheisiin luotettaviin lähteisiin */}
+            <View style={styles.bottomBar}>
+                <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
+                    <Text style={styles.linkButton}>Diabetesliitto</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => openLink("https://www.kanta.fi/omakanta")}>
+                    <Text style={styles.linkButton}>omaKanta</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => openLink("https://www.terveyskyla.fi/diabetestalo")}>
+                    <Text style={styles.linkButton}>Diabetes Talo</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     )
 }
@@ -394,11 +482,13 @@ const styles = StyleSheet.create({
     section: {
         marginTop: 20,
         width: "80%",
+        paddingBottom: 10,
+        marginBottom: 20,
     },
+
     sectionTitle: {
         fontSize: 18,
         fontWeight: "bold",
-        marginBottom: 6,
     },
     rowBetween: {
         flexDirection: "row",
@@ -422,17 +512,23 @@ const styles = StyleSheet.create({
         marginTop: 4,
         fontSize: 16,
     },
-    linksTitle: {
-        textAlign: "center",
-        fontSize: 18,
-        fontWeight: "bold",
-        marginTop: 40,
-    },
-    rowCenterAbsolute: {
+    bottomBar: {
+        position: "absolute",
+        bottom: 20,
+        left: 0,
+        right: 0,
+        backgroundColor: "#E5F7FD",
+        paddingVertical: 12,
         flexDirection: "row",
         justifyContent: "center",
-        marginTop: 20,
-        marginBottom: 40,
+        borderTopWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 12,
+        marginHorizontal: 20,
+        elevation: 4,
+        shadowColor: "#000",
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
     },
     linkButton: {
         backgroundColor: "#009FE3",
@@ -488,5 +584,11 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingTop: 180,
         paddingBottom: 40,
-    }
+    },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 6,
+    },
 })
