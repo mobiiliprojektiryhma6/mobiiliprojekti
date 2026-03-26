@@ -50,6 +50,7 @@ export default function MealBuilderScreen() {
   const [servingSizeInput, setServingSizeInput] = useState("100");
   const [selectedProduct, setSelectedProduct] = useState<FoodItem | null>(null);
 
+
   const [productSearch, setProductSearch] = useState("");
 
   const route = useRoute<any>();
@@ -78,16 +79,17 @@ export default function MealBuilderScreen() {
     loadProducts();
   }, [authReady]);
 
-  useEffect(() => {
-    if (route.params?.addedFood) {
-      const food = route.params.addedFood;
+useEffect(() => {
+  if (route.params?.addedFood) {
+    const food = route.params.addedFood;
 
-      setSelectedProduct(food);
-      setServingSizeModalVisible(true);
+    setSelectedProduct(food);
+    setServingSizeModalVisible(true);
 
-      navigation.setParams({ addedFood: undefined });
-    }
-  }, [route.params?.addedFood]);
+    navigation.setParams({ addedFood: undefined });
+  }
+}, [route.params?.addedFood]);
+
 
   const startEditingFood = (food: FoodItem) => {
     setTempName(food.name);
