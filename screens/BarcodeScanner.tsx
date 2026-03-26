@@ -11,12 +11,12 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
 
-   /* User scans barcode -> barcode number is captured
-   - App calls Open Food Facts API with that number
-   - API returns product info (name, calories, carbs, protein, fat)
-   - App navigates back to FoodSearchScreen with that data
+  /* User scans barcode -> barcode number is captured
+  - App calls Open Food Facts API with that number
+  - API returns product info (name, calories, carbs, protein, fat)
+  - App navigates back to FoodSearchScreen with that data
 
-   If the product is not found -> alert and let user scan again */
+  If the product is not found -> alert and let user scan again */
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned || loading) return;
@@ -24,11 +24,22 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
     setLoading(true);
 
     try {
-      const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(data)}.json`;
+      const url = `https://world.openfoodfacts.net/api/v0/product/${encodeURIComponent(data)}.json`;
       const response = await fetch(url, {
         headers: { "User-Agent": "DiabetesApp/1.0 (school-project)" },
       });
-      const result = await response.json();
+
+      const text = await response.text();
+
+      if (!text.startsWith("{")) {
+        console.log("Barcode API did not return JSON:", text);
+        alert("Failed to fetch product. Try again.");
+        setScanned(false);
+        setLoading(false);
+        return;
+      }
+
+      const result = JSON.parse(text);
 
       if (result.status === 1 && result.product) {
         const p = result.product;
