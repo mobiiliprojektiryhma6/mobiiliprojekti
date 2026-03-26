@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
+
 export default function BarcodeScanner({ navigation }: { navigation: any }) {
+  // First we handle camera permission 
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Flags to prevent the function from running multiple times while a scan is being processed
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  /* User scans barcode -> barcode number is captured
+  - App calls Open Food Facts API with that number
+  - API returns product info (name, calories, carbs, protein, fat)
+  - App navigates back to FoodSearchScreen with that data
+
+  If the product is not found -> alert and let user scan again */
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned || loading) return;
@@ -19,11 +24,22 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
     setLoading(true);
 
     try {
-      const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(data)}.json`;
+      const url = `https://world.openfoodfacts.net/api/v0/product/${encodeURIComponent(data)}.json`;
       const response = await fetch(url, {
         headers: { "User-Agent": "DiabetesApp/1.0 (school-project)" },
       });
-      const result = await response.json();
+
+      const text = await response.text();
+
+      if (!text.startsWith("{")) {
+        console.log("Barcode API did not return JSON:", text);
+        alert("Failed to fetch product. Try again.");
+        setScanned(false);
+        setLoading(false);
+        return;
+      }
+
+      const result = JSON.parse(text);
 
       if (result.status === 1 && result.product) {
         const p = result.product;
@@ -51,6 +67,10 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
     }
   };
 
+  /* Before using camera, we ask the user for permission. 
+  - Loading (permission is null) -> spinner
+  - Not granted -> "Grant Permission" button
+  - Granted -> Camera view */
   if (!permission) {
     return (
       <View style={styles.center}>
@@ -70,6 +90,16 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
     );
   }
 
+
+  /* Camera View
+  - barcodeTypes - barcode formats to recognize
+  - onBarcodeScanned - function to call when a barcode is detected. 
+  When camera sees a barcode, it detects it over and over again. It would do +30 times (=+30 API calls) for the same product.
+  
+  onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} is a trick to prevent that
+
+  scanned is false (nobody scanned yet) -> give the camera the handleBarcodeScanned function → camera is listening
+  scanned is true (we already got one) -> give the camera undefined (nothing) → camera stops listening */
   return (
     <View style={styles.container}>
       <CameraView
