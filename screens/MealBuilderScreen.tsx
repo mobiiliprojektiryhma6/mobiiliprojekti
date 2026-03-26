@@ -48,6 +48,8 @@ export default function MealBuilderScreen() {
   const [servingSizeInput, setServingSizeInput] = useState("100");
   const [selectedProduct, setSelectedProduct] = useState<FoodItem | null>(null);
 
+  const route = useRoute<any>();
+
 
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
@@ -72,6 +74,21 @@ export default function MealBuilderScreen() {
 
     loadProducts();
   }, [authReady]);
+
+// receive food from FoodSearchScreen, food is added and appears in meal list
+  useEffect(() => {
+    if (route.params?.addedFood) {
+      const food = route.params.addedFood as FoodItem;
+
+      setFoods((prev) => [
+        ...prev,
+        {
+          ...food,
+          id: food.id + "-" + Date.now(),
+        },
+      ]);
+    }
+  }, [route.params?.addedFood]);
 
 
   const startEditingFood = (food: FoodItem) => {
