@@ -22,6 +22,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const [products, setProducts] = useState<FoodItem[]>([]);
     const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
     const [scannedProduct, setScannedProduct] = useState<FoodItem | null>(null);
+    const [searchTrigger, setSearchTrigger] = useState("");
 
     // Handle scanned product from BarcodeScanner - When BarcodeScanner navigates back with a scanned product
     /* if (route.params?.scannedProduct) {
@@ -126,7 +127,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             clearTimeout(debounceRef.current);
         }
 
-        if (query.trim().length < 2) {
+        const q = searchTrigger;
+
+        if (q.trim().length < 2) {
             setApiResults([]);
             setApiLoading(false);
             return;
@@ -136,16 +139,29 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
         debounceRef.current = setTimeout(async () => {
             try {
-                const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
-                    query
-                )}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,nutriments,code`;
+                await new Promise(r => setTimeout(r, 200));
+
+                const url =
+                    `https://world.openfoodfacts.net/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=5`;
 
                 const response = await fetch(url, {
-                    headers: { "User-Agent": "DiabetesApp/1.0 (school-project)" },
+                    headers: {
+                        "User-Agent": "FoodAppSchoolProject/1.0 (test@test.com)",
+                        "Accept": "application/json",
+                    },
                 });
-                const data = await response.json();
+                const text = await response.text();
 
-                if (data.products) {
+                if (!text.startsWith("{")) {
+                    console.log("Not JSON:", text);
+                    setApiResults([]);
+                    setApiLoading(false);
+                    return;
+                }
+
+                const data = JSON.parse(text);
+
+                if (data.products && Array.isArray(data.products)) {
                     const items: FoodItem[] = data.products
                         .filter((p: any) => p.product_name)
                         .map((p: any) => {
@@ -171,12 +187,12 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             } finally {
                 setApiLoading(false);
             }
-        }, 300);
+        }, 2000);
 
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [query]);
+    }, [searchTrigger]);
 
     const hasLocal = localBest.length > 0 || localSimilar.length > 0;
     const hasAny = hasLocal || apiResults.length > 0;
@@ -237,7 +253,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                             <TouchableOpacity
                                 style={styles.addButton}
-                                onPress={() => 
+                                onPress={() =>
                                     navigation.navigate("MealBuilder", {
                                         addedFood: item,
                                     })
@@ -260,9 +276,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                     style={styles.searchInput}
                     placeholder="Search food (e.g. bread, chocolate...)"
                     value={query}
-                    onChangeText={(text) => {
-                        setQuery(text);
-                        setSelectedItem(null);
+                    onChangeText={(text) => setQuery(text)}
+                    onSubmitEditing={() => {
+                        setSearchTrigger(query);
                     }}
                     autoCorrect={false}
                     autoFocus
