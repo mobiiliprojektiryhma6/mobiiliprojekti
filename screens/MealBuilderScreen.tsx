@@ -16,6 +16,8 @@ import { getAuth } from "firebase/auth";
 import MealCard from "../components/MealCard";
 import { FoodItem } from "../types/FoodItem";
 
+import { useRoute, useNavigation } from "@react-navigation/native";
+
 const getDayKey = (date = new Date()) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -48,8 +50,11 @@ export default function MealBuilderScreen() {
   const [servingSizeInput, setServingSizeInput] = useState("100");
   const [selectedProduct, setSelectedProduct] = useState<FoodItem | null>(null);
 
-  const route = useRoute<any>();
 
+  const [productSearch, setProductSearch] = useState("");
+
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
@@ -57,7 +62,6 @@ export default function MealBuilderScreen() {
     });
     return unsub;
   }, []);
-
 
   useEffect(() => {
     if (!authReady) return;
@@ -75,20 +79,16 @@ export default function MealBuilderScreen() {
     loadProducts();
   }, [authReady]);
 
-// receive food from FoodSearchScreen, food is added and appears in meal list
-  useEffect(() => {
-    if (route.params?.addedFood) {
-      const food = route.params.addedFood as FoodItem;
+useEffect(() => {
+  if (route.params?.addedFood) {
+    const food = route.params.addedFood;
 
-      setFoods((prev) => [
-        ...prev,
-        {
-          ...food,
-          id: food.id + "-" + Date.now(),
-        },
-      ]);
-    }
-  }, [route.params?.addedFood]);
+    setSelectedProduct(food);
+    setServingSizeModalVisible(true);
+
+    navigation.setParams({ addedFood: undefined });
+  }
+}, [route.params?.addedFood]);
 
 
   const startEditingFood = (food: FoodItem) => {
@@ -127,7 +127,6 @@ export default function MealBuilderScreen() {
   const deleteFood = (foodId: string) => {
     setFoods((prev) => prev.filter((f) => f.id !== foodId));
   };
-
 
   const saveMeal = async () => {
     const user = getAuth().currentUser;
@@ -169,7 +168,6 @@ export default function MealBuilderScreen() {
       alert("Could not save meal.");
     }
   };
-
 
   const scaleValue = (value: number, grams: number) => {
     const scaled = value * (grams / 100);
@@ -252,11 +250,13 @@ export default function MealBuilderScreen() {
         </>
       )}
 
-
-      <TouchableOpacity style={styles.saveButton} onPress={saveMeal}>
+      <TouchableOpacity
+        style={[styles.saveButton, !mealType && { opacity: 0.4 }]}
+        disabled={!mealType}
+        onPress={saveMeal}
+      >
         <Text style={styles.saveButtonText}>Save Meal</Text>
       </TouchableOpacity>
-
 
       <Modal visible={chooseModalVisible} transparent animationType="fade">
         <View style={styles.modalContainer}>
@@ -271,6 +271,16 @@ export default function MealBuilderScreen() {
               }}
             >
               <Text style={styles.modalAddButtonText}>Pick from products</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={() => {
+                setChooseModalVisible(false);
+                navigation.navigate("FoodSearch");
+              }}
+            >
+              <Text style={styles.modalAddButtonText}>Search online</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -293,107 +303,61 @@ export default function MealBuilderScreen() {
         </View>
       </Modal>
 
-
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
-          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
+          
+          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
             Choose a Food
           </Text>
 
-          <FlatList
-            data={products}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productItem}
-                onPress={() => {
-                  setSelectedProduct(item);
-                  setServingSizeInput("100");
-                  setProductModalVisible(false);
-                  setServingSizeModalVisible(true);
-                }}
-              >
-                <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
-              </TouchableOpacity>
-            )}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            value={productSearch}
+            onChangeText={setProductSearch}
           />
+
+          <View style={{ flex: 1 }}>
+            <FlatList
+              keyboardShouldPersistTaps="handled"
+              data={
+                productSearch.trim() === ""
+                  ? products
+                  : products.filter(p =>
+                      p.name.toLowerCase().includes(productSearch.toLowerCase())
+                    )
+              }
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.productItem}
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setServingSizeInput("100");
+                    setProductModalVisible(false);
+                    setServingSizeModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.productName}>{item.name}</Text>
+                  <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
 
           <TouchableOpacity onPress={() => setProductModalVisible(false)}>
             <Text style={{ textAlign: "center", marginTop: 20, color: "gray" }}>
               Close
             </Text>
           </TouchableOpacity>
+
         </View>
       </Modal>
 
-
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
-              {editingFoodId ? "Edit Food" : "Add Food"}
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={tempName}
-              onChangeText={setTempName}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Energy (kcal)"
-              keyboardType="numeric"
-              value={tempEnergy}
-              onChangeText={setTempEnergy}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Carbs (g)"
-              keyboardType="numeric"
-              value={tempCarbs}
-              onChangeText={setTempCarbs}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Protein (g)"
-              keyboardType="numeric"
-              value={tempProtein}
-              onChangeText={setTempProtein}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Fat (g)"
-              keyboardType="numeric"
-              value={tempFat}
-              onChangeText={setTempFat}
-            />
-
-            <TouchableOpacity style={styles.modalAddButton} onPress={addOrEditFood}>
-              <Text style={styles.modalAddButtonText}>
-                {editingFoodId ? "Save Changes" : "Add"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
       <Modal
         visible={servingSizeModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => { }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
@@ -407,6 +371,7 @@ export default function MealBuilderScreen() {
               autoFocus
               selectTextOnFocus
             />
+
             <TouchableOpacity
               style={[
                 styles.modalAddButton,
@@ -427,6 +392,7 @@ export default function MealBuilderScreen() {
           </View>
         </View>
       </Modal>
+
     </View>
   );
 }
@@ -557,4 +523,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "gray",
   },
+  searchInput: {
+  backgroundColor: "#fff",
+  padding: 10,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#d1d5db",
+  marginBottom: 12,
+  marginTop: 4,
+  fontSize: 16,
+},
 });

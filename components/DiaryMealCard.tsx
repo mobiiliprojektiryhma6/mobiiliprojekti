@@ -11,14 +11,23 @@ type Meal = {
   totalCarbohydrates?: number;
   totalProtein?: number;
   totalFat?: number;
+  timestamp?: any;
 };
 
 type Props = {
   meal: Meal;
+  index: number;
 };
 
-export default function DiaryMealCard({ meal }: Props) {
+export default function DiaryMealCard({ meal, index }: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  const timeString = meal.timestamp
+  ? meal.timestamp.toDate().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  : "";
 
   const totalCarbs = meal.totalCarbohydrates ?? 0;
   const totalEnergy = meal.totalEnergy ?? 0;
@@ -32,8 +41,14 @@ export default function DiaryMealCard({ meal }: Props) {
       style={styles.card}
     >
       <View style={styles.header}>
-        <Text style={styles.headerText}>{meal.mealType}</Text>
-        <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
+        <Text style={styles.headerText}>
+          {meal.mealType} #{index}
+        </Text>
+
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
+          <Text style={styles.timeText}>{timeString}</Text>
+        </View>
       </View>
 
       {!expanded && (
@@ -190,6 +205,12 @@ const styles = StyleSheet.create({
   width: 90,              
   fontSize: 14,
   color: "#374151",
+},
+
+timeText: {
+  fontSize: 14,
+  color: "#4B5563",
+  fontWeight: "500",
 },
 
 });

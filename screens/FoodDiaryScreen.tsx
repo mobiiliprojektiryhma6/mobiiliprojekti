@@ -15,6 +15,7 @@ type Meal = {
   totalCarbohydrates?: number;
   totalProtein?: number;
   totalFat?: number;
+  timestamp?: any;
 };
 
 const getDayKey = (date = new Date()) => {
@@ -31,7 +32,7 @@ export default function FoodDiaryScreen() {
   const [loading, setLoading] = useState(true);
 
   const [selectedDate, setSelectedDate] = useState(getDayKey());
-
+  
   useEffect(() => {
     if (!user) return;
 
@@ -125,11 +126,23 @@ export default function FoodDiaryScreen() {
           </View>
         </View>
 
-
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
             {grouped[type].length > 0 && (
-              <DiaryMealCard meal={grouped[type][0]} />
+              <>
+
+                <Text style={styles.mealHeader}>{type}</Text>
+
+    
+                {grouped[type].map((meal, index) => (
+                  <DiaryMealCard
+                    key={meal.id}
+                    meal={meal}
+                    index={index + 1}
+                  />
+
+                ))}
+              </>
             )}
           </View>
         ))}
@@ -198,5 +211,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 6,
   },
-
+  mealHeader: {
+  fontSize: 20,
+  fontWeight: "700",
+  marginBottom: 8,
+  marginTop: 10,
+},
 });
