@@ -90,6 +90,13 @@ useEffect(() => {
   }
 }, [route.params?.addedFood]);
 
+useEffect(() => {
+  if (route.params?.customFood) {
+    setModalVisible(true);
+    navigation.setParams({ customFood: undefined });
+  }
+}, [route.params?.customFood]);
+
 
   const startEditingFood = (food: FoodItem) => {
     setTempName(food.name);
@@ -263,6 +270,7 @@ useEffect(() => {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Add Food</Text>
 
+            {/* 1. Pick from products */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
@@ -273,6 +281,7 @@ useEffect(() => {
               <Text style={styles.modalAddButtonText}>Pick from products</Text>
             </TouchableOpacity>
 
+            {/* 2. Search online */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
@@ -283,16 +292,24 @@ useEffect(() => {
               <Text style={styles.modalAddButtonText}>Search online</Text>
             </TouchableOpacity>
 
+            {/* 3. Add custom food */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
+                setEditingFoodId(null);
+                setTempName("");
+                setTempEnergy("");
+                setTempCarbs("");
+                setTempProtein("");
+                setTempFat("");
                 setModalVisible(true);
               }}
             >
               <Text style={styles.modalAddButtonText}>Add custom food</Text>
             </TouchableOpacity>
 
+            {/* Cancel */}
             <TouchableOpacity
               style={styles.modalCancelButton}
               onPress={() => setChooseModalVisible(false)}
@@ -302,6 +319,7 @@ useEffect(() => {
           </View>
         </View>
       </Modal>
+
 
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
@@ -386,6 +404,70 @@ useEffect(() => {
             <TouchableOpacity
               style={styles.modalCancelButton}
               onPress={() => setServingSizeModalVisible(false)}
+            >
+              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
+              {editingFoodId ? "Edit Food" : "Add Food"}
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={tempName}
+              onChangeText={setTempName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Energy (kcal)"
+              keyboardType="numeric"
+              value={tempEnergy}
+              onChangeText={setTempEnergy}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Carbs (g)"
+              keyboardType="numeric"
+              value={tempCarbs}
+              onChangeText={setTempCarbs}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Protein (g)"
+              keyboardType="numeric"
+              value={tempProtein}
+              onChangeText={setTempProtein}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Fat (g)"
+              keyboardType="numeric"
+              value={tempFat}
+              onChangeText={setTempFat}
+            />
+
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={addOrEditFood}
+            >
+              <Text style={styles.modalAddButtonText}>
+                {editingFoodId ? "Save" : "Add"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => {
+                setModalVisible(false);
+                setEditingFoodId(null);
+              }}
             >
               <Text style={styles.modalCancelButtonText}>Cancel</Text>
             </TouchableOpacity>
