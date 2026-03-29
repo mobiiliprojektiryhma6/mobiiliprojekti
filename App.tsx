@@ -13,6 +13,7 @@ import MealBuilderScreen from "./screens/MealBuilderScreen";
 import FoodSearchScreen from "./screens/FoodSearchScreen";
 import HamburgerMenuButton from "./components/navigation/HamburgerMenuButton";
 import BarcodeScanner from "./screens/BarcodeScanner";
+import MedicationScreen from "./screens/Medicationscreen"
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -64,6 +65,7 @@ export default function App() {
               <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{ title: "Food Search" }} />
               <Stack.Screen name="Scanner" component={BarcodeScanner} options={{ title: "Barcode Scanner" }} />
               <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+              <Stack.Screen name="Medications" component={MedicationScreen} options={{ title: "Medications" }} />
             </>
           )}
         </Stack.Navigator>
