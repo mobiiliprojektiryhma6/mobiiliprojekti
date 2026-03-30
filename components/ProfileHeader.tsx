@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 
 type ProfileHeaderProps = {
-  user: any
-  profileImage: string | null
-  onChooseImage: () => void
+    user: any
+    profileImage: string | null
+    onChooseImage: () => void
 }
 
 export default function ProfileHeader({ user, profileImage, onChooseImage }: ProfileHeaderProps) {
@@ -35,10 +35,11 @@ const styles = StyleSheet.create({
     headerLeft: {
         position: "absolute",
         top: 80,
-        left: 60,
+        left: 40,
     },
     profileName: {
         fontSize: 24,
+        left: 6,
         fontWeight: "bold",
     },
     emailName: {
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     profileImage: {
         position: "absolute",
         top: 40,
-        right: 20,
+        right: 10,
         width: 120,
         height: 120,
         borderRadius: 32,
