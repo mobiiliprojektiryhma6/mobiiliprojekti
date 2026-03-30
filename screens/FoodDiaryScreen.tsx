@@ -62,13 +62,13 @@ export default function FoodDiaryScreen() {
     );
   }
 
-  const mealTypes = ["Breakfast", "Lunch", "Snack", "Dinner"];
+  const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
   const grouped: Record<string, Meal[]> = {
     Breakfast: [],
     Lunch: [],
-    Snack: [],
     Dinner: [],
+    Snack: [],
   };
 
   mealTypes.forEach((type) => {
@@ -133,13 +133,20 @@ export default function FoodDiaryScreen() {
 
                 <Text style={styles.mealHeader}>{type}</Text>
 
-    
-                {grouped[type].map((meal, index) => (
-                  <DiaryMealCard
-                    key={meal.id}
-                    meal={meal}
-                    index={index + 1}
-                  />
+
+                {grouped[type]
+                  .sort((a, b) => {
+                    if (a.timestamp && b.timestamp) {
+                      return a.timestamp.toMillis() - b.timestamp.toMillis();
+                    }
+                    return 0;
+                  })
+                  .map((meal, index) => (
+                    <DiaryMealCard
+                      key={meal.id}
+                      meal={meal}
+                      index={index + 1}
+                    />
 
                 ))}
               </>
