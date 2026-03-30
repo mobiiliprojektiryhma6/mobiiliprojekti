@@ -11,6 +11,7 @@ import MealBuilderScreen from "../../screens/MealBuilderScreen";
 import FoodSearchScreen from "../../screens/FoodSearchScreen";
 import BarcodeScanner from "../../screens/BarcodeScanner";
 import HamburgerMenuButton from "../../components/navigation/HamburgerMenuButton";
+import AccountSettingsScreen from "../../screens/AccountSettingsScreen";
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -27,6 +28,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
           <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{ title: "Food Search" }} />
           <Stack.Screen name="Scanner" component={BarcodeScanner} options={{ title: "Scan Barcode" }} />
+          <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
         </Stack.Navigator>
       </NavigationContainer>
 

@@ -13,6 +13,9 @@ import MealBuilderScreen from "./screens/MealBuilderScreen";
 import FoodSearchScreen from "./screens/FoodSearchScreen";
 import HamburgerMenuButton from "./components/navigation/HamburgerMenuButton";
 import BarcodeScanner from "./screens/BarcodeScanner";
+import AccountSettingsScreen from "./screens/AccountSettingsScreen";
+import { TouchableOpacity } from "react-native"
+import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -58,12 +61,65 @@ export default function App() {
             />
           ) : (
             <>
-              <Stack.Screen name="Home" component={Homescreen} options={{ title: "Home" }} />
-              <Stack.Screen name="FoodDiary" component={FoodDiaryScreen} options={{ title: "Food Diary" }} />
-              <Stack.Screen name="MealBuilder" component={MealBuilderScreen} options={{ title: "Meal Builder" }} />
-              <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{ title: "Food Search" }} />
-              <Stack.Screen name="Scanner" component={BarcodeScanner} options={{ title: "Barcode Scanner" }} />
-              <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+              <Stack.Screen name="Home" component={Homescreen} options={{
+                title: "Home", headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => navigationRef.navigate("Profile" as never)}
+                  >
+                    <MaterialIcons name="person" size={28} color="#009FE3" />
+                  </TouchableOpacity>
+                ),
+              }} />
+              <Stack.Screen name="FoodDiary" component={FoodDiaryScreen} options={{
+                title: "Food Diary", headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => navigationRef.navigate("Profile" as never)}
+                  >
+                    <MaterialIcons name="person" size={28} color="#009FE3" />
+                  </TouchableOpacity>
+                ),
+              }} />
+              <Stack.Screen name="MealBuilder" component={MealBuilderScreen} options={{
+                title: "Meal Builder", headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => navigationRef.navigate("Profile" as never)}
+                  >
+                    <MaterialIcons name="person" size={28} color="#009FE3" />
+                  </TouchableOpacity>
+                ),
+              }} />
+              <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{
+                title: "Food Search", headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => navigationRef.navigate("Profile" as never)}
+                  >
+                    <MaterialIcons name="person" size={28} color="#009FE3" />
+                  </TouchableOpacity>
+                ),
+              }} />
+              <Stack.Screen name="Scanner" component={BarcodeScanner} options={{
+                title: "Barcode Scanner", headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => navigationRef.navigate("Profile" as never)}
+                  >
+                    <MaterialIcons name="person" size={28} color="#009FE3" />
+                  </TouchableOpacity>
+                ),
+              }} />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                  title: "Profile",
+                  headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigationRef.navigate("AccountSettings" as never)}
+                    >
+                      <MaterialIcons name="settings" size={28} color="#009FE3" />
+                    </TouchableOpacity>
+                  ),
+                }} />
+              <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
             </>
           )}
         </Stack.Navigator>
