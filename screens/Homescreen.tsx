@@ -20,8 +20,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#E5F7FD",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     paddingHorizontal: 10,
+    paddingTop: 16,
   },
   button: {
     backgroundColor: "#009FE3",

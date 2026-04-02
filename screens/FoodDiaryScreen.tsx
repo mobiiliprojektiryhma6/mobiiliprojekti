@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
+import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 
 type Meal = {
   id: string;
@@ -30,6 +31,9 @@ export default function FoodDiaryScreen() {
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [targetCarbs, setTargetCarbs] = useState<number | null>(null);
+  const [targetSource, setTargetSource] = useState<"manual" | "recommended" | "missing">("missing");
+  const [targetReason, setTargetReason] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(getDayKey());
   
@@ -53,6 +57,29 @@ export default function FoodDiaryScreen() {
 
     return unsubscribe;
   }, [user, selectedDate]);
+
+  useEffect(() => {
+    const loadTarget = async () => {
+      if (!user) return;
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      const resolvedTarget = resolveDailyCarbTarget({
+        useManualCarbTarget: userData?.useManualCarbTarget,
+        dailyCarbTarget: userData?.dailyCarbTarget,
+        weight: userData?.weight,
+        height: userData?.height,
+      });
+
+      setTargetCarbs(resolvedTarget.target);
+      setTargetSource(resolvedTarget.source);
+      setTargetReason(resolvedTarget.reason ?? null);
+    };
+
+    loadTarget();
+  }, [user]);
 
   if (loading) {
     return (
@@ -85,6 +112,8 @@ export default function FoodDiaryScreen() {
     { carbs: 0, energy: 0, protein: 0, fat: 0 }
   );
 
+  const remainingCarbs = targetCarbs !== null ? targetCarbs - dailyTotals.carbs : null;
+
   const goToPreviousDay = () => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() - 1);
@@ -109,6 +138,32 @@ export default function FoodDiaryScreen() {
 
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Today's Meals</Text>
+
+        <View style={styles.targetCard}>
+          <View style={styles.targetHeaderRow}>
+            <Text style={styles.targetTitle}>Daily Carb Target</Text>
+          </View>
+
+          {targetCarbs !== null ? (
+            <>
+              <Text style={styles.targetLine}>
+                {dailyTotals.carbs.toFixed(1)} / {targetCarbs} g
+              </Text>
+              <Text style={styles.targetMeta}>
+                Mode: {targetSource === "manual" ? "Custom" : "Recommended"}
+              </Text>
+              <Text style={[styles.targetMeta, remainingCarbs !== null && remainingCarbs < 0 && styles.targetOver]}>
+                {remainingCarbs !== null && remainingCarbs >= 0
+                  ? `${remainingCarbs.toFixed(1)} g left`
+                  : `${Math.abs(remainingCarbs ?? 0).toFixed(1)} g over target`}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.targetMissing}>
+              {targetReason ?? "Missing profile info: add weight and height, or set a custom carb target."}
+            </Text>
+          )}
+        </View>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Daily Totals</Text>
@@ -211,6 +266,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 6,
   },
+  targetCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    marginBottom: 16,
+  },
+  targetHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  targetTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  targetLine: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  targetMeta: {
+    fontSize: 14,
+    color: "#4B5563",
+    marginBottom: 4,
+  },
+  targetOver: {
+    color: "#B00020",
+    fontWeight: "600",
+  },
+  targetMissing: {
+    fontSize: 14,
+    color: "#B00020",
+  },
+
   mealHeader: {
   fontSize: 20,
   fontWeight: "700",
