@@ -53,7 +53,7 @@ export default function FoodDiaryScreen() {
         id: doc.id,
       }));
 
-      setMeals(data);
+      setMeals([...data]);
       setLoading(false);
     });
 
@@ -90,6 +90,15 @@ export default function FoodDiaryScreen() {
       </View>
     );
   }
+
+  const getCarbStatusColor = (carbs: number, target: number | null) => {
+  if (target === null) return "#999"; 
+
+  if (carbs > target) return "#EF4444"; 
+  if (carbs > target * 0.85) return "#FBBF24"; 
+  return "#10B981"; 
+};
+
 
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
@@ -165,11 +174,31 @@ export default function FoodDiaryScreen() {
 
           {targetCarbs !== null ? (
             <>
-              <Text style={styles.targetLine}>
+              <Text
+                style={[
+                  styles.targetLine,
+                  { color: getCarbStatusColor(dailyTotals.carbs, targetCarbs) }
+                ]}
+              >
                 {dailyTotals.carbs.toFixed(1)} / {targetCarbs} g
               </Text>
+
+              {/* Progress bar */}
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${Math.min((dailyTotals.carbs / targetCarbs) * 100, 100)}%`,
+                      backgroundColor: getCarbStatusColor(dailyTotals.carbs, targetCarbs),
+                    },
+                  ]}
+                />
+              </View>
+
+
               <Text style={styles.targetMeta}>
-                Mode: {targetSource === "manual" ? "Custom" : "Recommended"}
+                {targetSource === "manual" ? "Custom" : "Recommended"}
               </Text>
               <Text style={[styles.targetMeta, remainingCarbs !== null && remainingCarbs < 0 && styles.targetOver]}>
                 {remainingCarbs !== null && remainingCarbs >= 0
@@ -386,6 +415,17 @@ mealTypeSummaryItem: {
   fontSize: 12,
   color: "#444",
 },
+progressTrack: {
+  height: 10,
+  backgroundColor: "#E5E7EB",
+  borderRadius: 6,
+  marginTop: 6,
+  marginBottom: 4,
+},
 
+progressFill: {
+  height: 10,
+  borderRadius: 6,
+},
 
 });
