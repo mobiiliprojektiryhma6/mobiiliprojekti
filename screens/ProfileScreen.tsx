@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { View, Text, StyleSheet, Linking, TouchableOpacity, TextInput, Image, Alert, Modal, ScrollView } from "react-native"
 import { useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
 import { db } from "../firebase/config"
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc } from "firebase/firestore"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { calculateRecommendedCarbTarget } from "../src/utils/carbTarget"
 
 export default function ProfileScreen() {
 
@@ -15,13 +16,20 @@ export default function ProfileScreen() {
     const [allergies, setAllergies] = useState<string[]>([])
     const [medicine, setMedicine] = useState<string[]>([])
     const [profileImage, setProfileImage] = useState<string | null>(null)
-    const [permission, requestPermission] = useCameraPermissions()
+    const [, requestPermission] = useCameraPermissions()
     const [modalVisible, setModalVisible] = useState(false)
     const [modalTitle, setModalTitle] = useState("")
     const [modalValue, setModalValue] = useState("")
-    const [modalType, setModalType] = useState<"height" | "weight" | "disease" | "allergy" | "medicine" | null>(null)
+    const [modalType, setModalType] = useState<"height" | "weight" | "disease" | "allergy" | "medicine" | "dailyCarbTarget" | null>(null)
+    const [useManualCarbTarget, setUseManualCarbTarget] = useState(false)
+    const [dailyCarbTarget, setDailyCarbTarget] = useState<string | null>(null)
 
     const { user } = useAuth()
+
+    const recommendedTarget = useMemo(() => {
+        const result = calculateRecommendedCarbTarget(weight, height)
+        return result
+    }, [weight, height])
 
     const openLink = (url: string) => Linking.openURL(url)
 
@@ -40,6 +48,8 @@ export default function ProfileScreen() {
                 setAllergies(data.allergies || [])
                 setMedicine(data.medicine || [])
                 setProfileImage(data.profileImage || null)
+                setUseManualCarbTarget(data.useManualCarbTarget || false)
+                setDailyCarbTarget(data.dailyCarbTarget ? String(data.dailyCarbTarget) : null)
             }
         }
 
@@ -121,11 +131,16 @@ export default function ProfileScreen() {
         )
     }
 
-    const openModal = (type: "height" | "weight" | "disease" | "allergy" | "medicine", title: string) => { // Modalin avaaminen, asetetaan modalin mahdolliset tyypit ja otsikko sen mukaan
+    const openModal = (type: "height" | "weight" | "disease" | "allergy" | "medicine" | "dailyCarbTarget", title: string) => { // Modalin avaaminen, asetetaan modalin mahdolliset tyypit ja otsikko sen mukaan
         setModalType(type)
         setModalTitle(title)
         setModalValue("")
         setModalVisible(true)
+    }
+
+    const setCarbTargetMode = async (useManual: boolean) => {
+        setUseManualCarbTarget(useManual)
+        await saveToFirestore({ useManualCarbTarget: useManual })
     }
 
     const saveModalValue = async () => { // tallenetaan modalissa annettu arvo, tarkistetaan että se ei ole tyhjä, ja päivitetään Firestoreen
@@ -140,6 +155,18 @@ export default function ProfileScreen() {
         if (modalType === "weight") {
             setWeight(modalValue)
             update.weight = modalValue
+        }
+        if (modalType === "dailyCarbTarget") {
+            const parsedTarget = Number(modalValue.replace(",", "."))
+
+            if (!Number.isFinite(parsedTarget) || parsedTarget <= 0) {
+                alert("Daily carb target must be a positive number.")
+                return
+            }
+
+            const rounded = Math.round(parsedTarget)
+            setDailyCarbTarget(String(rounded))
+            update.dailyCarbTarget = rounded
         }
         if (modalType === "disease") {
             const updated = [...diseases, modalValue]
@@ -205,7 +232,7 @@ export default function ProfileScreen() {
                     <Text style={styles.emailName}>{user?.email || "Email"}</Text>
                 </View>
                 {/*Profiilikuvan valinta ja vaihto*/}
-                <TouchableOpacity style={styles.profileImage} onPress={chooseImageOption}> 
+                <TouchableOpacity style={styles.profileImage} onPress={chooseImageOption}>
                     {profileImage ? (
                         <Image source={{ uri: profileImage }} style={{ width: "100%", height: "100%", borderRadius: 30 }} />
                     ) : (
@@ -243,7 +270,7 @@ export default function ProfileScreen() {
 
                         {/* Painon lisäys ja muokkaus */}
                         <View style={styles.column}>
-                            <Text>Weight (kg):</Text> 
+                            <Text>Weight (kg):</Text>
                             {weight ? (
                                 <>
                                     <Text style={styles.listItem}>• {weight} kg</Text>
@@ -267,9 +294,56 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Daily Carb Target:</Text>
+
+                    <View style={styles.targetModeRow}>
+                        <TouchableOpacity
+                            style={[styles.modeButton, !useManualCarbTarget && styles.modeButtonActive]}
+                            onPress={() => setCarbTargetMode(false)}
+                        >
+                            <Text style={[styles.modeButtonText, !useManualCarbTarget && styles.modeButtonTextActive]}>
+                                Recommended
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.modeButton, useManualCarbTarget && styles.modeButtonActive]}
+                            onPress={() => setCarbTargetMode(true)}
+                        >
+                            <Text style={[styles.modeButtonText, useManualCarbTarget && styles.modeButtonTextActive]}>
+                                Custom
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {!useManualCarbTarget && recommendedTarget.target !== null && (
+                        <Text style={styles.listItem}>• Recommended: {recommendedTarget.target} g/day</Text>
+                    )}
+
+                    {!useManualCarbTarget && recommendedTarget.target === null && (
+                        <Text style={styles.warningText}>{recommendedTarget.reason}</Text>
+                    )}
+
+                    {useManualCarbTarget && dailyCarbTarget && (
+                        <Text style={styles.listItem}>• Custom target: {dailyCarbTarget} g/day</Text>
+                    )}
+
+                    {useManualCarbTarget && !dailyCarbTarget && (
+                        <Text style={styles.warningText}>Add your custom carb target to use manual mode.</Text>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={() => openModal("dailyCarbTarget", dailyCarbTarget ? "Edit daily carb target" : "Add daily carb target")}
+                    >
+                        <MaterialIcons name={dailyCarbTarget ? "edit" : "add"} size={dailyCarbTarget ? 22 : 28} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+
                 {/* Sairauksien lisäys ja poisto */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Diseases:</Text> 
+                    <Text style={styles.sectionTitle}>Diseases:</Text>
 
                     <TouchableOpacity
                         style={styles.smallButton}
@@ -291,7 +365,7 @@ export default function ProfileScreen() {
 
                 {/* Lääkityksen lisäys ja poisto */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Medication:</Text> 
+                    <Text style={styles.sectionTitle}>Medication:</Text>
 
                     <TouchableOpacity
                         style={styles.smallButton}
@@ -311,7 +385,7 @@ export default function ProfileScreen() {
                     ))}
                 </View>
 
-                 {/* Allergioiden lisäys ja poisto */}
+                {/* Allergioiden lisäys ja poisto */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Allergies:</Text>
 
@@ -334,7 +408,7 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Linkit diabetesaiheisiin luotettaviin lähteisiin */}
-                <Text style={styles.linksTitle}>Links:</Text> 
+                <Text style={styles.linksTitle}>Links:</Text>
 
                 <View style={styles.rowCenterAbsolute}>
                     <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
@@ -440,6 +514,36 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginHorizontal: 6,
         color: "#FFFFFF",
+    },
+    targetModeRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    modeButton: {
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#009FE3",
+        borderRadius: 8,
+        paddingVertical: 10,
+        alignItems: "center",
+    },
+    modeButtonActive: {
+        backgroundColor: "#009FE3",
+    },
+    modeButtonText: {
+        color: "#009FE3",
+        fontWeight: "700",
+    },
+    modeButtonTextActive: {
+        color: "#FFFFFF",
+    },
+    warningText: {
+        marginTop: 4,
+        fontSize: 14,
+        color: "#B00020",
     },
     modalOverlay: {
         flex: 1,
