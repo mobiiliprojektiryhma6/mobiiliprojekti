@@ -24,15 +24,14 @@ export default function CarbsPerMealChart({ mealTypeNutrition }: Props) {
 
       {mealTypes.map((type) => {
         const carbs = mealTypeNutrition[type].carbs;
-        const percent =
-          maxCarbs > 0 ? `${(carbs / maxCarbs) * 100}%` : "0%";
+        const percent = maxCarbs > 0 ? (carbs / maxCarbs) * 100 : 0;
 
         return (
           <View key={type} style={styles.row}>
             <Text style={styles.chartLabel}>{type}</Text>
 
             <View style={styles.chartBarBackground}>
-              <View style={[styles.chartBarFill, { width: percent }]} />
+              <View style={[styles.chartBarFill, { width: `${percent}%` }]} />
             </View>
 
             <Text style={styles.chartValueRight}>
