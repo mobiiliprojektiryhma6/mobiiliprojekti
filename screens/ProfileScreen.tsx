@@ -80,16 +80,14 @@ export default function ProfileScreen() {
             saveToFirestore({ profileImage: result.assets[0].uri })
         }
     }
-import React from "react"
-import { View, ScrollView, TouchableOpacity, Text, StyleSheet, Linking } from "react-native"
 
-import ProfileHeader from "../components/ProfileHeader"
-import PersonalInfoSection from "../components/PersonalInfoSection"
-import HealthSection from "../components/HealthSection"
-import EditModal from "../components/EditModal"
+    const takePhoto = async () => { // Kuvan otto, tarkistetaan samalla kameran käyttöoikeudet
+        const { status } = await requestPermission()
 
-import { useProfileData } from "../src/hooks/useProfileData"
-
+        if (status !== "granted") {
+            alert("Salli kameran käyttö asetuksista.")
+            return
+        }
 
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true,
@@ -185,40 +183,10 @@ import { useProfileData } from "../src/hooks/useProfileData"
             setMedicine(updated)
             update.medicine = updated
         }
-export default function ProfileScreen() {
 
-    const {
-        user,
-        height,
-        weight,
-        diseases,
-        allergies,
-        medicine,
-        profileImage,
-
-        personalHeight,
-        personalWeight,
-        modalValue,
-
-        modalVisible,
-        modalTitle,
-        modalType,
-
-        setPersonalHeight,
-        setPersonalWeight,
-        setModalValue,
-        setModalVisible,
-
-        openModal,
-        saveModalValue,
-        chooseImageOption,
-
-        removeDisease,
-        removeAllergy,
-        removeMedicine,
-    } = useProfileData()
-
-    const openLink = (url: string) => Linking.openURL(url)
+        await saveToFirestore(update)
+        setModalVisible(false)
+    }
 
     return (
         <View style={styles.container}>
@@ -226,54 +194,25 @@ export default function ProfileScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Edit Modal for Personal Information, Diseases, Allergies and Medication */}
-                <EditModal
+
+
+                <Modal // Modalin käyttööntä
                     visible={modalVisible}
-                    type={modalType}
-                    title={modalTitle}
-                    personalHeight={personalHeight}
-                    personalWeight={personalWeight}
-                    modalValue={modalValue}
-                    onChangeHeight={setPersonalHeight}
-                    onChangeWeight={setPersonalWeight}
-                    onChangeValue={setModalValue}
-                    onSave={saveModalValue}
-                    onClose={() => setModalVisible(false)}
-                />
-                <ProfileHeader
-                    user={user}
-                    profileImage={profileImage}
-                    onChooseImage={chooseImageOption}
-                />
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalBox}>
+                            <Text style={styles.modalTitle}>{modalTitle}</Text>
 
-                <PersonalInfoSection
-                    height={height}
-                    weight={weight}
-                    onEdit={() => openModal("personal", "Edit Personal Information")}
-                />
-
-                {/* Health Sections for Diseases, Medication and Allergies */}
-                <HealthSection
-                    title="Diseases"
-                    items={diseases}
-                    onAdd={() => openModal("disease", "Add Disease")}
-                    onDelete={removeDisease}
-                />
-
-                <HealthSection
-                    title="Medication"
-                    items={medicine}
-                    onAdd={() => openModal("medicine", "Add Medication")}
-                    onDelete={removeMedicine}
-                />
-
-                <HealthSection
-                    title="Allergies"
-                    items={allergies}
-                    onAdd={() => openModal("allergy", "Add Allergy")}
-                    onDelete={removeAllergy}
-                />
-
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Write here..."
+                                value={modalValue}
+                                onChangeText={setModalValue}
+                                autoFocus
+                            />
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -479,21 +418,12 @@ export default function ProfileScreen() {
                     <TouchableOpacity onPress={() => openLink("https://www.kanta.fi/omakanta")}>
                         <Text style={styles.linkButton}>omaKanta</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => openLink("https://www.terveyskyla.fi/diabetestalo")}>
+                        <Text style={styles.linkButton}>Diabetes Talo</Text>
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
-            {/* Links to Diabetes Resources */}
-            <View style={styles.bottomBar}>
-                <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
-                    <Text style={styles.linkButton}>Diabetesliitto</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => openLink("https://www.kanta.fi/omakanta")}>
-                    <Text style={styles.linkButton}>omaKanta</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => openLink("https://www.terveyskyla.fi/diabetestalo")}>
-                    <Text style={styles.linkButton}>Diabetes Talo</Text>
-                </TouchableOpacity>
-            </View>
         </View>
     )
 }
@@ -506,30 +436,78 @@ const styles = StyleSheet.create({
         backgroundColor: "#E5F7FD",
     },
 
-    scrollContent: {
-        paddingTop: 180,
-        paddingBottom: 40,
+    headerLeft: {
+        position: "absolute",
+        top: 80,
+        left: 60,
+    },
+    profileName: {
+        fontSize: 24,
+        fontWeight: "bold",
+    },
+    emailName: {
+        fontSize: 16,
+        color: "#555",
+        marginTop: 4,
     },
 
-    bottomBar: {
+    profileImage: {
         position: "absolute",
-        bottom: 20,
-        left: 0,
-        right: 0,
-        backgroundColor: "#E5F7FD",
-        paddingVertical: 12,
+        top: 40,
+        right: 20,
+        width: 120,
+        height: 120,
+        borderRadius: 32,
+        backgroundColor: "#fff",
+        borderWidth: 2,
+        borderColor: "#009FE3",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    section: {
+        marginTop: 20,
+        width: "80%",
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 6,
+    },
+    rowBetween: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "100%",
+    },
+    column: {
+        width: "48%",
+    },
+
+    smallButton: {
+        backgroundColor: "#009FE3",
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 6,
+    },
+    listItem: {
+        marginTop: 4,
+        fontSize: 16,
+    },
+    linksTitle: {
+        textAlign: "center",
+        fontSize: 18,
+        fontWeight: "bold",
+        marginTop: 40,
+    },
+    rowCenterAbsolute: {
         flexDirection: "row",
         justifyContent: "center",
-        borderTopWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 12,
-        marginHorizontal: 20,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
+        marginTop: 20,
+        marginBottom: 40,
     },
-
     linkButton: {
         backgroundColor: "#009FE3",
         padding: 12,
@@ -615,5 +593,4 @@ const styles = StyleSheet.create({
         paddingTop: 180,
         paddingBottom: 40,
     }
-})
 })
