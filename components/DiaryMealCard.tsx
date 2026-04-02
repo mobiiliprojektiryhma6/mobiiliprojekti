@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FoodItem } from "../types/FoodItem";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import EditFood from "./EditFood";
-import { deleteDoc } from "firebase/firestore";
-
-
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 type Meal = {
   id: string;
@@ -47,9 +45,12 @@ function calculateMealTotals(foods: FoodItem[]) {
   };
 }
 
-
 export default function DiaryMealCard({ meal, index }: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const user = getAuth().currentUser;
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [foodToEdit, setFoodToEdit] = useState<FoodItem | null>(null);
@@ -64,134 +65,152 @@ export default function DiaryMealCard({ meal, index }: Props) {
     setFoodToEdit(null);
   };
 
-
   const timeString = meal.timestamp
-  ? meal.timestamp.toDate().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  : "";
+    ? meal.timestamp.toDate().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
 
   const totalCarbs = meal.totalCarbohydrates ?? 0;
   const totalEnergy = meal.totalEnergy ?? 0;
   const totalProtein = meal.totalProtein ?? 0;
   const totalFat = meal.totalFat ?? 0;
 
-  const user = getAuth().currentUser;
-
   const handleDelete = async (foodId: string) => {
-  if (!user) return;
+    if (!user) return;
 
-  const updatedFoods = meal.foods.filter(f => f.id !== foodId);
+    const updatedFoods = meal.foods.filter((f) => f.id !== foodId);
+    const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
 
-  const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
+    if (updatedFoods.length === 0) {
+      await deleteDoc(mealRef);
+      return;
+    }
 
-  // If no foods left → delete the whole meal document
-  if (updatedFoods.length === 0) {
-    await deleteDoc(mealRef);
-    return;
-  }
+    const totals = calculateMealTotals(updatedFoods);
 
-  // Otherwise update normally
-  const totals = calculateMealTotals(updatedFoods);
+    await updateDoc(mealRef, {
+      foods: updatedFoods,
+      ...totals,
+    });
+  };
 
-  await updateDoc(mealRef, {
-    foods: updatedFoods,
-    ...totals,
-  });
-};
+  // Replacement from FoodSearch
+  useEffect(() => {
+    const params = route.params;
 
+    if (!params?.replaceFood || !user) return;
+
+    const product = params.replaceFood;
+    const editingFoodId = params.editingFoodId;
+
+    const updatedFoods = meal.foods.map((f) =>
+      f.id === editingFoodId ? { ...product, id: editingFoodId } : f
+    );
+
+    const totals = calculateMealTotals(updatedFoods);
+    const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
+
+    updateDoc(mealRef, {
+      foods: updatedFoods,
+      ...totals,
+    });
+
+    navigation.setParams({
+      replaceFood: undefined,
+      editingFoodId: undefined,
+      mealId: undefined,
+    });
+
+    setEditModalVisible(false);
+    setFoodToEdit(null);
+  }, [route.params?.replaceFood]);
 
   return (
-  <>
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={() => setExpanded(!expanded)}
-      style={styles.card}
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerText}>
-          {meal.mealType} #{index}
-        </Text>
+    <>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => setExpanded(!expanded)}
+        style={styles.card}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerText}>
+            {meal.mealType} #{index}
+          </Text>
 
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
-          <Text style={styles.timeText}>{timeString}</Text>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
+            <Text style={styles.timeText}>{timeString}</Text>
+          </View>
         </View>
-      </View>
 
-      {!expanded && (
-        <Text style={styles.tapHint}>Tap to expand</Text>
-      )}
+        {!expanded && <Text style={styles.tapHint}>Tap to expand</Text>}
 
-      {expanded && (
-        <View style={styles.body}>
-
-          <View style={styles.section}>
-            {meal.foods.map((food) => (
-              <View key={food.id} style={styles.foodRow}>
-                <Text style={styles.foodName}>
-                  {food.name}
-                  {food.servingSize ? ` (${food.servingSize} g)` : ""}
-                </Text>
-                <Text style={styles.foodCarbs}>
-                  {food.carbohydrates.toFixed(1)} g
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.nutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
-            <Text style={styles.nutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
-            <Text style={styles.nutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
-            <Text style={styles.nutrient}>Fat: {totalFat.toFixed(1)} g</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.chartTitle}>Carbs per food</Text>
-
-            {meal.foods.map((food) => {
-              const pct =
-                totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
-
-              return (
-                <View key={food.id} style={styles.barRow}>
-                  <Text style={styles.barLabel}>{food.name}</Text>
-
-                  <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${pct}%` }]} />
-                  </View>
-
-                  <Text style={styles.foodCarbs}>{food.carbohydrates.toFixed(1)} g</Text>
-
-                  <View style={styles.actionColumn}>
-                    <TouchableOpacity onPress={() => openEditModal(food)}>
-                      <Text style={styles.editButton}>Edit</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => handleDelete(food.id)}>
-                      <Text style={styles.deleteButton}>Del</Text>
-                    </TouchableOpacity>
-                  </View>
+        {expanded && (
+          <View style={styles.body}>
+            <View style={styles.section}>
+              {meal.foods.map((food) => (
+                <View key={food.id} style={styles.foodRow}>
+                  <Text style={styles.foodName}>
+                    {food.name}
+                    {food.servingSize ? ` (${food.servingSize} g)` : ""}
+                  </Text>
+                  <Text style={styles.foodCarbs}>
+                    {food.carbohydrates.toFixed(1)} g
+                  </Text>
                 </View>
-              );
-            })}
+              ))}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.nutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
+              <Text style={styles.nutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
+              <Text style={styles.nutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
+              <Text style={styles.nutrient}>Fat: {totalFat.toFixed(1)} g</Text>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.chartTitle}>Carbs per food</Text>
+
+              {meal.foods.map((food) => {
+                const pct =
+                  totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
+
+                return (
+                  <View key={food.id} style={styles.barRow}>
+                    <Text style={styles.barLabel}>{food.name}</Text>
+
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { width: `${pct}%` }]} />
+                    </View>
+
+                    <Text style={styles.foodCarbs}>
+                      {food.carbohydrates.toFixed(1)} g
+                    </Text>
+
+                    <View style={styles.actionColumn}>
+                      <TouchableOpacity onPress={() => openEditModal(food)}>
+                        <Text style={styles.editButton}>Edit</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity onPress={() => handleDelete(food.id)}>
+                        <Text style={styles.deleteButton}>Del</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
+        )}
+      </TouchableOpacity>
 
-        </View>
+      {editModalVisible && foodToEdit && (
+        <EditFood food={foodToEdit} meal={meal} onClose={closeEditModal} />
       )}
-    </TouchableOpacity>
-
-    {editModalVisible && foodToEdit && (
-      <EditFood
-        food={foodToEdit}
-        meal={meal}
-        onClose={closeEditModal}
-      />
-    )}
-  </>
-);
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

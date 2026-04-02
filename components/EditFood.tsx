@@ -55,14 +55,10 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
   const [mode, setMode] = useState<"choose" | "manual">("choose");
 
-  // Manual edit fields
   const [name, setName] = useState(food.name);
-  const [servingSize, setServingSize] = useState(
-    food.servingSize ? String(food.servingSize) : ""
-  );
-  const [carbs, setCarbs] = useState(String(food.carbohydrates));
+  const [servingSize, setServingSize] = useState("");
+  const [carbs, setCarbs] = useState("");
 
-  // Load products (same as MealBuilder)
   useEffect(() => {
     const loadProducts = async () => {
       const snapshot = await getDocs(collection(db, "products"));
@@ -81,11 +77,20 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
   const saveManual = async () => {
     if (!user) return;
 
+    const grams = Number(servingSize) || 0;
+
+    // scale factor based on original serving size
+    const originalGrams = food.servingSize || 100;
+    const factor = grams / originalGrams;
+
     const updatedFood: FoodItem = {
       ...food,
       name,
-      servingSize: servingSize ? Number(servingSize) : undefined,
-      carbohydrates: Number(carbs),
+      servingSize: grams,
+      carbohydrates: Number(((food.carbohydrates || 0) * factor).toFixed(2)),
+      energy: (food.energy || 0) * factor,
+      protein: (food.protein || 0) * factor,
+      fat: (food.fat || 0) * factor,
     };
 
     const updatedFoods = meal.foods.map((f) =>
@@ -152,6 +157,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                     navigation.navigate("FoodSearch", {
                       editingFoodId: food.id,
                       mealId: meal.id,
+                      returnTo: "EditFood",
                     });
                   }}
                 >
@@ -183,21 +189,29 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                   onChangeText={setName}
                 />
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Serving size (g)"
-                  keyboardType="numeric"
-                  value={servingSize}
-                  onChangeText={setServingSize}
-                />
+                {/* Serving size */}
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Serving size"
+                    keyboardType="numeric"
+                    value={servingSize}
+                    onChangeText={setServingSize}
+                  />
+                  <Text style={styles.unitLabel}>g</Text>
+                </View>
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Carbohydrates (g)"
-                  keyboardType="numeric"
-                  value={carbs}
-                  onChangeText={setCarbs}
-                />
+                {/* Carbohydrates */}
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Carbohydrates"
+                    keyboardType="numeric"
+                    value={carbs}
+                    onChangeText={(v) => setCarbs(v)}
+                  />
+                  <Text style={styles.unitLabel}>g</Text>
+                </View>
 
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
@@ -261,26 +275,25 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                 <Text style={styles.productName}>{item.name}</Text>
                 <Text style={styles.productInfo}>
                   {item.carbohydrates} g carbs
-                              </Text>
-                          </TouchableOpacity>
-                      )}
-                  />
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
 
-                  <TouchableOpacity
-                      style={{
-                          padding: 12,
-                          backgroundColor: "#e5e7eb",
-                          borderRadius: 8,
-                          marginTop: 20,
-                          alignSelf: "center",
-                          width: "50%",
-                      }}
-                      onPress={() => setProductPickerVisible(false)}
-                  >
-                      <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
-
-              </View>
+          <TouchableOpacity
+            style={{
+              padding: 12,
+              backgroundColor: "#e5e7eb",
+              borderRadius: 8,
+              marginTop: 20,
+              alignSelf: "center",
+              width: "50%",
+            }}
+            onPress={() => setProductPickerVisible(false)}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       </Modal>
     </>
   );
@@ -341,11 +354,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cancelButton: {
-  padding: 12,
-  backgroundColor: "#e5e7eb",
-  borderRadius: 8,
-  marginRight: 8,
-},
+    padding: 12,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 8,
+    marginRight: 8,
+  },
   saveButton: {
     padding: 12,
     backgroundColor: "#3B82F6",
@@ -362,5 +375,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#fff",
     fontWeight: "600",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 12,
+  },
+  inputField: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  unitLabel: {
+    fontSize: 16,
+    color: "#555",
+    marginLeft: 8,
+    fontWeight: "500",
   },
 });
