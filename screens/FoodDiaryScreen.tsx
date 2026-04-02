@@ -5,6 +5,8 @@ import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
+import CarbsPerMealChart from "../components/CarbsPerMealChart";
+
 
 type Meal = {
   id: string;
@@ -143,6 +145,8 @@ export default function FoodDiaryScreen() {
             </View>
           </View>
         </View>
+
+        <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
 
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
