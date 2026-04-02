@@ -5,6 +5,8 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import EditFood from "./EditFood";
+import { deleteDoc } from "firebase/firestore";
+
 
 
 type Meal = {
@@ -82,13 +84,20 @@ export default function DiaryMealCard({ meal, index }: Props) {
 
   const updatedFoods = meal.foods.filter(f => f.id !== foodId);
 
-  const totals = calculateMealTotals(updatedFoods);
-
   const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
+
+  // If no foods left → delete the whole meal document
+  if (updatedFoods.length === 0) {
+    await deleteDoc(mealRef);
+    return;
+  }
+
+  // Otherwise update normally
+  const totals = calculateMealTotals(updatedFoods);
 
   await updateDoc(mealRef, {
     foods: updatedFoods,
-    ...totals, 
+    ...totals,
   });
 };
 
