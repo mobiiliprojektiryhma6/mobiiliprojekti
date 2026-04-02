@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FoodItem } from "../types/FoodItem";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
+import { getAuth } from "firebase/auth";
+import EditFood from "./EditFood";
+
 
 type Meal = {
   id: string;
@@ -19,8 +24,44 @@ type Props = {
   index: number;
 };
 
+function calculateMealTotals(foods: FoodItem[]) {
+  let totalCarbohydrates = 0;
+  let totalEnergy = 0;
+  let totalProtein = 0;
+  let totalFat = 0;
+
+  foods.forEach((f) => {
+    totalCarbohydrates += f.carbohydrates || 0;
+    totalEnergy += f.energy || 0;
+    totalProtein += f.protein || 0;
+    totalFat += f.fat || 0;
+  });
+
+  return {
+    totalCarbohydrates,
+    totalEnergy,
+    totalProtein,
+    totalFat,
+  };
+}
+
+
 export default function DiaryMealCard({ meal, index }: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [foodToEdit, setFoodToEdit] = useState<FoodItem | null>(null);
+
+  const openEditModal = (food: FoodItem) => {
+    setFoodToEdit(food);
+    setEditModalVisible(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalVisible(false);
+    setFoodToEdit(null);
+  };
+
 
   const timeString = meal.timestamp
   ? meal.timestamp.toDate().toLocaleTimeString([], {
@@ -34,7 +75,26 @@ export default function DiaryMealCard({ meal, index }: Props) {
   const totalProtein = meal.totalProtein ?? 0;
   const totalFat = meal.totalFat ?? 0;
 
+  const user = getAuth().currentUser;
+
+  const handleDelete = async (foodId: string) => {
+  if (!user) return;
+
+  const updatedFoods = meal.foods.filter(f => f.id !== foodId);
+
+  const totals = calculateMealTotals(updatedFoods);
+
+  const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
+
+  await updateDoc(mealRef, {
+    foods: updatedFoods,
+    ...totals, 
+  });
+};
+
+
   return (
+  <>
     <TouchableOpacity
       activeOpacity={0.9}
       onPress={() => setExpanded(!expanded)}
@@ -86,16 +146,26 @@ export default function DiaryMealCard({ meal, index }: Props) {
               const pct =
                 totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
 
-                return (
-                    <View key={food.id} style={styles.barRow}>
-                        <Text style={styles.barLabel}>{food.name}</Text>
+              return (
+                <View key={food.id} style={styles.barRow}>
+                  <Text style={styles.barLabel}>{food.name}</Text>
 
-                        <View style={styles.barTrack}>
-                            <View style={[styles.barFill, { width: `${pct}%` }]} />
-                        </View>
+                  <View style={styles.barTrack}>
+                    <View style={[styles.barFill, { width: `${pct}%` }]} />
+                  </View>
 
-                        <Text style={styles.foodCarbs}>{food.carbohydrates.toFixed(1)} g</Text>
-                    </View>
+                  <Text style={styles.foodCarbs}>{food.carbohydrates.toFixed(1)} g</Text>
+
+                  <View style={styles.actionColumn}>
+                    <TouchableOpacity onPress={() => openEditModal(food)}>
+                      <Text style={styles.editButton}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => handleDelete(food.id)}>
+                      <Text style={styles.deleteButton}>Del</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               );
             })}
           </View>
@@ -103,7 +173,16 @@ export default function DiaryMealCard({ meal, index }: Props) {
         </View>
       )}
     </TouchableOpacity>
-  );
+
+    {editModalVisible && foodToEdit && (
+      <EditFood
+        food={foodToEdit}
+        meal={meal}
+        onClose={closeEditModal}
+      />
+    )}
+  </>
+);
 }
 
 const styles = StyleSheet.create({
@@ -212,5 +291,32 @@ timeText: {
   color: "#4B5563",
   fontWeight: "500",
 },
+actionColumn: {
+  justifyContent: "center",
+  alignItems: "flex-end",
+  marginLeft: 8,
+},
+
+editButton: {
+  backgroundColor: "#3B82F6",
+  color: "white",
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 6,
+  fontSize: 12,
+  overflow: "hidden",
+  marginBottom: 4,
+},
+
+deleteButton: {
+  backgroundColor: "#EF4444",
+  color: "white",
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 6,
+  fontSize: 12,
+  overflow: "hidden",
+},
+
 
 });

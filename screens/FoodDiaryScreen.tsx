@@ -5,6 +5,8 @@ import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
+import CarbsPerMealChart from "../components/CarbsPerMealChart";
+
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 
 type Meal = {
@@ -89,13 +91,13 @@ export default function FoodDiaryScreen() {
     );
   }
 
-  const mealTypes = ["Breakfast", "Lunch", "Snack", "Dinner"];
+  const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
   const grouped: Record<string, Meal[]> = {
     Breakfast: [],
     Lunch: [],
-    Snack: [],
     Dinner: [],
+    Snack: [],
   };
 
   mealTypes.forEach((type) => {
@@ -111,6 +113,23 @@ export default function FoodDiaryScreen() {
     }),
     { carbs: 0, energy: 0, protein: 0, fat: 0 }
   );
+
+ const mealTypeNutrition = mealTypes.reduce((acc, type) => {
+  const mealsOfType = grouped[type];
+
+  const totals = mealsOfType.reduce(
+    (sum, m) => ({
+      carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
+      protein: sum.protein + (m.totalProtein ?? 0),
+      fat: sum.fat + (m.totalFat ?? 0),
+      energy: sum.energy + (m.totalEnergy ?? 0),
+    }),
+    { carbs: 0, protein: 0, fat: 0, energy: 0 }
+  );
+
+  acc[type] = totals;
+  return acc;
+}, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
 
   const remainingCarbs = targetCarbs !== null ? targetCarbs - dailyTotals.carbs : null;
 
@@ -181,6 +200,8 @@ export default function FoodDiaryScreen() {
           </View>
         </View>
 
+        <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
+
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
             {grouped[type].length > 0 && (
@@ -188,13 +209,42 @@ export default function FoodDiaryScreen() {
 
                 <Text style={styles.mealHeader}>{type}</Text>
 
-    
-                {grouped[type].map((meal, index) => (
-                  <DiaryMealCard
-                    key={meal.id}
-                    meal={meal}
-                    index={index + 1}
-                  />
+                {mealTypeNutrition[type].carbs > 0 && (
+                  <View style={styles.mealTypeSummaryCard}>
+                    <View style={styles.mealTypeSummaryRow}>
+                      <Text style={styles.mealTypeSummaryItem}>
+                        Carbs: {mealTypeNutrition[type].carbs.toFixed(1)} g
+                      </Text>
+                      <Text style={styles.mealTypeSummaryItem}>
+                        Protein: {mealTypeNutrition[type].protein.toFixed(1)} g
+                      </Text>
+                    </View>
+
+                    <View style={styles.mealTypeSummaryRow}>
+                      <Text style={styles.mealTypeSummaryItem}>
+                        Energy: {mealTypeNutrition[type].energy.toFixed(0)} kcal
+                      </Text>
+                      <Text style={styles.mealTypeSummaryItem}>
+                        Fat: {mealTypeNutrition[type].fat.toFixed(1)} g
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+
+                {grouped[type]
+                  .sort((a, b) => {
+                    if (a.timestamp && b.timestamp) {
+                      return a.timestamp.toMillis() - b.timestamp.toMillis();
+                    }
+                    return 0;
+                  })
+                  .map((meal, index) => (
+                    <DiaryMealCard
+                      key={meal.id}
+                      meal={meal}
+                      index={index + 1}
+                    />
 
                 ))}
               </>
@@ -308,5 +358,34 @@ const styles = StyleSheet.create({
   fontWeight: "700",
   marginBottom: 8,
   marginTop: 10,
+  },
+  mealTypeSummary: {
+  fontSize: 13,
+  color: "#444",
+  marginBottom: 6,
+  marginLeft: 4,
 },
+mealTypeSummaryCard: {
+  backgroundColor: "#fff",
+  padding: 8,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#d0d0d0",
+  marginBottom: 10,
+  marginTop: -4,
+  marginHorizontal: 4,
+},
+
+mealTypeSummaryRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 2,
+},
+
+mealTypeSummaryItem: {
+  fontSize: 12,
+  color: "#444",
+},
+
+
 });
