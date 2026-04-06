@@ -4,6 +4,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import NutritionCircle from "../components/NutritionalCircle";
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
 - FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
@@ -246,6 +247,14 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                             {/* Divider */}
                             <View style={styles.detailDivider} />
+
+                            {/* Nutrition circle - PieGram <3 */}
+                            <NutritionCircle
+                                carbs={item.carbohydrates}
+                                protein={item.protein}
+                                fat={item.fat}
+                                calories={item.energy}
+                            />
 
                             {/* Nutrient rows */}
                             {[
