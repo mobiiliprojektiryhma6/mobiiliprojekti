@@ -1,9 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { PieChart } from "react-native-svg-charts";
-import { G, Text as SvgTextRaw } from "react-native-svg";
-
-const SvgText = SvgTextRaw as any;
+import Svg, { G, Circle, Text as SvgText } from "react-native-svg";
 
 type Props = {
     carbs: number;
@@ -13,50 +10,77 @@ type Props = {
 };
 
 export default function NutritionCircle({ carbs, protein, fat, calories }: Props) {
+    const size = 140;
+    const strokeWidth = 18;
+    const radius = (size - strokeWidth) / 2;
+    const cx = size / 2;
+    const cy = size / 2;
+    const circumference = 2 * Math.PI * radius;
 
-    const data = [
-        { key: 1, value: carbs, svg: { fill: "#E67E22" } },
-        { key: 2, value: protein, svg: { fill: "#2980B9" } },
-        { key: 3, value: fat, svg: { fill: "#27AE60" } },
-    ];
+    const total = carbs + protein + fat;
 
-    const Labels = () => (
-        <G {...({} as any)}>
-            <SvgText
-                x="50%"
-                y="45%"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                fontSize={18}
-                fontWeight="bold"
-            >
-                {calories}
-            </SvgText>
+    const segments =
+        total > 0
+            ? [
+                  { value: carbs, color: "#E67E22" },
+                  { value: protein, color: "#2980B9" },
+                  { value: fat, color: "#27AE60" },
+              ]
+            : [{ value: 1, color: "#EEEEEE" }];
 
-            <SvgText
-                x="50%"
-                y="60%"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                fontSize={12}
-                fill="#777"
-            >
-                kcal
-            </SvgText>
-        </G>
-    );
+    const segTotal = segments.reduce((s, x) => s + x.value, 0);
+
+    let offset = 0;
+    const arcs = segments.map((seg, i) => {
+        const fraction = seg.value / segTotal;
+        const dash = fraction * circumference;
+        const gap = circumference - dash;
+        const circle = (
+            <Circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r={radius}
+                stroke={seg.color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={`${dash} ${gap}`}
+                strokeDashoffset={-offset}
+                fill="none"
+            />
+        );
+        offset += dash;
+        return circle;
+    });
 
     return (
         <View style={{ alignItems: "center", marginVertical: 10 }}>
-            <PieChart
-                style={{ height: 140, width: 140 }}
-                valueAccessor={({ item }: { item: any }) => item.value}
-                data={data}
-                outerRadius={"95%"}
-                innerRadius={"70%"}
-            >
-                <Labels />
-            </PieChart>
+            <Svg width={size} height={size}>
+                {/* Rotate -90deg so the first slice starts at the top */}
+                <G rotation={-90} origin={`${cx}, ${cy}`}>
+                    {arcs}
+                </G>
+                <SvgText
+                    x={cx}
+                    y={cy - 2}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    fontSize={18}
+                    fontWeight="bold"
+                    fill="#1A1A2E"
+                >
+                    {calories}
+                </SvgText>
+                <SvgText
+                    x={cx}
+                    y={cy + 16}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    fontSize={12}
+                    fill="#777"
+                >
+                    kcal
+                </SvgText>
+            </Svg>
         </View>
     );
 }
