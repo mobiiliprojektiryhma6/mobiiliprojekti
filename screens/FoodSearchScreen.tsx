@@ -229,38 +229,57 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                 )}
 
                 {isSelected && (
-                    <TouchableOpacity onPress={() => handleSelect(item)}>
+                    <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
                         <View style={styles.detailCard}>
-                            <Text style={styles.detailName}>{item.name}</Text>
 
-                            <View style={styles.nutrientRow}>
-                                <Text style={styles.nutrientLabel}>Energy</Text>
-                                <Text style={styles.nutrientValue}>{item.energy} kcal</Text>
+                            {/* Header */}
+                            <View style={styles.detailHeader}>
+                                <View style={styles.detailHeaderLeft}>
+                                    <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
+                                    <Text style={styles.detailPerNote}>per 100 g</Text>
+                                </View>
+                                <View style={styles.detailEnergyBadge}>
+                                    <Text style={styles.detailEnergyValue}>{item.energy}</Text>
+                                    <Text style={styles.detailEnergyUnit}>kcal</Text>
+                                </View>
                             </View>
-                            <View style={styles.nutrientRow}>
-                                <Text style={styles.nutrientLabel}>Carbohydrates</Text>
-                                <Text style={styles.nutrientValue}>{item.carbohydrates} g</Text>
-                            </View>
-                            <View style={styles.nutrientRow}>
-                                <Text style={styles.nutrientLabel}>Protein</Text>
-                                <Text style={styles.nutrientValue}>{item.protein} g</Text>
-                            </View>
-                            <View style={styles.nutrientRow}>
-                                <Text style={styles.nutrientLabel}>Fat</Text>
-                                <Text style={styles.nutrientValue}>{item.fat} g</Text>
-                            </View>
-                            <Text style={styles.perNote}>Per 100g</Text>
 
+                            {/* Divider */}
+                            <View style={styles.detailDivider} />
+
+                            {/* Nutrient rows */}
+                            {[
+                                { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
+                                { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
+                                { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
+                            ].map(({ label, value, unit, color, ref }) => (
+                                <View key={label} style={styles.detailNutrientBlock}>
+                                    <View style={styles.detailNutrientRow}>
+                                        <View style={[styles.detailDot, { backgroundColor: color }]} />
+                                        <Text style={styles.detailNutrientLabel}>{label}</Text>
+                                        <Text style={styles.detailNutrientValue}>
+                                            {value}
+                                            <Text style={styles.detailNutrientUnit}> {unit}</Text>
+                                        </Text>
+                                    </View>
+                                    <View style={styles.detailBarTrack}>
+                                        <View style={[
+                                            styles.detailBarFill,
+                                            { width: `${Math.min((value / ref) * 100, 100)}%`, backgroundColor: color }
+                                        ]} />
+                                    </View>
+                                </View>
+                            ))}
+
+                            {/* Add button */}
                             <TouchableOpacity
                                 style={styles.addButton}
-                                onPress={() =>
-                                    navigation.navigate("MealBuilder", {
-                                        addedFood: item,
-                                    })
-                                }
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate("MealBuilder", { addedFood: item })}
                             >
-                                <Text style={styles.addButtonText}>Add Food</Text>
+                                <Text style={styles.addButtonText}>+ Add to Meal</Text>
                             </TouchableOpacity>
+
                         </View>
                     </TouchableOpacity>
                 )}
@@ -400,26 +419,6 @@ const styles = StyleSheet.create({
         color: "#666",
         marginTop: 2,
     },
-    detailCard: {
-        backgroundColor: "#fff",
-        padding: 16,
-        borderWidth: 1,
-        borderTopWidth: 0,
-        borderColor: "#009FE3",
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
-        marginBottom: 6,
-    },
-    detailName: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 4,
-    },
-    detailBarcode: {
-        fontSize: 13,
-        color: "#999",
-        marginBottom: 12,
-    },
     nutrientRow: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -456,16 +455,124 @@ const styles = StyleSheet.create({
         color: "#999",
         fontStyle: "italic",
     },
-    addButton: {
-        marginTop: 12,
-        backgroundColor: "#009FE3",
-        paddingVertical: 10,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    addButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "600",
-    },
+    detailCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#009FE3",
+    shadowColor: "#009FE3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+},
+detailHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 14,
+},
+detailHeaderLeft: {
+    flex: 1,
+    paddingRight: 12,
+},
+detailName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1A1A2E",
+    letterSpacing: -0.3,
+    marginBottom: 3,
+},
+detailPerNote: {
+    fontSize: 11,
+    color: "#9B9B9B",
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+},
+detailEnergyBadge: {
+    backgroundColor: "#FFF3E0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: "center",
+    minWidth: 64,
+},
+detailEnergyValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#E67E22",
+    letterSpacing: -0.5,
+},
+detailEnergyUnit: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#E67E22",
+    opacity: 0.8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+},
+detailDivider: {
+    height: 1,
+    backgroundColor: "#F0F0F0",
+    marginBottom: 14,
+},
+detailNutrientBlock: {
+    marginBottom: 10,
+},
+detailNutrientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+},
+detailDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+},
+detailNutrientLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#555",
+},
+detailNutrientValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A1A2E",
+},
+detailNutrientUnit: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "#9B9B9B",
+},
+detailBarTrack: {
+    height: 4,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 2,
+    marginLeft: 16,
+    overflow: "hidden",
+},
+detailBarFill: {
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.75,
+},
+addButton: {
+    marginTop: 14,
+    backgroundColor: "#009FE3",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+},
+addButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+},
+
 });
