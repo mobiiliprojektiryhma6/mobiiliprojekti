@@ -4,9 +4,15 @@ import { useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
 import { db } from "../firebase/config"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc } from "firebase/firestore"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { calculateRecommendedCarbTarget } from "../src/utils/carbTarget"
+
+// Lääkitys subcollectionista haettu tyyppi, vain nimi näytetään profiilissa
+type MedicationEntry = {
+    id: string
+    name: string
+}
 
 export default function ProfileScreen() {
 
@@ -14,7 +20,7 @@ export default function ProfileScreen() {
     const [weight, setWeight] = useState<string | null>(null)
     const [diseases, setDiseases] = useState<string[]>([])
     const [allergies, setAllergies] = useState<string[]>([])
-    const [medicine, setMedicine] = useState<string[]>([])
+    const [medications, setMedications] = useState<MedicationEntry[]>([])
     const [profileImage, setProfileImage] = useState<string | null>(null)
     const [, requestPermission] = useCameraPermissions()
     const [modalVisible, setModalVisible] = useState(false)
@@ -46,7 +52,6 @@ export default function ProfileScreen() {
                 setWeight(data.weight || null)
                 setDiseases(data.diseases || [])
                 setAllergies(data.allergies || [])
-                setMedicine(data.medicine || [])
                 setProfileImage(data.profileImage || null)
                 setUseManualCarbTarget(data.useManualCarbTarget || false)
                 setDailyCarbTarget(data.dailyCarbTarget ? String(data.dailyCarbTarget) : null)
@@ -54,6 +59,25 @@ export default function ProfileScreen() {
         }
 
         loadData()
+    }, [user])
+
+    // Haetaan lääkitykset subcollectionista erillään perustiedoista
+    useEffect(() => {
+        const loadMedications = async () => {
+            if (!user) return
+            try {
+                const snap = await getDocs(collection(db, "users", user.uid, "medications"))
+                const items: MedicationEntry[] = snap.docs.map((d) => ({
+                    id: d.id,
+                    name: (d.data() as any).name || "Unnamed",
+                }))
+                setMedications(items)
+            } catch (e) {
+                console.error("Failed to load medications:", e)
+            }
+        }
+ 
+        loadMedications()
     }, [user])
 
     const saveToFirestore = async (data: any) => {
@@ -113,10 +137,33 @@ export default function ProfileScreen() {
         await saveToFirestore({ allergies: updated })
     }
 
-    const removeMedicine = async (index: number) => { // Poistetaan lääkitys jos se on tarpeen
-        const updated = medicine.filter((_, i) => i !== index)
-        setMedicine(updated)
-        await saveToFirestore({ medicine: updated })
+    const addMedicationFromProfile = async (name: string) => {
+        if (!user) return
+        try {
+            const ref = await addDoc(collection(db, "users", user.uid, "medications"), {
+                name: name.trim(),
+                dose: "",
+                usage: "",
+                notes: "",
+                times: [],
+            })
+            setMedications((prev) => [...prev, { id: ref.id, name: name.trim() }])
+        } catch (e) {
+            console.error("Failed to add medication:", e)
+            Alert.alert("Error", "Could not add medication.")
+        }
+    }
+
+    // Poistetaan lääkitys subcollectionista
+    const removeMedication = async (id: string) => {
+        if (!user) return
+        try {
+            await deleteDoc(doc(db, "users", user.uid, "medications", id))
+            setMedications((prev) => prev.filter((m) => m.id !== id))
+        } catch (e) {
+            console.error("Failed to remove medication:", e)
+            Alert.alert("Error", "Could not remove medication.")
+        }
     }
 
     const chooseImageOption = () => { // Annetaan Alerti joka antaa käyttäjälle vaihtoehdon kuvagalleria tai kamera
@@ -179,9 +226,10 @@ export default function ProfileScreen() {
             update.allergies = updated
         }
         if (modalType === "medicine") {
-            const updated = [...medicine, modalValue]
-            setMedicine(updated)
-            update.medicine = updated
+            // Kirjoitetaan subcollectioniin
+            await addMedicationFromProfile(modalValue)
+            setModalVisible(false)
+            return
         }
 
         await saveToFirestore(update)
@@ -363,22 +411,21 @@ export default function ProfileScreen() {
                     ))}
                 </View>
 
-                {/* Lääkityksen lisäys ja poisto */}
+                {/* Lääkitys - lukee subcollectionista, näyttää vain nimen */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Medication:</Text>
-
+ 
                     <TouchableOpacity
                         style={styles.smallButton}
                         onPress={() => openModal("medicine", "Lisää lääkitys")}
                     >
                         <MaterialIcons name="add" size={28} color="#fff" />
                     </TouchableOpacity>
-
-                    {medicine.map((item, index) => (
-                        <View key={index} style={styles.listRow}>
-                            <Text style={styles.listItem}>• {item}</Text>
-
-                            <TouchableOpacity onPress={() => removeMedicine(index)}>
+ 
+                    {medications.map((med) => (
+                        <View key={med.id} style={styles.listRow}>
+                            <Text style={styles.listItem}>• {med.name}</Text>
+                            <TouchableOpacity onPress={() => removeMedication(med.id)}>
                                 <MaterialIcons name="delete" size={24} color="#d11a2a" />
                             </TouchableOpacity>
                         </View>
