@@ -9,6 +9,7 @@ type MenuRoute =
     | "FoodSearch"
     | "MealBuilder"
     | "Profile"
+    | "Medications"
     | "Logout";
 
 type HamburgerMenuButtonProps = {
@@ -38,6 +39,7 @@ const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
                     <TouchableOpacity onPress={() => navigateToScreen("FoodSearch")}><Text style={styles.menuItem}>Food Search</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("MealBuilder")}><Text style={styles.menuItem}>Meal Builder</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Profile")}><Text style={styles.menuItem}>Profile</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigateToScreen("Medications")}><Text style={styles.menuItem}>Medications</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Logout")}><Text style={styles.menuItem}>Logout</Text></TouchableOpacity>
                 </View>
             </BottomSheet>
