@@ -351,7 +351,10 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
     return (
         <>
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView
+                contentContainerStyle={styles.container}
+                keyboardShouldPersistTaps="handled"
+            >
                 {/* Search bar with camera icon */}
                 <View style={styles.searchRow}>
                     <TextInput
