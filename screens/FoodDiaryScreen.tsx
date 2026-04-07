@@ -34,11 +34,10 @@ export default function FoodDiaryScreen() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [targetCarbs, setTargetCarbs] = useState<number | null>(null);
-  const [targetSource, setTargetSource] = useState<"manual" | "recommended" | "missing">("missing");
   const [targetReason, setTargetReason] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(getDayKey());
-  
+
   useEffect(() => {
     if (!user) return;
 
@@ -76,7 +75,6 @@ export default function FoodDiaryScreen() {
       });
 
       setTargetCarbs(resolvedTarget.target);
-      setTargetSource(resolvedTarget.source);
       setTargetReason(resolvedTarget.reason ?? null);
     };
 
@@ -92,12 +90,12 @@ export default function FoodDiaryScreen() {
   }
 
   const getCarbStatusColor = (carbs: number, target: number | null) => {
-  if (target === null) return "#999"; 
+    if (target === null) return "#999";
 
-  if (carbs > target) return "#EF4444"; 
-  if (carbs > target * 0.85) return "#FBBF24"; 
-  return "#10B981"; 
-};
+    if (carbs > target) return "#EF4444";
+    if (carbs > target * 0.85) return "#FBBF24";
+    return "#10B981";
+  };
 
 
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -123,24 +121,22 @@ export default function FoodDiaryScreen() {
     { carbs: 0, energy: 0, protein: 0, fat: 0 }
   );
 
- const mealTypeNutrition = mealTypes.reduce((acc, type) => {
-  const mealsOfType = grouped[type];
+  const mealTypeNutrition = mealTypes.reduce((acc, type) => {
+    const mealsOfType = grouped[type];
 
-  const totals = mealsOfType.reduce(
-    (sum, m) => ({
-      carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
-      protein: sum.protein + (m.totalProtein ?? 0),
-      fat: sum.fat + (m.totalFat ?? 0),
-      energy: sum.energy + (m.totalEnergy ?? 0),
-    }),
-    { carbs: 0, protein: 0, fat: 0, energy: 0 }
-  );
+    const totals = mealsOfType.reduce(
+      (sum, m) => ({
+        carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
+        protein: sum.protein + (m.totalProtein ?? 0),
+        fat: sum.fat + (m.totalFat ?? 0),
+        energy: sum.energy + (m.totalEnergy ?? 0),
+      }),
+      { carbs: 0, protein: 0, fat: 0, energy: 0 }
+    );
 
-  acc[type] = totals;
-  return acc;
-}, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
-
-  const remainingCarbs = targetCarbs !== null ? targetCarbs - dailyTotals.carbs : null;
+    acc[type] = totals;
+    return acc;
+  }, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
 
   const goToPreviousDay = () => {
     const d = new Date(selectedDate);
@@ -195,16 +191,6 @@ export default function FoodDiaryScreen() {
                   ]}
                 />
               </View>
-
-
-              <Text style={styles.targetMeta}>
-                {targetSource === "manual" ? "Custom" : "Recommended"}
-              </Text>
-              <Text style={[styles.targetMeta, remainingCarbs !== null && remainingCarbs < 0 && styles.targetOver]}>
-                {remainingCarbs !== null && remainingCarbs >= 0
-                  ? `${remainingCarbs.toFixed(1)} g left`
-                  : `${Math.abs(remainingCarbs ?? 0).toFixed(1)} g over target`}
-              </Text>
             </>
           ) : (
             <Text style={styles.targetMissing}>
@@ -275,7 +261,7 @@ export default function FoodDiaryScreen() {
                       index={index + 1}
                     />
 
-                ))}
+                  ))}
               </>
             )}
           </View>
@@ -383,49 +369,49 @@ const styles = StyleSheet.create({
   },
 
   mealHeader: {
-  fontSize: 20,
-  fontWeight: "700",
-  marginBottom: 8,
-  marginTop: 10,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    marginTop: 10,
   },
   mealTypeSummary: {
-  fontSize: 13,
-  color: "#444",
-  marginBottom: 6,
-  marginLeft: 4,
-},
-mealTypeSummaryCard: {
-  backgroundColor: "#fff",
-  padding: 8,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: "#d0d0d0",
-  marginBottom: 10,
-  marginTop: -4,
-  marginHorizontal: 4,
-},
+    fontSize: 13,
+    color: "#444",
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  mealTypeSummaryCard: {
+    backgroundColor: "#fff",
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    marginBottom: 10,
+    marginTop: -4,
+    marginHorizontal: 4,
+  },
 
-mealTypeSummaryRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 2,
-},
+  mealTypeSummaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
 
-mealTypeSummaryItem: {
-  fontSize: 12,
-  color: "#444",
-},
-progressTrack: {
-  height: 10,
-  backgroundColor: "#E5E7EB",
-  borderRadius: 6,
-  marginTop: 6,
-  marginBottom: 4,
-},
+  mealTypeSummaryItem: {
+    fontSize: 12,
+    color: "#444",
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 6,
+    marginTop: 6,
+    marginBottom: 4,
+  },
 
-progressFill: {
-  height: 10,
-  borderRadius: 6,
-},
+  progressFill: {
+    height: 10,
+    borderRadius: 6,
+  },
 
 });
