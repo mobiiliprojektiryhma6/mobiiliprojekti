@@ -335,9 +335,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             <TouchableOpacity
                                 style={styles.addButton}
                                 activeOpacity={0.8}
-                                onPress={() => navigation.navigate("MealBuilder", { addedFood: item })}
+                                onPress={() => handleAddFood(item)}
                             >
-                                <Text style={styles.addButtonText}>+ Add to Meal</Text>
+                                <Text style={styles.addButtonText}>
+                                    {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
+                                </Text>
                             </TouchableOpacity>
 
                         </View>
@@ -557,124 +559,184 @@ const styles = StyleSheet.create({
         color: "#999",
         fontStyle: "italic",
     },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.45)",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    modalBox: {
+        width: "100%",
+        backgroundColor: "#FFFFFF",
+        borderRadius: 18,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: "#E6EEF4",
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#1A1A2E",
+        marginBottom: 6,
+    },
+    modalSubtitle: {
+        fontSize: 13,
+        color: "#666",
+        marginBottom: 14,
+        lineHeight: 18,
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: "#D7E2EA",
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 16,
+        backgroundColor: "#F9FCFE",
+        marginBottom: 14,
+    },
+    modalActionButton: {
+        backgroundColor: "#009FE3",
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    modalActionText: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: "700",
+    },
+    modalCancelButton: {
+        backgroundColor: "#EEF4F8",
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+    modalCancelText: {
+        color: "#4B5563",
+        fontSize: 15,
+        fontWeight: "600",
+    },
     detailCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#009FE3",
-    shadowColor: "#009FE3",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-},
-detailHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 14,
-},
-detailHeaderLeft: {
-    flex: 1,
-    paddingRight: 12,
-},
-detailName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1A1A2E",
-    letterSpacing: -0.3,
-    marginBottom: 3,
-},
-detailPerNote: {
-    fontSize: 11,
-    color: "#9B9B9B",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-},
-detailEnergyBadge: {
-    backgroundColor: "#FFF3E0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-    minWidth: 64,
-},
-detailEnergyValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#E67E22",
-    letterSpacing: -0.5,
-},
-detailEnergyUnit: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#E67E22",
-    opacity: 0.8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-},
-detailDivider: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
-    marginBottom: 14,
-},
-detailNutrientBlock: {
-    marginBottom: 10,
-},
-detailNutrientRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-},
-detailDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-},
-detailNutrientLabel: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#555",
-},
-detailNutrientValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A1A2E",
-},
-detailNutrientUnit: {
-    fontSize: 12,
-    fontWeight: "400",
-    color: "#9B9B9B",
-},
-detailBarTrack: {
-    height: 4,
-    backgroundColor: "#F0F0F0",
-    borderRadius: 2,
-    marginLeft: 16,
-    overflow: "hidden",
-},
-detailBarFill: {
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.75,
-},
-addButton: {
-    marginTop: 14,
-    backgroundColor: "#009FE3",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-},
-addButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-},
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: "#009FE3",
+        shadowColor: "#009FE3",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    detailHeader: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        marginBottom: 14,
+    },
+    detailHeaderLeft: {
+        flex: 1,
+        paddingRight: 12,
+    },
+    detailName: {
+        fontSize: 17,
+        fontWeight: "700",
+        color: "#1A1A2E",
+        letterSpacing: -0.3,
+        marginBottom: 3,
+    },
+    detailPerNote: {
+        fontSize: 11,
+        color: "#9B9B9B",
+        fontWeight: "500",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+    },
+    detailEnergyBadge: {
+        backgroundColor: "#FFF3E0",
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        alignItems: "center",
+        minWidth: 64,
+    },
+    detailEnergyValue: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#E67E22",
+        letterSpacing: -0.5,
+    },
+    detailEnergyUnit: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "#E67E22",
+        opacity: 0.8,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+    },
+    detailDivider: {
+        height: 1,
+        backgroundColor: "#F0F0F0",
+        marginBottom: 14,
+    },
+    detailNutrientBlock: {
+        marginBottom: 10,
+    },
+    detailNutrientRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 5,
+    },
+    detailDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    detailNutrientLabel: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: "600",
+        color: "#555",
+    },
+    detailNutrientValue: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#1A1A2E",
+    },
+    detailNutrientUnit: {
+        fontSize: 12,
+        fontWeight: "400",
+        color: "#9B9B9B",
+    },
+    detailBarTrack: {
+        height: 4,
+        backgroundColor: "#F0F0F0",
+        borderRadius: 2,
+        marginLeft: 16,
+        overflow: "hidden",
+    },
+    detailBarFill: {
+        height: 4,
+        borderRadius: 2,
+        opacity: 0.75,
+    },
+    addButton: {
+        marginTop: 14,
+        backgroundColor: "#009FE3",
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: "center",
+    },
+    addButtonText: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: "700",
+        letterSpacing: 0.3,
+    },
 
 });
