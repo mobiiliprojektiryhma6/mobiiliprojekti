@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react"
-import { View, Text, TouchableOpacity, TextInput, Alert, Modal, ScrollView, Linking } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native"
 import { useCameraPermissions } from "expo-camera"
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../src/hooks/useAuth"
@@ -10,6 +10,7 @@ import { calculateRecommendedCarbTarget } from "../src/utils/carbTarget"
 import HealthSection from "../components/HealthSection"
 import ProfileHeader from "../components/ProfileHeader"
 import PersonalInfoSection from "../components/PersonalInfoSection"
+import EditModal from "../components/EditModal"
 import { globalStyles } from "../src/styles/globalStyles"
 import { useTheme } from "../src/theme/ThemeContext"
 
@@ -24,12 +25,16 @@ export default function ProfileScreen() {
     const [profileImage, setProfileImage] = useState<string | null>(null)
 
     const [, requestPermission] = useCameraPermissions()
+
+    // Modal state
     const [modalVisible, setModalVisible] = useState(false)
+    const [modalType, setModalType] = useState<"personal" | "disease" | "allergy" | "medicine" | "dailyCarbTarget" | null>(null)
     const [modalTitle, setModalTitle] = useState("")
     const [modalValue, setModalValue] = useState("")
-    const [modalType, setModalType] = useState<
-        "height" | "weight" | "disease" | "allergy" | "medicine" | "dailyCarbTarget" | null
-    >(null)
+
+    // Personal info temp values
+    const [tempHeight, setTempHeight] = useState("")
+    const [tempWeight, setTempWeight] = useState("")
 
     const [useManualCarbTarget, setUseManualCarbTarget] = useState(false)
     const [dailyCarbTarget, setDailyCarbTarget] = useState<string | null>(null)
@@ -44,6 +49,7 @@ export default function ProfileScreen() {
 
     const openLink = (url: string) => Linking.openURL(url)
 
+    // Load user data
     useEffect(() => {
         const loadData = async () => {
             if (!user) return
@@ -62,6 +68,7 @@ export default function ProfileScreen() {
         loadData()
     }, [user])
 
+    // Load medications
     useEffect(() => {
         const loadMedications = async () => {
             if (!user) return
@@ -125,67 +132,41 @@ export default function ProfileScreen() {
         ])
     }
 
-    const removeDisease = async (index: number) => {
-        const updated = diseases.filter((_, i) => i !== index)
-        setDiseases(updated)
-        saveToFirestore({ diseases: updated })
+    // OPEN PERSONAL INFO MODAL
+    const openPersonalInfoModal = () => {
+        setModalType("personal")
+        setModalTitle("Edit Personal Information")
+        setTempHeight(height ?? "")
+        setTempWeight(weight ?? "")
+        setModalVisible(true)
     }
 
-    const removeAllergy = async (index: number) => {
-        const updated = allergies.filter((_, i) => i !== index)
-        setAllergies(updated)
-        saveToFirestore({ allergies: updated })
-    }
-
-    const addMedicationFromProfile = async (name: string) => {
-        if (!user) return
-        try {
-            const ref = await addDoc(collection(db, "users", user.uid, "medications"), {
-                name: name.trim(),
-                dose: "",
-                usage: "",
-                notes: "",
-                times: [],
-            })
-            setMedications((prev) => [...prev, { id: ref.id, name: name.trim() }])
-        } catch (e) {
-            console.error("Failed to add medication:", e)
-            Alert.alert("Error", "Could not add medication.")
-        }
-    }
-
-    const removeMedication = async (id: string) => {
-        if (!user) return
-        await deleteDoc(doc(db, "users", user.uid, "medications", id))
-        setMedications((prev) => prev.filter((m) => m.id !== id))
-        try {
-            await deleteDoc(doc(db, "users", user.uid, "medications", id))
-            setMedications((prev) => prev.filter((m) => m.id !== id))
-        } catch (e) {
-            console.error("Failed to remove medication:", e)
-            Alert.alert("Error", "Could not remove medication.")
-        }
-    }
-
-    const openModal = (type: any, title: string) => {
+    // OPEN GENERIC MODAL
+    const openGenericModal = (type: any, title: string) => {
         setModalType(type)
         setModalTitle(title)
         setModalValue("")
         setModalVisible(true)
     }
 
-    const setCarbTargetMode = async (useManual: boolean) => {
-        setUseManualCarbTarget(useManual)
-        saveToFirestore({ useManualCarbTarget: useManual })
-    }
-
+    // SAVE MODAL VALUE
     const saveModalValue = async () => {
+        if (modalType === "personal") {
+            const h = tempHeight.trim()
+            const w = tempWeight.trim()
+
+            setHeight(h)
+            setWeight(w)
+
+            await saveToFirestore({ height: h, weight: w })
+            setModalVisible(false)
+            return
+        }
+
         if (!modalValue.trim()) return
 
         let update: any = {}
 
-        if (modalType === "height") update.height = modalValue
-        if (modalType === "weight") update.weight = modalValue
         if (modalType === "disease") update.diseases = [...diseases, modalValue]
         if (modalType === "allergy") update.allergies = [...allergies, modalValue]
 
@@ -199,13 +180,43 @@ export default function ProfileScreen() {
         }
 
         if (modalType === "medicine") {
-            // Kirjoitetaan subcollectioniin
             await addMedicationFromProfile(modalValue)
-            return setModalVisible(false)
+            setModalVisible(false)
+            return
         }
 
         await saveToFirestore(update)
         setModalVisible(false)
+    }
+
+    const addMedicationFromProfile = async (name: string) => {
+        if (!user) return
+        const ref = await addDoc(collection(db, "users", user.uid, "medications"), {
+            name: name.trim(),
+            dose: "",
+            usage: "",
+            notes: "",
+            times: [],
+        })
+        setMedications((prev) => [...prev, { id: ref.id, name: name.trim() }])
+    }
+
+    const removeDisease = async (index: number) => {
+        const updated = diseases.filter((_, i) => i !== index)
+        setDiseases(updated)
+        saveToFirestore({ diseases: updated })
+    }
+
+    const removeAllergy = async (index: number) => {
+        const updated = allergies.filter((_, i) => i !== index)
+        setAllergies(updated)
+        saveToFirestore({ allergies: updated })
+    }
+
+    const removeMedication = async (id: string) => {
+        if (!user) return
+        await deleteDoc(doc(db, "users", user.uid, "medications", id))
+        setMedications((prev) => prev.filter((m) => m.id !== id))
     }
 
     return (
@@ -221,7 +232,7 @@ export default function ProfileScreen() {
                 <PersonalInfoSection
                     height={height}
                     weight={weight}
-                    onEdit={() => openModal("height", "Edit height")}
+                    onEdit={openPersonalInfoModal}
                 />
 
                 {/* DAILY CARB TARGET */}
@@ -234,7 +245,7 @@ export default function ProfileScreen() {
                                 globalStyles.modeButton,
                                 !useManualCarbTarget && globalStyles.modeButtonActive,
                             ]}
-                            onPress={() => setCarbTargetMode(false)}
+                            onPress={() => setUseManualCarbTarget(false)}
                         >
                             <Text
                                 style={[
@@ -251,7 +262,7 @@ export default function ProfileScreen() {
                                 globalStyles.modeButton,
                                 useManualCarbTarget && globalStyles.modeButtonActive,
                             ]}
-                            onPress={() => setCarbTargetMode(true)}
+                            onPress={() => setUseManualCarbTarget(true)}
                         >
                             <Text
                                 style={[
@@ -289,7 +300,7 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                         style={globalStyles.smallButton}
                         onPress={() =>
-                            openModal(
+                            openGenericModal(
                                 "dailyCarbTarget",
                                 dailyCarbTarget ? "Edit daily carb target" : "Add daily carb target"
                             )
@@ -306,21 +317,21 @@ export default function ProfileScreen() {
                 <HealthSection
                     title="Diseases"
                     items={diseases}
-                    onAdd={() => openModal("disease", "Add disease")}
+                    onAdd={() => openGenericModal("disease", "Add disease")}
                     onDelete={removeDisease}
                 />
 
                 <HealthSection
                     title="Medication"
-                    items={medications.map((m) => m.name)}
-                    onAdd={() => openModal("medicine", "Add medication")}
+                    items={medications}
+                    onAdd={() => openGenericModal("medicine", "Add medication")}
                     onDelete={(index) => removeMedication(medications[index].id)}
                 />
 
                 <HealthSection
                     title="Allergies"
                     items={allergies}
-                    onAdd={() => openModal("allergy", "Add allergy")}
+                    onAdd={() => openGenericModal("allergy", "Add allergy")}
                     onDelete={removeAllergy}
                 />
 
@@ -340,31 +351,20 @@ export default function ProfileScreen() {
                 </View>
             </ScrollView>
 
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={globalStyles.modalOverlay}>
-                    <View style={globalStyles.modalBox}>
-                        <Text style={globalStyles.modalTitle}>{modalTitle}</Text>
-
-                        <TextInput
-                            style={globalStyles.modalInput}
-                            placeholder="Write here..."
-                            value={modalValue}
-                            onChangeText={setModalValue}
-                            autoFocus
-                        />
-
-                        <View style={globalStyles.modalButtons}>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Text style={globalStyles.modalCancel}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={saveModalValue}>
-                                <Text style={globalStyles.modalSave}>Add</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            {/* SINGLE MODAL FOR EVERYTHING */}
+            <EditModal
+                visible={modalVisible}
+                type={modalType}
+                title={modalTitle}
+                personalHeight={tempHeight}
+                personalWeight={tempWeight}
+                modalValue={modalValue}
+                onChangeHeight={setTempHeight}
+                onChangeWeight={setTempWeight}
+                onChangeValue={setModalValue}
+                onSave={saveModalValue}
+                onClose={() => setModalVisible(false)}
+            />
         </View>
     )
 }
