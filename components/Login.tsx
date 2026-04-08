@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from "react"
+import { View, TextInput, Text, TouchableOpacity, Alert } from "react-native"
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth"
+import { globalStyles } from "../src/styles/globalStyles"
 
 interface LoginProps {
     setLoggedIn?: (value: boolean) => void;
@@ -24,7 +25,6 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
             console.log("✅ User logged in: ", user.email); // user log to terminal
 
             if (setLoggedIn) setLoggedIn(true);
-
         } catch (error: any) {
             console.log('Login failed. Please try again.');
             if (error.code === 'auth/user-not-found') {
@@ -39,46 +39,35 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
         }
     }
 
-
-
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Login 💉</Text>
+        <View style={{ width: "100%", padding: 20 }}>
+            <Text style={[globalStyles.header, { textAlign: "center" }]}>
+                Login 💉
+            </Text>
+
             <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
+                autoCapitalize="none"
             />
+
             <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
             />
-            <Button title="Login 😈" onPress={handleLogin} />
-        </View>
-    );
-}
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 24,
-        marginBottom: 20,
-        fontWeight: 'bold',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        padding: 10,
-        marginBottom: 10,
-        borderRadius: 5,
-    },
-});
+            <TouchableOpacity
+                style={globalStyles.buttonPrimary}
+                onPress={handleLogin}
+            >
+                <Text style={globalStyles.buttonPrimaryText}>Login 😈</Text>
+            </TouchableOpacity>
+        </View>
+    )
+}

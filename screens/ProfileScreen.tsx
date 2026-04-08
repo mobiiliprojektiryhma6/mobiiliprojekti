@@ -223,12 +223,14 @@ export default function ProfileScreen() {
         <View style={[globalStyles.container, { backgroundColor: theme.colors.background }]}>
             <ScrollView contentContainerStyle={globalStyles.screenWithHeader}>
 
+                {/*Username, Email, Profile Picture*/}
                 <ProfileHeader
                     user={user}
                     profileImage={profileImage}
                     onChooseImage={chooseImageOption}
                 />
 
+                {/*Weight and Height*/}
                 <PersonalInfoSection
                     height={height}
                     weight={weight}
@@ -314,6 +316,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/*Health Info: Diseases, Medications and Allergies*/}
                 <HealthSection
                     title="Diseases"
                     items={diseases}
@@ -351,7 +354,7 @@ export default function ProfileScreen() {
                 </View>
             </ScrollView>
 
-            {/* SINGLE MODAL FOR EVERYTHING */}
+            {/* Modal */}
             <EditModal
                 visible={modalVisible}
                 type={modalType}
