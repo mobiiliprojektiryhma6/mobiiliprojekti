@@ -190,11 +190,12 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                   style={styles.optionButton}
                   onPress={() => {
                     onClose();
-                    navigation.navigate("FavoritesPicker", {
+                    navigation.navigate("FavoriteMeals", {
                       editingFoodId: food.id,
                       mealId: meal.id,
                       returnTo: "EditFood",
                     });
+
                   }}
                 >
                   <Text style={styles.optionText}>Pick from Favorites ⭐</Text>
