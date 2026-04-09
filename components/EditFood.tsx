@@ -13,6 +13,7 @@ import { doc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
+import { globalStyles } from "../src/styles/globalStyles"
 
 // --- Helper: recalc totals ---
 function calculateMealTotals(foods: FoodItem[]) {
@@ -150,114 +151,112 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
     <>
       {/* MAIN EDIT MODAL */}
       <Modal transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={[styles.modal, mode === "products" && styles.productModal]}>
-            {/* --- Step 1: Choose edit method --- */}
+        <View style={globalStyles.modalOverlay}>
+          <View
+            style={[
+              globalStyles.modalBox,
+              mode === "products" && globalStyles.editFood_productModal,
+            ]}
+          >
+            {/* CHOOSE MODE */}
             {mode === "choose" && (
               <>
-                <Text style={styles.title}>Edit Food</Text>
+                <Text style={globalStyles.modalTitle}>Edit Food</Text>
 
                 <TouchableOpacity
-                  style={styles.optionButton}
+                  style={globalStyles.editFood_optionButton}
                   onPress={() => setMode("manual")}
                 >
-                  <Text style={styles.optionText}>Edit manually</Text>
+                  <Text style={globalStyles.editFood_optionText}>Edit manually</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.optionButton}
+                  style={globalStyles.editFood_optionButton}
                   onPress={() => {
-                    onClose();
+                    onClose()
                     navigation.navigate("FoodSearch", {
                       editingFoodId: food.id,
                       mealId: meal.id,
                       returnTo: "EditFood",
-                    });
+                    })
                   }}
                 >
-                  <Text style={styles.optionText}>Search online</Text>
+                  <Text style={globalStyles.editFood_optionText}>Search online</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.optionButton}
+                  style={globalStyles.editFood_optionButton}
                   onPress={() => setMode("products")}
                 >
-                  <Text style={styles.optionText}>Pick from products</Text>
+                  <Text style={globalStyles.editFood_optionText}>Pick from products</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Text style={globalStyles.modalCancel}>Cancel</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            {/* --- Step 2: Manual edit --- */}
+            {/* MANUAL EDIT */}
             {mode === "manual" && (
               <>
-                <Text style={styles.title}>Edit Food Manually</Text>
+                <Text style={globalStyles.modalTitle}>Edit Food Manually</Text>
 
                 <TextInput
-                  style={styles.input}
+                  style={globalStyles.modalInput}
                   placeholder="Name"
                   value={name}
                   onChangeText={setName}
                 />
 
-                {/* Serving size */}
-                <View style={styles.inputRow}>
+                <View style={globalStyles.editFood_inputRow}>
                   <TextInput
-                    style={styles.inputField}
+                    style={globalStyles.editFood_inputField}
                     placeholder="Serving size"
                     keyboardType="numeric"
                     value={servingSize}
                     onChangeText={setServingSize}
                   />
-                  <Text style={styles.unitLabel}>g</Text>
+                  <Text style={globalStyles.editFood_unitLabel}>g</Text>
                 </View>
 
-                {/* Carbohydrates */}
-                <View style={styles.inputRow}>
+                <View style={globalStyles.editFood_inputRow}>
                   <TextInput
-                    style={styles.inputField}
+                    style={globalStyles.editFood_inputField}
                     placeholder="Carbohydrates"
                     keyboardType="numeric"
                     value={carbs}
-                    onChangeText={(v) => setCarbs(v)}
+                    onChangeText={setCarbs}
                   />
-                  <Text style={styles.unitLabel}>g</Text>
+                  <Text style={globalStyles.editFood_unitLabel}>g</Text>
                 </View>
 
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setMode("choose")}
-                  >
-                    <Text style={styles.cancelText}>Back</Text>
+                <View style={globalStyles.editFood_buttonRow}>
+                  <TouchableOpacity onPress={() => setMode("choose")}>
+                    <Text style={globalStyles.modalCancel}>Back</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={onClose}>
+                    <Text style={globalStyles.modalCancel}>Cancel</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={onClose}
-                  >
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.saveButton}
+                    style={globalStyles.buttonPrimary}
                     onPress={saveManual}
                   >
-                    <Text style={styles.saveText}>Save</Text>
+                    <Text style={globalStyles.buttonPrimaryText}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
 
+            {/* PRODUCT PICKER */}
             {mode === "products" && (
               <>
-                <Text style={styles.productTitle}>Choose a Food</Text>
+                <Text style={globalStyles.modalTitle}>Choose a Food</Text>
 
                 <TextInput
-                  style={styles.searchInput}
+                  style={globalStyles.editFood_searchInput}
                   placeholder="Search products..."
                   value={productSearch}
                   onChangeText={setProductSearch}
@@ -272,57 +271,54 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                         p.name.toLowerCase().includes(productSearch.toLowerCase())
                       )
                   }
-                  keyboardShouldPersistTaps="handled"
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
                     <TouchableOpacity
-                      style={styles.productItem}
+                      style={globalStyles.editFood_productItem}
                       onPress={() => {
-                        setPendingProduct(item);
-                        setProductServingSize(String(food.servingSize || 100));
-                        setAmountPopupVisible(true);
+                        setPendingProduct(item)
+                        setProductServingSize(String(food.servingSize || 100))
+                        setAmountPopupVisible(true)
                       }}
                     >
-                      <Text style={styles.productName}>{item.name}</Text>
-                      <Text style={styles.productInfo}>
+                      <Text style={globalStyles.editFood_productName}>{item.name}</Text>
+                      <Text style={globalStyles.editFood_productInfo}>
                         {item.carbohydrates} g carbs
                       </Text>
                     </TouchableOpacity>
                   )}
-                  style={styles.productsList}
+                  style={globalStyles.editFood_productsList}
                 />
 
-                <View style={styles.buttonRow}>
+                <View style={globalStyles.editFood_buttonRow}>
                   <TouchableOpacity
-                    style={styles.modalCancelButton}
                     onPress={() => {
-                      setAmountPopupVisible(false);
-                      setPendingProduct(null);
-                      setMode("choose");
+                      setAmountPopupVisible(false)
+                      setPendingProduct(null)
+                      setMode("choose")
                     }}
                   >
-                    <Text style={styles.modalCancelButtonText}>Back</Text>
+                    <Text style={globalStyles.modalCancel}>Back</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.modalCancelButton}
                     onPress={() => {
-                      setAmountPopupVisible(false);
-                      setPendingProduct(null);
-                      onClose();
+                      setAmountPopupVisible(false)
+                      setPendingProduct(null)
+                      onClose()
                     }}
                   >
-                    <Text style={styles.modalCancelButtonText}>Close</Text>
+                    <Text style={globalStyles.modalCancel}>Close</Text>
                   </TouchableOpacity>
                 </View>
 
                 {amountPopupVisible && pendingProduct && (
-                  <View style={styles.amountOverlay}>
-                    <View style={styles.amountPopup}>
-                      <Text style={styles.title}>How many grams?</Text>
+                  <View style={globalStyles.editFood_amountOverlay}>
+                    <View style={globalStyles.editFood_amountPopup}>
+                      <Text style={globalStyles.modalTitle}>How many grams?</Text>
 
                       <TextInput
-                        style={styles.input}
+                        style={globalStyles.modalInput}
                         keyboardType="number-pad"
                         value={productServingSize}
                         onChangeText={setProductServingSize}
@@ -332,20 +328,24 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
                       <TouchableOpacity
                         style={[
-                          styles.optionButton,
+                          globalStyles.editFood_optionButton,
                           !(parseInt(productServingSize, 10) > 0) && { opacity: 0.4 },
                         ]}
                         disabled={!(parseInt(productServingSize, 10) > 0)}
-                        onPress={() => saveFromProduct(pendingProduct, parseInt(productServingSize, 10))}
+                        onPress={() =>
+                          saveFromProduct(
+                            pendingProduct,
+                            parseInt(productServingSize, 10)
+                          )
+                        }
                       >
-                        <Text style={styles.optionText}>Add</Text>
+                        <Text style={globalStyles.editFood_optionText}>Add</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.modalCancelButton}
                         onPress={() => setAmountPopupVisible(false)}
                       >
-                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                        <Text style={globalStyles.modalCancel}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -358,152 +358,3 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modal: {
-    width: "85%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-  },
-  productModal: {
-    width: "92%",
-    maxHeight: "88%",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  productTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  optionButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  optionText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
-  },
-  productItem: {
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  productInfo: {
-    fontSize: 14,
-    color: "gray",
-  },
-  productsList: {
-    maxHeight: 360,
-    marginBottom: 12,
-  },
-  amountOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-  },
-  amountPopup: {
-    width: "85%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-  },
-  searchInput: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    marginBottom: 12,
-    marginTop: 4,
-    fontSize: 16,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 14,
-    marginTop: 10,
-  },
-  modalCancelButton: {
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  modalCancelButtonText: {
-    color: "gray",
-    fontSize: 16,
-  },
-  cancelButton: {
-    padding: 12,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  saveButton: {
-    padding: 12,
-    backgroundColor: "#3B82F6",
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelText: {
-    textAlign: "center",
-    color: "#374151",
-    fontWeight: "600",
-  },
-  saveText: {
-    textAlign: "center",
-    color: "#fff",
-    fontWeight: "600",
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 12,
-  },
-  inputField: {
-    flex: 1,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  unitLabel: {
-    fontSize: 16,
-    color: "#555",
-    marginLeft: 8,
-    fontWeight: "500",
-  },
-});

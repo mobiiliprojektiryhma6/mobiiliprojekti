@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useTodayCarbsChart } from "../src/hooks/useTodayCarbsChart";
+import { globalStyles } from "../src/styles/globalStyles"
 
 export default function TodayCarbsChart() {
     const {
@@ -18,27 +19,37 @@ export default function TodayCarbsChart() {
     } = useTodayCarbsChart();
 
     return (
-        <View style={styles.chartWrap}>
-            <Text style={styles.chartTitle}>Today's Carbs</Text>
+        <View style={globalStyles.todayChart_wrap}>
+            <Text style={globalStyles.todayChart_title}>Today's Carbs</Text>
 
-            <View style={styles.targetWrap}>
+            <View style={globalStyles.todayChart_targetWrap}>
                 {targetCarbs === null || remainingCarbs === null ? (
-                    <Text style={styles.infoText}>{targetMessage ?? "Missing profile info: add weight and height, or set a custom carb target."}</Text>
+                    <Text style={globalStyles.todayChart_infoText}>
+                        {targetMessage ??
+                            "Missing profile info: add weight and height, or set a custom carb target."}
+                    </Text>
                 ) : (
                     <>
                         {totalCarbs > targetCarbs && (
-                            <Text style={styles.warningText}>You are {Math.abs(targetCarbs - totalCarbs).toFixed(1)} g above today&apos;s target.</Text>
+                            <Text style={globalStyles.todayChart_warningText}>
+                                You are {Math.abs(targetCarbs - totalCarbs).toFixed(1)} g above today&apos;s target.
+                            </Text>
                         )}
 
-                        <View style={styles.progressTrack}>
-                            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                        <View style={globalStyles.todayChart_progressTrack}>
+                            <View
+                                style={[
+                                    globalStyles.todayChart_progressFill,
+                                    { width: `${progress * 100}%` },
+                                ]}
+                            />
                         </View>
                     </>
                 )}
             </View>
 
             {loadingChart && <Text>Loading chart...</Text>}
-            {!loadingChart && chartError && <Text style={styles.errorText}>{chartError}</Text>}
+            {!loadingChart && chartError && <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>}
             {!loadingChart && !chartError && pieData.length === 0 && <Text>No meals logged for today yet.</Text>}
 
             {!loadingChart && !chartError && pieData.length > 0 && (
@@ -55,70 +66,27 @@ export default function TodayCarbsChart() {
                         chartConfig={{ color: () => "#000" }}
                         absolute
                     />
-                    <Text style={styles.totalText}>Total carbs: {totalCarbs.toFixed(1)} g</Text>
-                    {remainingCarbs !== null && <Text style={styles.remainingText}>Remaining: {remainingCarbs.toFixed(1)} g</Text>}
+
+                    <Text style={globalStyles.todayChart_totalText}>
+                        Total carbs: {totalCarbs.toFixed(1)} g
+                    </Text>
+
+                    {remainingCarbs !== null && (
+                        <Text style={globalStyles.todayChart_remainingText}>
+                            Remaining: {remainingCarbs.toFixed(1)} g
+                        </Text>
+                    )}
                 </>
             )}
 
-            {!loadingChart && !chartError && pieData.length === 0 && remainingCarbs !== null && (
-                <Text style={styles.remainingText}>Remaining: {remainingCarbs.toFixed(1)} g</Text>
-            )}
+            {!loadingChart &&
+                !chartError &&
+                pieData.length === 0 &&
+                remainingCarbs !== null && (
+                    <Text style={globalStyles.todayChart_remainingText}>
+                        Remaining: {remainingCarbs.toFixed(1)} g
+                    </Text>
+                )}
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    chartWrap: {
-        marginTop: 0,
-        marginBottom: 16,
-        alignItems: "center",
-        paddingVertical: 0,
-        paddingHorizontal: 10,
-    },
-    chartTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        marginBottom: 8,
-    },
-    targetWrap: {
-        width: "100%",
-        marginBottom: 6,
-        paddingHorizontal: 4,
-    },
-    infoText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#B00020",
-        marginBottom: 6,
-    },
-    warningText: {
-        fontSize: 12,
-        color: "#B00020",
-        marginBottom: 6,
-    },
-    progressTrack: {
-        width: "100%",
-        height: 8,
-        borderRadius: 999,
-        backgroundColor: "#E5E7EB",
-        overflow: "hidden",
-    },
-    progressFill: {
-        height: "100%",
-        backgroundColor: "#009FE3",
-    },
-    totalText: {
-        marginTop: 8,
-        fontWeight: "600",
-    },
-    remainingText: {
-        marginTop: 4,
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#1F2937",
-    },
-    errorText: {
-        color: "#B00020",
-        textAlign: "center",
-    },
-});
