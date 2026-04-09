@@ -13,6 +13,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import { globalStyles } from "../src/styles/globalStyles"
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
 - FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
@@ -278,11 +279,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             <View key={`${source}-${item.id}`}>
                 {!isSelected && (
                     <TouchableOpacity
-                        style={styles.resultItem}
+                        style={globalStyles.card}
                         onPress={() => handleSelect(item)}
                     >
-                        <Text style={styles.resultName}>{item.name}</Text>
-                        <Text style={styles.resultDetail}>
+                        <Text style={globalStyles.textPrimary}>{item.name}</Text>
+                        <Text style={globalStyles.foodSearch_resultDetail}>
                             {item.energy} kcal | Carbs {item.carbohydrates}g | Protein {item.protein}g | Fat {item.fat}g
                         </Text>
                     </TouchableOpacity>
@@ -290,22 +291,25 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                 {isSelected && (
                     <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
-                        <View style={styles.detailCard}>
+                        <View style={globalStyles.card}>
 
                             {/* Header */}
-                            <View style={styles.detailHeader}>
-                                <View style={styles.detailHeaderLeft}>
-                                    <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
-                                    <Text style={styles.detailPerNote}>per 100 g</Text>
+                            <View style={globalStyles.foodSearch_detailHeader}>
+                                <View style={globalStyles.foodSearch_detailHeaderLeft}>
+                                    <Text style={globalStyles.foodSearch_detailName} numberOfLines={2}>
+                                        {item.name}
+                                    </Text>
+                                    <Text style={globalStyles.foodSearch_detailPerNote}>per 100 g</Text>
                                 </View>
-                                <View style={styles.detailEnergyBadge}>
-                                    <Text style={styles.detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={styles.detailEnergyUnit}>kcal</Text>
+
+                                <View style={globalStyles.foodSearch_detailEnergyBadge}>
+                                    <Text style={globalStyles.foodSearch_detailEnergyValue}>{item.energy}</Text>
+                                    <Text style={globalStyles.foodSearch_detailEnergyUnit}>kcal</Text>
                                 </View>
                             </View>
 
                             {/* Divider */}
-                            <View style={styles.detailDivider} />
+                            <View style={globalStyles.foodSearch_detailDivider} />
 
                             {/* Nutrient rows */}
                             {[
@@ -313,31 +317,37 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                 { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
                                 { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
                             ].map(({ label, value, unit, color, ref }) => (
-                                <View key={label} style={styles.detailNutrientBlock}>
-                                    <View style={styles.detailNutrientRow}>
-                                        <View style={[styles.detailDot, { backgroundColor: color }]} />
-                                        <Text style={styles.detailNutrientLabel}>{label}</Text>
-                                        <Text style={styles.detailNutrientValue}>
+                                <View key={label} style={globalStyles.foodSearch_detailNutrientBlock}>
+                                    <View style={globalStyles.foodSearch_detailNutrientRow}>
+                                        <View style={[globalStyles.foodSearch_detailDot, { backgroundColor: color }]} />
+                                        <Text style={globalStyles.foodSearch_detailNutrientLabel}>{label}</Text>
+                                        <Text style={globalStyles.foodSearch_detailNutrientValue}>
                                             {value}
-                                            <Text style={styles.detailNutrientUnit}> {unit}</Text>
+                                            <Text style={globalStyles.foodSearch_detailNutrientUnit}> {unit}</Text>
                                         </Text>
                                     </View>
-                                    <View style={styles.detailBarTrack}>
-                                        <View style={[
-                                            styles.detailBarFill,
-                                            { width: `${Math.min((value / ref) * 100, 100)}%`, backgroundColor: color }
-                                        ]} />
+
+                                    <View style={globalStyles.foodSearch_detailBarTrack}>
+                                        <View
+                                            style={[
+                                                globalStyles.foodSearch_detailBarFill,
+                                                {
+                                                    width: `${Math.min((value / ref) * 100, 100)}%`,
+                                                    backgroundColor: color,
+                                                },
+                                            ]}
+                                        />
                                     </View>
                                 </View>
                             ))}
 
                             {/* Add button */}
                             <TouchableOpacity
-                                style={styles.addButton}
+                                style={globalStyles.buttonPrimary}
                                 activeOpacity={0.8}
                                 onPress={() => handleAddFood(item)}
                             >
-                                <Text style={styles.addButtonText}>
+                                <Text style={globalStyles.buttonPrimaryText}>
                                     {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
                                 </Text>
                             </TouchableOpacity>
@@ -352,24 +362,23 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     return (
         <>
             <ScrollView
-                contentContainerStyle={styles.container}
+                contentContainerStyle={globalStyles.container}
                 keyboardShouldPersistTaps="handled"
             >
                 {/* Search bar with camera icon */}
-                <View style={styles.searchRow}>
+                <View style={globalStyles.foodSearch_searchRow}>
                     <TextInput
-                        style={styles.searchInput}
+                        style={globalStyles.input}
                         placeholder="Search food (e.g. bread, chocolate...)"
                         value={query}
                         onChangeText={(text) => setQuery(text)}
-                        onSubmitEditing={() => {
-                            setSearchTrigger(query);
-                        }}
+                        onSubmitEditing={() => setSearchTrigger(query)}
                         autoCorrect={false}
                         autoFocus
                     />
+
                     <TouchableOpacity
-                        style={styles.cameraButton}
+                        style={globalStyles.foodSearch_cameraButton}
                         onPress={() => navigation.navigate("Scanner")}
                     >
                         <Text style={{ fontSize: 22, color: "#fff" }}>📷</Text>
@@ -378,23 +387,23 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                 {/* Scanned product result */}
                 {scannedProduct && !selectedItem && (
-                    <View style={styles.resultsSection}>
-                        <Text style={styles.sectionTitle}>Scanned Product</Text>
+                    <View style={globalStyles.foodSearch_resultsSection}>
+                        <Text style={globalStyles.sectionTitle}>Scanned Product</Text>
                         {renderFoodItem(scannedProduct, "scanned")}
                     </View>
                 )}
 
                 {/* Selected item detail view */}
                 {selectedItem ? (
-                    <View style={styles.resultsSection}>
+                    <View style={globalStyles.foodSearch_resultsSection}>
                         {renderFoodItem(selectedItem, "selected")}
                     </View>
                 ) : (
                     <>
                         {/* Firestore results */}
                         {(localBest.length > 0 || localSimilar.length > 0) && (
-                            <View style={styles.resultsSection}>
-                                <Text style={styles.sectionTitle}>Your Foods</Text>
+                            <View style={globalStyles.foodSearch_resultsSection}>
+                                <Text style={globalStyles.sectionTitle}>Your Foods</Text>
                                 {localBest.map((item) => renderFoodItem(item, "local-best"))}
                                 {localSimilar.map((item) => renderFoodItem(item, "local-similar"))}
                             </View>
@@ -402,34 +411,39 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                         {/* Open Food Facts results */}
                         {apiLoading && (
-                            <View style={styles.loadingRow}>
+                            <View style={globalStyles.row}>
                                 <ActivityIndicator size="small" color="#009FE3" />
-                                <Text style={styles.loadingText}>Searching online...</Text>
+                                <Text style={globalStyles.textSecondary}>Searching online...</Text>
                             </View>
                         )}
 
                         {apiResults.length > 0 && (
-                            <View style={styles.resultsSection}>
-                                <Text style={styles.sectionTitle}>Online Results</Text>
+                            <View style={globalStyles.foodSearch_resultsSection}>
+                                <Text style={globalStyles.sectionTitle}>Online Results</Text>
                                 {apiResults.map((item) => renderFoodItem(item, "api"))}
                             </View>
                         )}
 
                         {showNoResults && (
-                            <Text style={styles.noResults}>No results found for "{query}"</Text>
+                            <Text style={globalStyles.textSecondary}>
+                                No results found for "{query}"
+                            </Text>
                         )}
                     </>
                 )}
             </ScrollView>
 
+            {/* Replacement modal */}
             <Modal visible={servingSizeModalVisible} transparent animationType="fade">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Set amount before replacing</Text>
-                        <Text style={styles.modalSubtitle}>Enter how many grams this meal item should use.</Text>
+                <View style={globalStyles.modalOverlay}>
+                    <View style={globalStyles.modalBox}>
+                        <Text style={globalStyles.modalTitle}>Set amount before replacing</Text>
+                        <Text style={globalStyles.modalDescription}>
+                            Enter how many grams this meal item should use.
+                        </Text>
 
                         <TextInput
-                            style={styles.modalInput}
+                            style={globalStyles.modalInput}
                             keyboardType="number-pad"
                             value={servingSizeInput}
                             onChangeText={setServingSizeInput}
@@ -440,23 +454,23 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                         <TouchableOpacity
                             style={[
-                                styles.modalActionButton,
+                                globalStyles.buttonPrimary,
                                 !(parseInt(servingSizeInput, 10) > 0) && { opacity: 0.4 },
                             ]}
                             disabled={!(parseInt(servingSizeInput, 10) > 0)}
                             onPress={handleConfirmReplacementAmount}
                         >
-                            <Text style={styles.modalActionText}>Confirm Replacement</Text>
+                            <Text style={globalStyles.buttonPrimaryText}>Confirm Replacement</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={styles.modalCancelButton}
+                            style={globalStyles.modalButtons}
                             onPress={() => {
                                 setServingSizeModalVisible(false);
                                 setPendingReplacement(null);
                             }}
                         >
-                            <Text style={styles.modalCancelText}>Cancel</Text>
+                            <Text style={globalStyles.modalCancel}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -464,282 +478,3 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         </>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        backgroundColor: "#E5F7FD",
-        paddingVertical: 20,
-        paddingHorizontal: 16,
-    },
-    searchRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        width: "100%",
-        marginBottom: 10,
-    },
-    searchInput: {
-        flex: 1,
-        backgroundColor: "#fff",
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 16,
-    },
-    cameraButton: {
-        backgroundColor: "#009FE3",
-        padding: 10,
-        borderRadius: 8,
-        marginLeft: 8,
-    },
-    resultsSection: {
-        width: "100%",
-        marginTop: 14,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 6,
-        color: "#333",
-    },
-    resultItem: {
-        backgroundColor: "#fff",
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 6,
-        borderWidth: 1,
-        borderColor: "#ddd",
-    },
-    resultItemSelected: {
-        borderColor: "#009FE3",
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        marginBottom: 0,
-    },
-    resultName: {
-        fontSize: 15,
-        fontWeight: "600",
-    },
-    resultDetail: {
-        fontSize: 13,
-        color: "#666",
-        marginTop: 2,
-    },
-    nutrientRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
-    nutrientLabel: {
-        fontSize: 16,
-        color: "#333",
-    },
-    nutrientValue: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    perNote: {
-        marginTop: 10,
-        fontSize: 13,
-        color: "#999",
-        textAlign: "right",
-    },
-    loadingRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 14,
-    },
-    loadingText: {
-        marginLeft: 8,
-        color: "#666",
-        fontSize: 14,
-    },
-    noResults: {
-        marginTop: 14,
-        color: "#999",
-        fontStyle: "italic",
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.45)",
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 20,
-    },
-    modalBox: {
-        width: "100%",
-        backgroundColor: "#FFFFFF",
-        borderRadius: 18,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: "#E6EEF4",
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#1A1A2E",
-        marginBottom: 6,
-    },
-    modalSubtitle: {
-        fontSize: 13,
-        color: "#666",
-        marginBottom: 14,
-        lineHeight: 18,
-    },
-    modalInput: {
-        borderWidth: 1,
-        borderColor: "#D7E2EA",
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        fontSize: 16,
-        backgroundColor: "#F9FCFE",
-        marginBottom: 14,
-    },
-    modalActionButton: {
-        backgroundColor: "#009FE3",
-        borderRadius: 10,
-        paddingVertical: 12,
-        alignItems: "center",
-        marginBottom: 10,
-    },
-    modalActionText: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "700",
-    },
-    modalCancelButton: {
-        backgroundColor: "#EEF4F8",
-        borderRadius: 10,
-        paddingVertical: 12,
-        alignItems: "center",
-    },
-    modalCancelText: {
-        color: "#4B5563",
-        fontSize: 15,
-        fontWeight: "600",
-    },
-    detailCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: "#009FE3",
-        shadowColor: "#009FE3",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    detailHeader: {
-        flexDirection: "row",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        marginBottom: 14,
-    },
-    detailHeaderLeft: {
-        flex: 1,
-        paddingRight: 12,
-    },
-    detailName: {
-        fontSize: 17,
-        fontWeight: "700",
-        color: "#1A1A2E",
-        letterSpacing: -0.3,
-        marginBottom: 3,
-    },
-    detailPerNote: {
-        fontSize: 11,
-        color: "#9B9B9B",
-        fontWeight: "500",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    detailEnergyBadge: {
-        backgroundColor: "#FFF3E0",
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        alignItems: "center",
-        minWidth: 64,
-    },
-    detailEnergyValue: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#E67E22",
-        letterSpacing: -0.5,
-    },
-    detailEnergyUnit: {
-        fontSize: 11,
-        fontWeight: "600",
-        color: "#E67E22",
-        opacity: 0.8,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    detailDivider: {
-        height: 1,
-        backgroundColor: "#F0F0F0",
-        marginBottom: 14,
-    },
-    detailNutrientBlock: {
-        marginBottom: 10,
-    },
-    detailNutrientRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 5,
-    },
-    detailDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginRight: 8,
-    },
-    detailNutrientLabel: {
-        flex: 1,
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#555",
-    },
-    detailNutrientValue: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#1A1A2E",
-    },
-    detailNutrientUnit: {
-        fontSize: 12,
-        fontWeight: "400",
-        color: "#9B9B9B",
-    },
-    detailBarTrack: {
-        height: 4,
-        backgroundColor: "#F0F0F0",
-        borderRadius: 2,
-        marginLeft: 16,
-        overflow: "hidden",
-    },
-    detailBarFill: {
-        height: 4,
-        borderRadius: 2,
-        opacity: 0.75,
-    },
-    addButton: {
-        marginTop: 14,
-        backgroundColor: "#009FE3",
-        paddingVertical: 12,
-        borderRadius: 10,
-        alignItems: "center",
-    },
-    addButtonText: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "700",
-        letterSpacing: 0.3,
-    },
-
-});

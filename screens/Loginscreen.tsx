@@ -13,7 +13,12 @@ export default function Loginscreen() {
       {showRegister ? <Register /> : <Login />}
 
       <TouchableOpacity onPress={() => setShowRegister(prev => !prev)}>
-        <Text style={[globalStyles.textPrimary, { color: "#007AFF", marginTop: 20 }]}>
+        <Text
+          style={[
+            globalStyles.textPrimary,
+            { color: "#007AFF", marginTop: 20, fontWeight: "600" }
+          ]}
+        >
           {showRegister
             ? "Already have an account? Login"
             : "Don't have an account? Register!"}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { globalStyles } from "../src/styles/globalStyles"
 
 
 export default function BarcodeScanner({ navigation }: { navigation: any }) {
@@ -73,7 +74,7 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   - Granted -> Camera view */
   if (!permission) {
     return (
-      <View style={styles.center}>
+      <View style={globalStyles.center}>
         <ActivityIndicator size="large" color="#009FE3" />
       </View>
     );
@@ -81,10 +82,12 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
 
   if (!permission.granted) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>Camera permission is required to scan barcodes.</Text>
-        <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Grant Permission</Text>
+      <View style={globalStyles.center}>
+        <Text style={globalStyles.barcode_message}>
+          Camera permission is required to scan barcodes.
+        </Text>
+        <TouchableOpacity style={globalStyles.button} onPress={requestPermission}>
+          <Text style={globalStyles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
@@ -101,109 +104,34 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   scanned is false (nobody scanned yet) -> give the camera the handleBarcodeScanned function → camera is listening
   scanned is true (we already got one) -> give the camera undefined (nothing) → camera stops listening */
   return (
-    <View style={styles.container}>
+    <View style={globalStyles.barcode_container}>
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
         barcodeScannerSettings={{
-          barcodeTypes: [
-            "ean13",
-            "ean8",
-            "upc_a",
-            "upc_e",
-            "code128",
-            "code39",
-            "code93",
-          ],
+          barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "code93"],
         }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       />
 
-      <View style={styles.overlay}>
-        <Text style={styles.instructions}>Point the camera at a barcode</Text>
+      <View style={globalStyles.overlay}>
+        <Text style={globalStyles.instructions}>Point the camera at a barcode</Text>
       </View>
 
       {loading && (
-        <View style={styles.loadingOverlay}>
+        <View style={globalStyles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Looking up product...</Text>
+          <Text style={globalStyles.loadingText}>Looking up product...</Text>
         </View>
       )}
 
       {scanned && !loading && (
-        <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setScanned(false)}
-          >
-            <Text style={styles.buttonText}>Scan Again</Text>
+        <View style={globalStyles.bottomBar}>
+          <TouchableOpacity style={globalStyles.button} onPress={() => setScanned(false)}>
+            <Text style={globalStyles.buttonText}>Scan Again</Text>
           </TouchableOpacity>
         </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#E5F7FD",
-    padding: 20,
-  },
-  message: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#333",
-  },
-  overlay: {
-    position: "absolute",
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  instructions: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "#fff",
-    fontSize: 16,
-    marginTop: 12,
-  },
-  bottomBar: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  button: {
-    backgroundColor: "#009FE3",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});

@@ -8,6 +8,7 @@ import {
   Modal,
   FlatList,
 } from "react-native";
+import { globalStyles } from "../src/styles/globalStyles"
 
 import { db } from "../firebase/config";
 import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
@@ -79,23 +80,23 @@ export default function MealBuilderScreen() {
     loadProducts();
   }, [authReady]);
 
-useEffect(() => {
-  if (route.params?.addedFood) {
-    const food = route.params.addedFood;
+  useEffect(() => {
+    if (route.params?.addedFood) {
+      const food = route.params.addedFood;
 
-    setSelectedProduct(food);
-    setServingSizeModalVisible(true);
+      setSelectedProduct(food);
+      setServingSizeModalVisible(true);
 
-    navigation.setParams({ addedFood: undefined });
-  }
-}, [route.params?.addedFood]);
+      navigation.setParams({ addedFood: undefined });
+    }
+  }, [route.params?.addedFood]);
 
-useEffect(() => {
-  if (route.params?.customFood) {
-    setModalVisible(true);
-    navigation.setParams({ customFood: undefined });
-  }
-}, [route.params?.customFood]);
+  useEffect(() => {
+    if (route.params?.customFood) {
+      setModalVisible(true);
+      navigation.setParams({ customFood: undefined });
+    }
+  }, [route.params?.customFood]);
 
 
   const startEditingFood = (food: FoodItem) => {
@@ -205,26 +206,27 @@ useEffect(() => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Build Your Meal</Text>
+    <View style={globalStyles.container}>
+      <Text style={globalStyles.header}>Build Your Meal</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Meal</Text>
+      {/* Meal type selector */}
+      <View style={globalStyles.mealBuilder_section}>
+        <Text style={globalStyles.mealBuilder_label}>Meal</Text>
 
-        <View style={styles.mealRow}>
+        <View style={globalStyles.mealBuilder_mealRow}>
           {["Breakfast", "Lunch", "Snack", "Dinner"].map((meal) => (
             <TouchableOpacity
               key={meal}
               style={[
-                styles.mealButton,
-                mealType === meal && styles.mealButtonSelected,
+                globalStyles.mealBuilder_mealButton,
+                mealType === meal && globalStyles.mealBuilder_mealButtonSelected,
               ]}
               onPress={() => setMealType(meal)}
             >
               <Text
                 style={[
-                  styles.mealButtonText,
-                  mealType === meal && styles.mealButtonTextSelected,
+                  globalStyles.mealBuilder_mealButtonText,
+                  mealType === meal && globalStyles.mealBuilder_mealButtonTextSelected,
                 ]}
               >
                 {meal}
@@ -234,16 +236,18 @@ useEffect(() => {
         </View>
       </View>
 
+      {/* Add food button */}
       <TouchableOpacity
-        style={styles.addFoodButton}
+        style={globalStyles.mealBuilder_addFoodButton}
         onPress={() => setChooseModalVisible(true)}
       >
-        <Text style={styles.addFoodButtonText}>Add Food</Text>
+        <Text style={globalStyles.mealBuilder_addFoodButtonText}>Add Food</Text>
       </TouchableOpacity>
 
+      {/* Foods list */}
       {foods.length > 0 && (
         <>
-          <Text style={styles.label}>Foods in this meal:</Text>
+          <Text style={globalStyles.mealBuilder_label}>Foods in this meal:</Text>
 
           <FlatList
             data={foods}
@@ -257,44 +261,50 @@ useEffect(() => {
         </>
       )}
 
+      {/* Save meal */}
       <TouchableOpacity
-        style={[styles.saveButton, !mealType && { opacity: 0.4 }]}
+        style={[
+          globalStyles.mealBuilder_saveButton,
+          !mealType && { opacity: 0.4 },
+        ]}
         disabled={!mealType}
         onPress={saveMeal}
       >
-        <Text style={styles.saveButtonText}>Save Meal</Text>
+        <Text style={globalStyles.mealBuilder_saveButtonText}>Save Meal</Text>
       </TouchableOpacity>
 
+      {/* CHOOSE FOOD MODAL */}
       <Modal visible={chooseModalVisible} transparent animationType="fade">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Food</Text>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalBox}>
+            <Text style={globalStyles.modalTitle}>Add Food</Text>
 
-            {/* 1. Pick from products */}
             <TouchableOpacity
-              style={styles.modalAddButton}
+              style={globalStyles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 setProductModalVisible(true);
               }}
             >
-              <Text style={styles.modalAddButtonText}>Pick from products</Text>
+              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+                Pick from products
+              </Text>
             </TouchableOpacity>
 
-            {/* 2. Search online */}
             <TouchableOpacity
-              style={styles.modalAddButton}
+              style={globalStyles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 navigation.navigate("FoodSearch");
               }}
             >
-              <Text style={styles.modalAddButtonText}>Search online</Text>
+              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+                Search online
+              </Text>
             </TouchableOpacity>
 
-            {/* 3. Add custom food */}
             <TouchableOpacity
-              style={styles.modalAddButton}
+              style={globalStyles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 setEditingFoodId(null);
@@ -306,83 +316,77 @@ useEffect(() => {
                 setModalVisible(true);
               }}
             >
-              <Text style={styles.modalAddButtonText}>Add custom food</Text>
+              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+                Add custom food
+              </Text>
             </TouchableOpacity>
 
-            {/* Cancel */}
             <TouchableOpacity
-              style={styles.modalCancelButton}
+              style={globalStyles.mealBuilder_modalCancelButton}
               onPress={() => setChooseModalVisible(false)}
             >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-
+      {/* PRODUCT PICKER MODAL */}
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
-          
-          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
-            Choose a Food
-          </Text>
+          <Text style={globalStyles.header}>Choose a Food</Text>
 
           <TextInput
-            style={styles.searchInput}
+            style={globalStyles.input}
             placeholder="Search products..."
             value={productSearch}
             onChangeText={setProductSearch}
           />
 
-          <View style={{ flex: 1 }}>
-            <FlatList
-              keyboardShouldPersistTaps="handled"
-              data={
-                productSearch.trim() === ""
-                  ? products
-                  : products.filter(p =>
-                      p.name.toLowerCase().includes(productSearch.toLowerCase())
-                    )
-              }
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.productItem}
-                  onPress={() => {
-                    setSelectedProduct(item);
-                    setServingSizeInput("100");
-                    setProductModalVisible(false);
-                    setServingSizeModalVisible(true);
-                  }}
-                >
-                  <Text style={styles.productName}>{item.name}</Text>
-                  <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+          <FlatList
+            keyboardShouldPersistTaps="handled"
+            data={
+              productSearch.trim() === ""
+                ? products
+                : products.filter((p) =>
+                  p.name.toLowerCase().includes(productSearch.toLowerCase())
+                )
+            }
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={globalStyles.mealBuilder_productItem}
+                onPress={() => {
+                  setSelectedProduct(item);
+                  setServingSizeInput("100");
+                  setProductModalVisible(false);
+                  setServingSizeModalVisible(true);
+                }}
+              >
+                <Text style={globalStyles.mealBuilder_productName}>{item.name}</Text>
+                <Text style={globalStyles.mealBuilder_productInfo}>
+                  {item.carbohydrates} carb
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
 
           <TouchableOpacity onPress={() => setProductModalVisible(false)}>
-            <Text style={{ textAlign: "center", marginTop: 20, color: "gray" }}>
-              Close
-            </Text>
+            <Text style={globalStyles.textSecondary}>Close</Text>
           </TouchableOpacity>
-
         </View>
       </Modal>
 
-      <Modal
-        visible={servingSizeModalVisible}
-        transparent
-        animationType="fade"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>How many grams?</Text>
+      {/* SERVING SIZE MODAL */}
+      <Modal visible={servingSizeModalVisible} transparent animationType="fade">
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalBox}>
+            <Text style={globalStyles.modalTitle}>How many grams?</Text>
 
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               keyboardType="number-pad"
               value={servingSizeInput}
               onChangeText={setServingSizeInput}
@@ -392,61 +396,64 @@ useEffect(() => {
 
             <TouchableOpacity
               style={[
-                styles.modalAddButton,
+                globalStyles.mealBuilder_modalAddButton,
                 !(parseInt(servingSizeInput, 10) > 0) && { opacity: 0.4 },
               ]}
               disabled={!(parseInt(servingSizeInput, 10) > 0)}
               onPress={handleAddWithServingSize}
             >
-              <Text style={styles.modalAddButtonText}>Add</Text>
+              <Text style={globalStyles.mealBuilder_modalAddButtonText}>Add</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.modalCancelButton}
+              style={globalStyles.mealBuilder_modalCancelButton}
               onPress={() => setServingSizeModalVisible(false)}
             >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+      {/* ADD / EDIT CUSTOM FOOD MODAL */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalBox}>
+            <Text style={globalStyles.modalTitle}>
               {editingFoodId ? "Edit Food" : "Add Food"}
             </Text>
 
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               placeholder="Name"
               value={tempName}
               onChangeText={setTempName}
             />
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               placeholder="Energy (kcal)"
               keyboardType="numeric"
               value={tempEnergy}
               onChangeText={setTempEnergy}
             />
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               placeholder="Carbs (g)"
               keyboardType="numeric"
               value={tempCarbs}
               onChangeText={setTempCarbs}
             />
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               placeholder="Protein (g)"
               keyboardType="numeric"
               value={tempProtein}
               onChangeText={setTempProtein}
             />
             <TextInput
-              style={styles.input}
+              style={globalStyles.input}
               placeholder="Fat (g)"
               keyboardType="numeric"
               value={tempFat}
@@ -454,165 +461,28 @@ useEffect(() => {
             />
 
             <TouchableOpacity
-              style={styles.modalAddButton}
+              style={globalStyles.mealBuilder_modalAddButton}
               onPress={addOrEditFood}
             >
-              <Text style={styles.modalAddButtonText}>
+              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
                 {editingFoodId ? "Save" : "Add"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.modalCancelButton}
+              style={globalStyles.mealBuilder_modalCancelButton}
               onPress={() => {
                 setModalVisible(false);
                 setEditingFoodId(null);
               }}
             >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#E5F7FD",
-    padding: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  mealRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  mealButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "#D0EAF7",
-    borderRadius: 8,
-  },
-  mealButtonSelected: {
-    backgroundColor: "#4BA3C3",
-  },
-  mealButtonText: {
-    fontSize: 16,
-  },
-  mealButtonTextSelected: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  addFoodButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  addFoodButtonText: {
-    color: "white",
-    fontSize: 18,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "gray",
-    marginBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: "#009FE3",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: {
-    width: "85%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: "#F0F0F0",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  modalAddButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  modalAddButtonText: {
-    color: "white",
-    fontSize: 16,
-  },
-  modalCancelButton: {
-    alignItems: "center",
-    padding: 10,
-  },
-  modalCancelButtonText: {
-    color: "gray",
-    fontSize: 16,
-  },
-
-  productItem: {
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  productInfo: {
-    fontSize: 14,
-    color: "gray",
-  },
-  searchInput: {
-  backgroundColor: "#fff",
-  padding: 10,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: "#d1d5db",
-  marginBottom: 12,
-  marginTop: 4,
-  fontSize: 16,
-},
-});
