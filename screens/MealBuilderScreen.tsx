@@ -18,6 +18,8 @@ import { FoodItem } from "../types/FoodItem";
 
 import { useRoute, useNavigation } from "@react-navigation/native";
 
+import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
+
 const getDayKey = (date = new Date()) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -79,24 +81,50 @@ export default function MealBuilderScreen() {
     loadProducts();
   }, [authReady]);
 
-useEffect(() => {
-  if (route.params?.addedFood) {
-    const food = route.params.addedFood;
+  useEffect(() => {
+    if (route.params?.addedFood) {
+      const food = route.params.addedFood;
 
-    setSelectedProduct(food);
-    setServingSizeModalVisible(true);
+      setSelectedProduct(food);
+      setServingSizeModalVisible(true);
 
-    navigation.setParams({ addedFood: undefined });
-  }
-}, [route.params?.addedFood]);
+      navigation.setParams({ addedFood: undefined });
+    }
+  }, [route.params?.addedFood]);
 
-useEffect(() => {
-  if (route.params?.customFood) {
-    setModalVisible(true);
-    navigation.setParams({ customFood: undefined });
-  }
-}, [route.params?.customFood]);
+  useEffect(() => {
+    if (route.params?.customFood) {
+      setModalVisible(true);
+      navigation.setParams({ customFood: undefined });
+    }
+  }, [route.params?.customFood]);
 
+  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      const favs = await getFavoriteFoods();
+      setFavoriteFoods(favs);
+    };
+    loadFavorites();
+  }, []);
+
+  const toggleFavorite = async (food: FoodItem) => {
+    console.log("TOGGLE FAVORITE:", food.name, food.id);
+
+    const isFav = favoriteFoods.some(f => f.id === food.id);
+    console.log("  was favorite?", isFav);
+
+    if (isFav) {
+      await removeFavoriteFood(food.id);
+      setFavoriteFoods(prev => [...prev.filter(f => f.id !== food.id)]);
+    } else {
+      await addFavoriteFood(food);
+      setFavoriteFoods(prev => [...prev, food]);
+    }
+
+    console.log("  now favorites:", favoriteFoods.map(f => f.name));
+  };
 
   const startEditingFood = (food: FoodItem) => {
     setTempName(food.name);
@@ -112,7 +140,7 @@ useEffect(() => {
     if (!tempName.trim()) return;
 
     const foodData: FoodItem = {
-      id: editingFoodId ?? Date.now().toString(),
+      id: editingFoodId ?? tempName.toLowerCase().replace(/\s+/g, "-"),
       name: tempName,
       energy: Number(tempEnergy),
       carbohydrates: Number(tempCarbs),
@@ -189,7 +217,7 @@ useEffect(() => {
 
     const scaledFood: FoodItem = {
       ...selectedProduct,
-      id: `${selectedProduct.id}-${Date.now()}`,
+      id: selectedProduct.id,
       servingSize: grams,
       per100g: false,
       energy: scaleValue(selectedProduct.energy, grams),
@@ -203,6 +231,18 @@ useEffect(() => {
     setServingSizeModalVisible(false);
     setSelectedProduct(null);
   };
+
+  const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
+
+  // ⭐ Load a whole favorite meal into MealBuilder
+  useEffect(() => {
+    if (route.params?.favoriteMeal) {
+      setFoods(route.params.favoriteMeal.foods);
+      navigation.setParams({ favoriteMeal: undefined });
+    }
+  }, [route.params?.favoriteMeal]);
+
+  console.log("ROUTES IN MEALBUILDER:", navigation.getState()?.routeNames);
 
   return (
     <View style={styles.container}>
@@ -249,9 +289,13 @@ useEffect(() => {
             data={foods}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => startEditingFood(item)}>
-                <MealCard food={item} onDelete={deleteFood} />
-              </TouchableOpacity>
+              <MealCard
+                food={{ ...item, isFavorite: favoriteFoods.some(f => f.id === item.id) }}
+                onDelete={deleteFood}
+                onToggleFavorite={toggleFavorite}
+                onPress={() => startEditingFood(item)}
+              />
+
             )}
           />
         </>
@@ -280,6 +324,32 @@ useEffect(() => {
             >
               <Text style={styles.modalAddButtonText}>Pick from products</Text>
             </TouchableOpacity>
+
+            {/* 4. Pick from Favorites */}
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={() => {
+                setChooseModalVisible(false);
+                setFavoritesModalVisible(true);
+              }}
+            >
+              <Text style={styles.modalAddButtonText}>Pick from Favorites ⭐</Text>
+            </TouchableOpacity>
+
+            {/* 5. Add from Favorite Meals */}
+            <TouchableOpacity
+              style={styles.modalAddButton}
+              onPress={() => {
+                setChooseModalVisible(false);
+
+                setTimeout(() => {
+                  navigation.navigate("FavoriteMeals");
+                }, 0);
+              }}
+            >
+              <Text style={styles.modalAddButtonText}>Add from Favorite Meals ⭐</Text>
+            </TouchableOpacity>
+
 
             {/* 2. Search online */}
             <TouchableOpacity
@@ -323,7 +393,7 @@ useEffect(() => {
 
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
-          
+
           <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
             Choose a Food
           </Text>
@@ -342,23 +412,34 @@ useEffect(() => {
                 productSearch.trim() === ""
                   ? products
                   : products.filter(p =>
-                      p.name.toLowerCase().includes(productSearch.toLowerCase())
-                    )
+                    p.name.toLowerCase().includes(productSearch.toLowerCase())
+                  )
               }
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.productItem}
-                  onPress={() => {
-                    setSelectedProduct(item);
-                    setServingSizeInput("100");
-                    setProductModalVisible(false);
-                    setServingSizeModalVisible(true);
-                  }}
-                >
-                  <Text style={styles.productName}>{item.name}</Text>
-                  <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
-                </TouchableOpacity>
+                <View style={styles.productItem}>
+
+                  {/* Left side: select product */}
+                  <TouchableOpacity
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      setSelectedProduct(item);
+                      setServingSizeInput("100");
+                      setProductModalVisible(false);
+                      setServingSizeModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.productName}>{item.name}</Text>
+                    <Text style={styles.productInfo}>{item.carbohydrates} carb</Text>
+                  </TouchableOpacity>
+
+                  {/* Right side: favorite star */}
+                  <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                    <Text style={{ fontSize: 22, marginLeft: 10 }}>
+                      {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             />
           </View>
@@ -371,6 +452,65 @@ useEffect(() => {
 
         </View>
       </Modal>
+
+      {/* ⭐ Favorites Modal */}
+      <Modal visible={favoritesModalVisible} animationType="slide">
+        <View style={{ flex: 1, padding: 20 }}>
+
+          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
+            Favorite Foods ⭐
+          </Text>
+
+          {favoriteFoods.length === 0 && (
+            <Text style={{ color: "gray", marginBottom: 20 }}>
+              You have no favorite foods yet.
+            </Text>
+          )}
+
+          {favoriteFoods.map((item) => (
+            <View
+              key={item.id}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                padding: 12,
+                backgroundColor: "#fff",
+                borderRadius: 8,
+                marginBottom: 10,
+              }}
+            >
+              {/* Left side: select food */}
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                onPress={() => {
+                  setSelectedProduct(item);
+                  setServingSizeInput("100");
+                  setFavoritesModalVisible(false);
+                  setServingSizeModalVisible(true);
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
+                <Text style={{ fontSize: 14, color: "gray" }}>
+                  {item.carbohydrates} carb
+                </Text>
+              </TouchableOpacity>
+
+              {/* Right side: remove from favorites */}
+              <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                <Text style={{ fontSize: 22, marginLeft: 10 }}>🗑</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          <TouchableOpacity onPress={() => setFavoritesModalVisible(false)}>
+            <Text style={{ textAlign: "center", marginTop: 20, color: "gray" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+      </Modal>
+
 
       <Modal
         visible={servingSizeModalVisible}
@@ -606,13 +746,13 @@ const styles = StyleSheet.create({
     color: "gray",
   },
   searchInput: {
-  backgroundColor: "#fff",
-  padding: 10,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: "#d1d5db",
-  marginBottom: 12,
-  marginTop: 4,
-  fontSize: 16,
-},
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    marginBottom: 12,
+    marginTop: 4,
+    fontSize: 16,
+  },
 });
