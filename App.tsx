@@ -17,6 +17,7 @@ import AccountSettingsScreen from "./screens/AccountSettingsScreen";
 import { TouchableOpacity } from "react-native"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 import MedicationScreen from "./screens/MedicationScreen"
+import FavoriteMeals from "./screens/FavoriteMeals";
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -122,6 +123,7 @@ export default function App() {
                 }} />
               <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
               <Stack.Screen name="Medications" component={MedicationScreen} options={{ title: "Medications" }} />
+              <Stack.Screen name="FavoriteMeals" component={FavoriteMeals} options={{ title: "Favorite Meals" }} />
             </>
           )}
         </Stack.Navigator>

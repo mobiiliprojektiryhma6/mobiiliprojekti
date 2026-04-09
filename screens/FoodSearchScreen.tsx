@@ -13,6 +13,8 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
+
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
 - FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
@@ -39,12 +41,33 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
           setSelectedItem(item); // auto-expand its detail card
           navigation.setParams({ scannedProduct: undefined }); // clean up so it does not trigger again
     */
+    const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+    useEffect(() => {
+        const loadFavorites = async () => {
+            const favs = await getFavoriteFoods();
+            setFavoriteFoods(favs);
+        };
+        loadFavorites();
+    }, []);
+
+    const toggleFavorite = async (food: FoodItem) => {
+        const isFav = favoriteFoods.some(f => f.id === food.id);
+
+        if (isFav) {
+            await removeFavoriteFood(food.id);
+            setFavoriteFoods(prev => prev.filter(f => f.id !== food.id));
+        } else {
+            await addFavoriteFood(food);
+            setFavoriteFoods(prev => [...prev, food]);
+        }
+    };
 
     useEffect(() => {
         if (route.params?.scannedProduct) {
             const p = route.params.scannedProduct;
             const item: FoodItem = {
-                id: p.barcode || String(Math.random()),
+                id: p.barcode || p.name.toLowerCase().replace(/\s+/g, "-"),
                 name: p.name,
                 energy: p.energy,
                 carbohydrates: p.carbohydrates,
@@ -183,7 +206,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                         .map((p: any) => {
                             const n = p.nutriments || {};
                             return {
-                                id: p.code || String(Math.random()),
+                                id: p.code || p.product_name.toLowerCase().replace(/\s+/g, "-"),
                                 name: p.product_name,
                                 energy: Math.round(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? 0),
                                 carbohydrates:
@@ -274,77 +297,100 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const renderFoodItem = (item: FoodItem, source: string) => {
         const isSelected = selectedItem?.id === item.id;
 
-        return (
-            <View key={`${source}-${item.id}`}>
-                {!isSelected && (
-                    <TouchableOpacity
-                        style={styles.resultItem}
-                        onPress={() => handleSelect(item)}
-                    >
+        // COMPACT VIEW (not selected)
+        if (!isSelected) {
+            return (
+                <View key={`${source}-${item.id}`} style={styles.resultItem}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => handleSelect(item)}>
                         <Text style={styles.resultName}>{item.name}</Text>
                         <Text style={styles.resultDetail}>
                             {item.energy} kcal | Carbs {item.carbohydrates}g | Protein {item.protein}g | Fat {item.fat}g
                         </Text>
                     </TouchableOpacity>
-                )}
 
-                {isSelected && (
-                    <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
-                        <View style={styles.detailCard}>
+                    {/* ⭐ Favorite toggle */}
+                    <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                        <Text style={{ fontSize: 22, marginLeft: 10 }}>
+                            {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
 
-                            {/* Header */}
-                            <View style={styles.detailHeader}>
-                                <View style={styles.detailHeaderLeft}>
-                                    <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
-                                    <Text style={styles.detailPerNote}>per 100 g</Text>
-                                </View>
+        // EXPANDED VIEW (selected)
+        return (
+            <View key={`${source}-${item.id}`} style={{ position: "relative" }}>
+
+                {/* Card press area */}
+                <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
+                    <View style={styles.detailCard}>
+
+                        {/* Header */}
+                        <View style={styles.detailHeader}>
+                            <View style={styles.detailHeaderLeft}>
+                                <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
+                                <Text style={styles.detailPerNote}>per 100 g</Text>
+                            </View>
+
+                            <View style={styles.detailHeaderRight}>
                                 <View style={styles.detailEnergyBadge}>
                                     <Text style={styles.detailEnergyValue}>{item.energy}</Text>
                                     <Text style={styles.detailEnergyUnit}>kcal</Text>
                                 </View>
+
+                                <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                                    <Text style={styles.starIcon}>
+                                        {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
-
-                            {/* Divider */}
-                            <View style={styles.detailDivider} />
-
-                            {/* Nutrient rows */}
-                            {[
-                                { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
-                                { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
-                                { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
-                            ].map(({ label, value, unit, color, ref }) => (
-                                <View key={label} style={styles.detailNutrientBlock}>
-                                    <View style={styles.detailNutrientRow}>
-                                        <View style={[styles.detailDot, { backgroundColor: color }]} />
-                                        <Text style={styles.detailNutrientLabel}>{label}</Text>
-                                        <Text style={styles.detailNutrientValue}>
-                                            {value}
-                                            <Text style={styles.detailNutrientUnit}> {unit}</Text>
-                                        </Text>
-                                    </View>
-                                    <View style={styles.detailBarTrack}>
-                                        <View style={[
-                                            styles.detailBarFill,
-                                            { width: `${Math.min((value / ref) * 100, 100)}%`, backgroundColor: color }
-                                        ]} />
-                                    </View>
-                                </View>
-                            ))}
-
-                            {/* Add button */}
-                            <TouchableOpacity
-                                style={styles.addButton}
-                                activeOpacity={0.8}
-                                onPress={() => handleAddFood(item)}
-                            >
-                                <Text style={styles.addButtonText}>
-                                    {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
-                                </Text>
-                            </TouchableOpacity>
-
                         </View>
-                    </TouchableOpacity>
-                )}
+
+
+                        {/* Divider */}
+                        <View style={styles.detailDivider} />
+
+                        {/* Nutrients */}
+                        {[
+                            { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
+                            { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
+                            { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
+                        ].map(({ label, value, unit, color, ref }) => (
+                            <View key={label} style={styles.detailNutrientBlock}>
+                                <View style={styles.detailNutrientRow}>
+                                    <View style={[styles.detailDot, { backgroundColor: color }]} />
+                                    <Text style={styles.detailNutrientLabel}>{label}</Text>
+                                    <Text style={styles.detailNutrientValue}>
+                                        {value}
+                                        <Text style={styles.detailNutrientUnit}> {unit}</Text>
+                                    </Text>
+                                </View>
+                                <View style={styles.detailBarTrack}>
+                                    <View
+                                        style={[
+                                            styles.detailBarFill,
+                                            { width: `${Math.min((value / ref) * 100, 100)}%`, backgroundColor: color },
+                                        ]}
+                                    />
+                                </View>
+                            </View>
+                        ))}
+
+                        {/* Add button */}
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            activeOpacity={0.8}
+                            onPress={() => handleAddFood(item)}
+                        >
+                            <Text style={styles.addButtonText}>
+                                {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
+                            </Text>
+                        </TouchableOpacity>
+
+                    </View>
+                </TouchableOpacity>
+
             </View>
         );
     };
@@ -741,5 +787,15 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         letterSpacing: 0.3,
     },
+    detailHeaderRight: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+starIcon: {
+  fontSize: 24,
+  marginLeft: 10,
+  marginTop: 2, // tiny vertical alignment tweak
+},
 
 });
