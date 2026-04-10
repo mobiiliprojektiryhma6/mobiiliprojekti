@@ -106,7 +106,6 @@ export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: 
         </View>
       </TouchableOpacity>
 
-      {/* ⭐ Favorite toggle — OUTSIDE the card press area */}
       <TouchableOpacity
         style={styles.favoriteButton}
         onPress={() => onToggleFavorite(food)}
@@ -126,6 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginHorizontal: 2,
     padding: 16,
+    paddingRight: 48,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
