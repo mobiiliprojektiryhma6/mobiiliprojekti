@@ -6,6 +6,8 @@ import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import EditFood from "./EditFood";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { getFavoriteFoods } from "../firebase/favorites";
+import { addFavoriteMeal, removeFavoriteMeal, getFavoriteMeals } from "../firebase/favoriteMeals";
 
 type Meal = {
   id: string;
@@ -96,6 +98,26 @@ export default function DiaryMealCard({ meal, index }: Props) {
     });
   };
 
+  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      const favs = await getFavoriteFoods();
+      setFavoriteFoods(favs);
+    };
+    loadFavorites();
+  }, []);
+
+  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const favs = await getFavoriteMeals();
+      setFavoriteMeals(favs);
+    };
+    load();
+  }, []);
+
   // Replacement from FoodSearch
   useEffect(() => {
     const params = route.params;
@@ -141,10 +163,31 @@ export default function DiaryMealCard({ meal, index }: Props) {
         style={styles.card}
       >
         <View style={styles.header}>
-          <Text style={styles.headerText}>
-            {meal.mealType} #{index}
-          </Text>
 
+          {/* Group meal title + star together */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.headerText}>
+              {meal.mealType} #{index}
+            </Text>
+
+            <TouchableOpacity
+              onPress={async () => {
+                if (favoriteMeals.some(m => m.id === meal.id)) {
+                  await removeFavoriteMeal(meal.id);
+                } else {
+                  await addFavoriteMeal(meal);
+                }
+                const favs = await getFavoriteMeals();
+                setFavoriteMeals(favs);
+              }}
+            >
+              <Text style={{ fontSize: 22, marginLeft: 8 }}>
+                {favoriteMeals.some(m => m.id === meal.id) ? "⭐" : "☆"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Right side: carbs + time */}
           <View style={{ alignItems: "flex-end" }}>
             <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
             <Text style={styles.timeText}>{timeString}</Text>
@@ -156,17 +199,28 @@ export default function DiaryMealCard({ meal, index }: Props) {
         {expanded && (
           <View style={styles.body}>
             <View style={styles.section}>
-              {meal.foods.map((food) => (
-                <View key={food.id} style={styles.foodRow}>
-                  <Text style={styles.foodName}>
-                    {food.name}
-                    {food.servingSize ? ` (${food.servingSize} g)` : ""}
-                  </Text>
-                  <Text style={styles.foodCarbs}>
-                    {food.carbohydrates.toFixed(1)} g
-                  </Text>
-                </View>
-              ))}
+              {meal.foods.map((food) => {
+                const baseName = food.name.split("(")[0].trim().toLowerCase();
+
+                const isFavorite = favoriteFoods.some(f =>
+                  f.id === food.id ||
+                  f.name.toLowerCase() === baseName
+                );
+
+                return (
+                  <View key={food.id} style={styles.foodRow}>
+                    <Text style={styles.foodName}>
+                      {isFavorite ? "⭐ " : ""}
+                      {food.name}
+                      {food.servingSize ? ` (${food.servingSize} g)` : ""}
+                    </Text>
+
+                    <Text style={styles.foodCarbs}>
+                      {food.carbohydrates.toFixed(1)} g
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.section}>

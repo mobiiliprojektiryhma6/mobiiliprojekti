@@ -12,4 +12,6 @@ export interface FoodItem {
   barcode?: string;
   category?: string;
   notes?: string;
+
+  isFavorite?: boolean;
 }

@@ -5,6 +5,8 @@ import { FoodItem } from "../types/FoodItem";
 type Props = {
   food: FoodItem;
   onDelete: (foodId: string) => void;
+  onToggleFavorite: (food: FoodItem) => void;
+  onPress?: () => void;
 };
 
 type NutrientRowProps = {
@@ -38,61 +40,79 @@ function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowP
   );
 }
 
-export default function MealCard({ food, onDelete }: Props) {
-  // Rough daily reference values for bar scaling (per 100g context)
+export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: Props) {
   const refValues = { carbs: 130, protein: 50, fat: 78 };
 
   return (
-    <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.name} numberOfLines={2}>
-            {food.name}
-          </Text>
-          <Text style={styles.perServing}>per 100 g</Text>
+    <View style={styles.cardWrapper}>
+      {/* Whole card press */}
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+        <View style={styles.card}>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.name} numberOfLines={2}>
+                {food.isFavorite ? "⭐ " : ""}
+                {food.name}
+              </Text>
+              <Text style={styles.perServing}>per 100 g</Text>
+            </View>
+
+            {/* Energy badge */}
+            <View style={styles.energyBadge}>
+              <Text style={styles.energyValue}>{food.energy}</Text>
+              <Text style={styles.energyUnit}>kcal</Text>
+            </View>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Nutrients */}
+          <View style={styles.nutrients}>
+            <NutrientRow
+              label="Carbs"
+              value={food.carbohydrates}
+              unit="g"
+              color="#E67E22"
+              barPercent={(food.carbohydrates / refValues.carbs) * 100}
+            />
+            <NutrientRow
+              label="Protein"
+              value={food.protein}
+              unit="g"
+              color="#2980B9"
+              barPercent={(food.protein / refValues.protein) * 100}
+            />
+            <NutrientRow
+              label="Fat"
+              value={food.fat}
+              unit="g"
+              color="#27AE60"
+              barPercent={(food.fat / refValues.fat) * 100}
+            />
+          </View>
+
+          {/* Delete button */}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => onDelete(food.id!)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.deleteText}>Remove</Text>
+          </TouchableOpacity>
+
         </View>
-        <View style={styles.energyBadge}>
-          <Text style={styles.energyValue}>{food.energy}</Text>
-          <Text style={styles.energyUnit}>kcal</Text>
-        </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Nutrients */}
-      <View style={styles.nutrients}>
-        <NutrientRow
-          label="Carbs"
-          value={food.carbohydrates}
-          unit="g"
-          color="#E67E22"
-          barPercent={(food.carbohydrates / refValues.carbs) * 100}
-        />
-        <NutrientRow
-          label="Protein"
-          value={food.protein}
-          unit="g"
-          color="#2980B9"
-          barPercent={(food.protein / refValues.protein) * 100}
-        />
-        <NutrientRow
-          label="Fat"
-          value={food.fat}
-          unit="g"
-          color="#27AE60"
-          barPercent={(food.fat / refValues.fat) * 100}
-        />
-      </View>
-
-      {/* Delete button */}
       <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => onDelete(food.id!)}
-        activeOpacity={0.7}
+        style={styles.favoriteButton}
+        onPress={() => onToggleFavorite(food)}
       >
-        <Text style={styles.deleteText}>Remove</Text>
+        <Text style={{ fontSize: 22 }}>
+          {food.isFavorite ? "⭐" : "☆"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -105,6 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginHorizontal: 2,
     padding: 16,
+    paddingRight: 48,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
@@ -112,7 +133,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -160,14 +180,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Divider
   divider: {
     height: 1,
     backgroundColor: "#F0F0F0",
     marginBottom: 14,
   },
 
-  // Nutrients
   nutrients: {
     gap: 10,
     marginBottom: 16,
@@ -215,7 +233,6 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
 
-  // Delete button
   deleteButton: {
     borderWidth: 1,
     borderColor: "#FFD6D6",
@@ -229,5 +246,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#E74C3C",
     letterSpacing: 0.3,
+  },
+
+  cardWrapper: {
+    position: "relative",
+  },
+  favoriteButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
   },
 });
