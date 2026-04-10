@@ -24,9 +24,12 @@ export default function FavoriteFoodsScreen() {
 
 const selectFood = (food: FoodItem) => {
     if (returnTo === "MealBuilder") {
-        navigation.navigate("MealBuilder", {
-            selectedFavoriteFood: food
-        });
+        navigation.goBack();   
+        setTimeout(() => {
+            navigation.navigate("MealBuilder", {
+                selectedFavoriteFood: food
+            });
+        }, 0);
     } else {
         navigation.navigate("FoodDiary", {
             selectedFavoriteFood: food,
@@ -35,6 +38,7 @@ const selectFood = (food: FoodItem) => {
         });
     }
 };
+
 
     const deleteFavorite = async (food: FoodItem) => {
         await removeFavoriteFood(food.id);
