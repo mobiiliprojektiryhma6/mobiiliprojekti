@@ -152,7 +152,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
       <Modal transparent animationType="fade">
         <View style={styles.overlay}>
           <View style={[styles.modal, mode === "products" && styles.productModal]}>
-            {/* --- Step 1: Choose edit method --- */}
+            
             {mode === "choose" && (
               <>
                 <Text style={styles.title}>Edit Food</Text>
@@ -185,12 +185,11 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                   <Text style={styles.optionText}>Pick from products</Text>
                 </TouchableOpacity>
 
-                {/* ⭐ NEW BUTTON — Pick from Favorites */}
                 <TouchableOpacity
                   style={styles.optionButton}
                   onPress={() => {
                     onClose();
-                    navigation.navigate("FavoriteMeals", {
+                    navigation.navigate("FavoriteFoods", {
                       editingFoodId: food.id,
                       mealId: meal.id,
                       returnTo: "EditFood",
@@ -207,8 +206,6 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
               </>
             )}
 
-
-            {/* --- Step 2: Manual edit --- */}
             {mode === "manual" && (
               <>
                 <Text style={styles.title}>Edit Food Manually</Text>

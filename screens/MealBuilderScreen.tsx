@@ -234,7 +234,7 @@ export default function MealBuilderScreen() {
 
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
 
-  // ⭐ Load a whole favorite meal into MealBuilder
+  // Load a whole favorite meal into MealBuilder
   useEffect(() => {
     if (route.params?.favoriteMeal) {
       setFoods(route.params.favoriteMeal.foods);
@@ -242,7 +242,18 @@ export default function MealBuilderScreen() {
     }
   }, [route.params?.favoriteMeal]);
 
-  console.log("ROUTES IN MEALBUILDER:", navigation.getState()?.routeNames);
+  
+  useEffect(() => {
+  if (route.params?.selectedFavoriteFood) {
+    const food = route.params.selectedFavoriteFood;
+
+    setSelectedProduct(food);
+    setServingSizeInput("100");
+    setServingSizeModalVisible(true);
+
+    navigation.setParams({ selectedFavoriteFood: undefined });
+  }
+}, [route.params?.selectedFavoriteFood]);
 
   return (
     <View style={styles.container}>
@@ -325,18 +336,18 @@ export default function MealBuilderScreen() {
               <Text style={styles.modalAddButtonText}>Pick from products</Text>
             </TouchableOpacity>
 
-            {/* 4. Pick from Favorites */}
+            {/* Pick from Favorites */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
-                setFavoritesModalVisible(true);
+                navigation.navigate("FavoriteFoods", { returnTo: "MealBuilder" });
               }}
             >
               <Text style={styles.modalAddButtonText}>Pick from Favorites ⭐</Text>
             </TouchableOpacity>
 
-            {/* 5. Add from Favorite Meals */}
+            {/* Add from Favorite Meals */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
@@ -351,7 +362,7 @@ export default function MealBuilderScreen() {
             </TouchableOpacity>
 
 
-            {/* 2. Search online */}
+            {/* Search online */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
@@ -362,7 +373,7 @@ export default function MealBuilderScreen() {
               <Text style={styles.modalAddButtonText}>Search online</Text>
             </TouchableOpacity>
 
-            {/* 3. Add custom food */}
+            {/* Add custom food */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
@@ -453,7 +464,7 @@ export default function MealBuilderScreen() {
         </View>
       </Modal>
 
-      {/* ⭐ Favorites Modal */}
+      {/* Favorites Modal */}
       <Modal visible={favoritesModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
 
@@ -479,7 +490,7 @@ export default function MealBuilderScreen() {
                 marginBottom: 10,
               }}
             >
-              {/* Left side: select food */}
+              {/* select food */}
               <TouchableOpacity
                 style={{ flex: 1 }}
                 onPress={() => {
@@ -495,7 +506,7 @@ export default function MealBuilderScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Right side: remove from favorites */}
+              {/* remove from favorites */}
               <TouchableOpacity onPress={() => toggleFavorite(item)}>
                 <Text style={{ fontSize: 22, marginLeft: 10 }}>🗑</Text>
               </TouchableOpacity>
