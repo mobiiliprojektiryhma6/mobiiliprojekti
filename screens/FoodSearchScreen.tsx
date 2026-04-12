@@ -13,6 +13,8 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import NutritionCircle from "../components/NutritionalCircle";
+import { saveProductsToFirestore } from "../src/utils/productCache";
 import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
 
 
@@ -174,6 +176,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             return;
         }
 
+        // Skip API call if we already have enough local results
+        if (localBest.length >= 3) {
+            setApiResults([]);
+            setApiLoading(false);
+            return;
+        }
+
         setApiLoading(true);
 
         debounceRef.current = setTimeout(async () => {
@@ -217,6 +226,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             };
                         });
                     setApiResults(items);
+                    // Cache new products to Firestore for future searches
+                    saveProductsToFirestore(items).catch(console.error);
                 } else {
                     setApiResults([]);
                 }
@@ -231,7 +242,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchTrigger]);
+    }, [searchTrigger, localBest.length]);
 
     const hasLocal = localBest.length > 0 || localSimilar.length > 0;
     const hasAny = hasLocal || apiResults.length > 0;
@@ -318,6 +329,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             );
         }
 
+                            {/* Header */}
+                            <View style={styles.detailHeader}>
+                                <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
+                                <Text style={styles.detailPerNote}>per 100 g</Text>
+        
         // EXPANDED VIEW (selected)
         return (
             <View key={`${source}-${item.id}`} style={{ position: "relative" }}>
@@ -347,6 +363,35 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
                         </View>
 
+
+                            {/* Divider */}
+                            <View style={styles.detailDivider} />
+
+                            {/* Nutrition circle - PieGram <3 */}
+                            <NutritionCircle
+                                carbs={item.carbohydrates}
+                                protein={item.protein}
+                                fat={item.fat}
+                                calories={item.energy}
+                            />
+
+                            {/* Nutrient rows */}
+                            {[
+                                { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
+                                { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
+                                { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
+                            ].map(({ label, value, unit, color, ref }) => (
+                                <View key={label} style={styles.detailNutrientBlock}>
+                                    <View style={styles.detailNutrientRow}>
+                                        <View style={[styles.detailDot, { backgroundColor: color }]} />
+                                        <Text style={styles.detailNutrientLabel}>{label}</Text>
+                                        <Text style={styles.detailNutrientValue}>
+                                            {value}
+                                            <Text style={styles.detailNutrientUnit}> {unit}</Text>
+                                        </Text>
+                                    </View>
+                                    <View style={styles.detailBarTrack}>
+                                        <View style={[
 
                         {/* Divider */}
                         <View style={styles.detailDivider} />
@@ -669,6 +714,117 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     detailCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#009FE3",
+    shadowColor: "#009FE3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+},
+detailHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 14,
+},
+detailHeaderLeft: {
+    flex: 1,
+    paddingRight: 12,
+},
+detailName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1A1A2E",
+    letterSpacing: -0.3,
+    marginBottom: 3,
+},
+detailPerNote: {
+    fontSize: 11,
+    color: "#9B9B9B",
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+},
+detailEnergyBadge: {
+    backgroundColor: "#FEECEC",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: "center",
+    minWidth: 64,
+},
+detailEnergyValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#E74C3C",
+    letterSpacing: -0.5,
+},
+detailEnergyUnit: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#E74C3C",
+    opacity: 0.8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+},
+detailDivider: {
+    height: 1,
+    backgroundColor: "#F0F0F0",
+    marginBottom: 14,
+},
+detailNutrientBlock: {
+    marginBottom: 10,
+},
+detailNutrientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+},
+detailDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+},
+detailNutrientLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#555",
+},
+detailNutrientValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A1A2E",
+},
+detailNutrientUnit: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "#9B9B9B",
+},
+detailBarTrack: {
+    height: 4,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 2,
+    marginLeft: 16,
+    overflow: "hidden",
+},
+detailBarFill: {
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.75,
+},
+addButton: {
+    marginTop: 14,
+    backgroundColor: "#009FE3",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
         backgroundColor: "#FFFFFF",
         borderRadius: 16,
         padding: 16,

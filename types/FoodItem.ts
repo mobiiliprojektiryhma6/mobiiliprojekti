@@ -13,5 +13,10 @@ export interface FoodItem {
   category?: string;
   notes?: string;
 
+  nameLower?: string;
+  cachedAt?: number;
+  source?: string;
+
   isFavorite?: boolean;
+
 }

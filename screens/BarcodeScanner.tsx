@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { getProductByBarcode, saveProductsToFirestore } from "../src/utils/productCache";
 
 
 export default function BarcodeScanner({ navigation }: { navigation: any }) {
@@ -24,6 +25,15 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
     setLoading(true);
 
     try {
+      // Check Firestore cache first — skip API if product was previously scanned/searched
+      const cached = await getProductByBarcode(data);
+      if (cached) {
+        console.log("Barcode cache hit:", cached.name);
+        navigation.navigate("FoodSearch", { scannedProduct: cached });
+        return;
+      }
+
+      // Not in cache — call Open Food Facts API
       const url = `https://world.openfoodfacts.net/api/v0/product/${encodeURIComponent(data)}.json`;
       const response = await fetch(url, {
         headers: { "User-Agent": "DiabetesApp/1.0 (school-project)" },
@@ -53,6 +63,12 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
           fat: Math.round((n.fat_100g ?? n.fat ?? 0) * 10) / 10,
           barcode: data,
         };
+        // Save to Firestore cache for future scans
+        saveProductsToFirestore([{
+          id: data,
+          ...scannedProduct,
+        }]).catch(console.error);
+
         navigation.navigate("FoodSearch", { scannedProduct });
       } else {
         alert("Product not found for barcode: " + data);
