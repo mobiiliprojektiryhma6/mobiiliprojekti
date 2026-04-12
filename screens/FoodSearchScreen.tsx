@@ -5,6 +5,7 @@ import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
 import NutritionCircle from "../components/NutritionalCircle";
+import { saveProductsToFirestore } from "../src/utils/productCache";
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
 - FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
@@ -136,6 +137,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             return;
         }
 
+        // Skip API call if we already have enough local results
+        if (localBest.length >= 3) {
+            setApiResults([]);
+            setApiLoading(false);
+            return;
+        }
+
         setApiLoading(true);
 
         debounceRef.current = setTimeout(async () => {
@@ -179,6 +187,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             };
                         });
                     setApiResults(items);
+                    // Cache new products to Firestore for future searches
+                    saveProductsToFirestore(items).catch(console.error);
                 } else {
                     setApiResults([]);
                 }
@@ -193,7 +203,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchTrigger]);
+    }, [searchTrigger, localBest.length]);
 
     const hasLocal = localBest.length > 0 || localSimilar.length > 0;
     const hasAny = hasLocal || apiResults.length > 0;
@@ -235,14 +245,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                             {/* Header */}
                             <View style={styles.detailHeader}>
-                                <View style={styles.detailHeaderLeft}>
-                                    <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
-                                    <Text style={styles.detailPerNote}>per 100 g</Text>
-                                </View>
-                                <View style={styles.detailEnergyBadge}>
-                                    <Text style={styles.detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={styles.detailEnergyUnit}>kcal</Text>
-                                </View>
+                                <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
+                                <Text style={styles.detailPerNote}>per 100 g</Text>
                             </View>
 
                             {/* Divider */}
@@ -502,7 +506,7 @@ detailPerNote: {
     letterSpacing: 0.5,
 },
 detailEnergyBadge: {
-    backgroundColor: "#FFF3E0",
+    backgroundColor: "#FEECEC",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -512,13 +516,13 @@ detailEnergyBadge: {
 detailEnergyValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#E67E22",
+    color: "#E74C3C",
     letterSpacing: -0.5,
 },
 detailEnergyUnit: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#E67E22",
+    color: "#E74C3C",
     opacity: 0.8,
     textTransform: "uppercase",
     letterSpacing: 0.5,

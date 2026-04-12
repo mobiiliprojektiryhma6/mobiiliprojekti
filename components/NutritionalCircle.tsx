@@ -18,6 +18,7 @@ export default function NutritionCircle({ carbs, protein, fat, calories }: Props
     const circumference = 2 * Math.PI * radius;
 
     const total = carbs + protein + fat;
+    const totalRounded = Math.round(total * 10) / 10;
 
     const segments =
         total > 0
@@ -61,12 +62,12 @@ export default function NutritionCircle({ carbs, protein, fat, calories }: Props
                 </G>
                 <SvgText
                     x={cx}
-                    y={cy - 2}
+                    y={cy - 4}
                     textAnchor="middle"
                     alignmentBaseline="middle"
-                    fontSize={18}
-                    fontWeight="bold"
-                    fill="#1A1A2E"
+                    fontSize={22}
+                    fontWeight="800"
+                    fill="#E74C3C"
                 >
                     {calories}
                 </SvgText>
@@ -75,10 +76,12 @@ export default function NutritionCircle({ carbs, protein, fat, calories }: Props
                     y={cy + 16}
                     textAnchor="middle"
                     alignmentBaseline="middle"
-                    fontSize={12}
-                    fill="#777"
+                    fontSize={11}
+                    fontWeight="600"
+                    fill="#E74C3C"
+                    opacity={0.8}
                 >
-                    kcal
+                    KCAL
                 </SvgText>
             </Svg>
         </View>
