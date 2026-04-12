@@ -13,11 +13,13 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import NutritionCircle from "../components/NutritionalCircle";
+import { saveProductsToFirestore } from "../src/utils/productCache";
 import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
 
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
-- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
+- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner.
 - BarcodeScanner: camera page  where users can scan a product's barcode to look its nutritional info. After scanning the product data is sent back to FoodSearchScreen
 
 1. FoodSearchScreen - User taps camera button -> BarcodeScanner (navigation.navigate("Scanner"))
@@ -115,11 +117,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         loadProducts();
     }, []);
 
-    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"                                                                                                                                                                                                                                       
-      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)                                                                                                                                                                          
-      - Starts with?     "chocolate".startsWith("ch")  → also "best"                                                                                                                                                                                         
-      - Contains?        "white chocolate".includes("ch") → goes to "similar" list                                                                                                                                                                           
-      - No match?        → doesn't show 
+    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"
+      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)
+      - Starts with?     "chocolate".startsWith("ch")  → also "best"
+      - Contains?        "white chocolate".includes("ch") → goes to "similar" list
+      - No match?        → doesn't show
   Fast because product is loaded in memory -> no network call needed
     */
     useEffect(() => {
@@ -151,14 +153,14 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     }, [query, products]);
 
     /* Debounced Open Food Facts API search - At the same time the app searched Open Food Facts online DB but with 300ms delay (debounce)
-    - User types "c"     → timer starts (300ms)                                                                                                                                                                                                                
-    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User stops typing  → 300ms passes → API call fires for "cho" 
-    
+    - User types "c"     → timer starts (300ms)
+    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)
+    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)
+    - User stops typing  → 300ms passes → API call fires for "cho"
+
     Why debounce? Without it, the app would make an API call for every single keystroke (c, ch, cho, ...) = Wasteful and slow
     The debounce waits until the user pauses typing, then makes one call
-  
+
     The API returns data (calories, carbs, protein, and fat per 100 g and it is displayed in the results)
     */
     useEffect(() => {
@@ -169,6 +171,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         const q = searchTrigger;
 
         if (q.trim().length < 2) {
+            setApiResults([]);
+            setApiLoading(false);
+            return;
+        }
+
+        // Skip API call if we already have enough local results
+        if (localBest.length >= 3) {
             setApiResults([]);
             setApiLoading(false);
             return;
@@ -217,6 +226,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             };
                         });
                     setApiResults(items);
+                    // Cache new products to Firestore for future searches
+                    saveProductsToFirestore(items).catch(console.error);
                 } else {
                     setApiResults([]);
                 }
@@ -231,7 +242,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchTrigger]);
+    }, [searchTrigger, localBest.length]);
 
     const hasLocal = localBest.length > 0 || localSimilar.length > 0;
     const hasAny = hasLocal || apiResults.length > 0;
@@ -246,7 +257,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         if (selectedItem?.id === item.id) {
             setSelectedItem(null); // already selected -> close it
         } else {
-            setSelectedItem(item); // select and expand 
+            setSelectedItem(item); // select and expand
         }
     };
 
@@ -308,7 +319,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* ⭐ Favorite toggle */}
+                    {/* Favorite toggle */}
                     <TouchableOpacity onPress={() => toggleFavorite(item)}>
                         <Text style={{ fontSize: 22, marginLeft: 10 }}>
                             {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
@@ -321,8 +332,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         // EXPANDED VIEW (selected)
         return (
             <View key={`${source}-${item.id}`} style={{ position: "relative" }}>
-
-                {/* Card press area */}
                 <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
                     <View style={styles.detailCard}>
 
@@ -334,11 +343,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
 
                             <View style={styles.detailHeaderRight}>
-                                <View style={styles.detailEnergyBadge}>
-                                    <Text style={styles.detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={styles.detailEnergyUnit}>kcal</Text>
-                                </View>
-
                                 <TouchableOpacity onPress={() => toggleFavorite(item)}>
                                     <Text style={styles.starIcon}>
                                         {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
@@ -347,9 +351,16 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
                         </View>
 
-
                         {/* Divider */}
                         <View style={styles.detailDivider} />
+
+                        {/* Nutrition circle */}
+                        <NutritionCircle
+                            carbs={item.carbohydrates}
+                            protein={item.protein}
+                            fat={item.fat}
+                            calories={item.energy}
+                        />
 
                         {/* Nutrients */}
                         {[
@@ -390,7 +401,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                     </View>
                 </TouchableOpacity>
-
             </View>
         );
     };
@@ -556,12 +566,8 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         borderWidth: 1,
         borderColor: "#ddd",
-    },
-    resultItemSelected: {
-        borderColor: "#009FE3",
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        marginBottom: 0,
+        flexDirection: "row",
+        alignItems: "center",
     },
     resultName: {
         fontSize: 15,
@@ -571,27 +577,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: "#666",
         marginTop: 2,
-    },
-    nutrientRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
-    nutrientLabel: {
-        fontSize: 16,
-        color: "#333",
-    },
-    nutrientValue: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    perNote: {
-        marginTop: 10,
-        fontSize: 13,
-        color: "#999",
-        textAlign: "right",
     },
     loadingRow: {
         flexDirection: "row",
@@ -691,6 +676,10 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingRight: 12,
     },
+    detailHeaderRight: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
     detailName: {
         fontSize: 17,
         fontWeight: "700",
@@ -702,28 +691,6 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: "#9B9B9B",
         fontWeight: "500",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    detailEnergyBadge: {
-        backgroundColor: "#FFF3E0",
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        alignItems: "center",
-        minWidth: 64,
-    },
-    detailEnergyValue: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#E67E22",
-        letterSpacing: -0.5,
-    },
-    detailEnergyUnit: {
-        fontSize: 11,
-        fontWeight: "600",
-        color: "#E67E22",
-        opacity: 0.8,
         textTransform: "uppercase",
         letterSpacing: 0.5,
     },
@@ -787,15 +754,9 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         letterSpacing: 0.3,
     },
-    detailHeaderRight: {
-  flexDirection: "row",
-  alignItems: "center",
-},
-
-starIcon: {
-  fontSize: 24,
-  marginLeft: 10,
-  marginTop: 2, // tiny vertical alignment tweak
-},
-
+    starIcon: {
+        fontSize: 24,
+        marginLeft: 10,
+        marginTop: 2,
+    },
 });
