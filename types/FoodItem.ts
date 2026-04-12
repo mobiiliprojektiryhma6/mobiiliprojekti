@@ -12,7 +12,11 @@ export interface FoodItem {
   barcode?: string;
   category?: string;
   notes?: string;
+
   nameLower?: string;
   cachedAt?: number;
   source?: string;
+
+  isFavorite?: boolean;
+
 }

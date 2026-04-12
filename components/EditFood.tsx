@@ -50,10 +50,12 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
   const navigation = useNavigation<any>();
 
   const [products, setProducts] = useState<FoodItem[]>([]);
-  const [productPickerVisible, setProductPickerVisible] = useState(false);
   const [productSearch, setProductSearch] = useState("");
+  const [pendingProduct, setPendingProduct] = useState<FoodItem | null>(null);
+  const [productServingSize, setProductServingSize] = useState(String(food.servingSize || 100));
+  const [amountPopupVisible, setAmountPopupVisible] = useState(false);
 
-  const [mode, setMode] = useState<"choose" | "manual">("choose");
+  const [mode, setMode] = useState<"choose" | "manual" | "products">("choose");
 
   const [name, setName] = useState(food.name);
   const [servingSize, setServingSize] = useState("");
@@ -109,12 +111,24 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
   };
 
   // --- Save using a selected product ---
-  const saveFromProduct = async (product: FoodItem) => {
+  const scaleValue = (value: number, grams: number) => {
+    const scaled = value * (grams / 100);
+    return Math.round(scaled * 10) / 10;
+  };
+
+  const saveFromProduct = async (product: FoodItem, grams: number) => {
     if (!user) return;
+    if (!grams || grams <= 0) return;
 
     const updatedFood: FoodItem = {
       ...product,
       id: food.id, // keep same ID
+      servingSize: grams,
+      per100g: false,
+      energy: scaleValue(product.energy, grams),
+      carbohydrates: scaleValue(product.carbohydrates, grams),
+      protein: scaleValue(product.protein, grams),
+      fat: scaleValue(product.fat, grams),
     };
 
     const updatedFoods = meal.foods.map((f) =>
@@ -137,8 +151,8 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
       {/* MAIN EDIT MODAL */}
       <Modal transparent animationType="fade">
         <View style={styles.overlay}>
-          <View style={styles.modal}>
-            {/* --- Step 1: Choose edit method --- */}
+          <View style={[styles.modal, mode === "products" && styles.productModal]}>
+            
             {mode === "choose" && (
               <>
                 <Text style={styles.title}>Edit Food</Text>
@@ -166,9 +180,24 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
                 <TouchableOpacity
                   style={styles.optionButton}
-                  onPress={() => setProductPickerVisible(true)}
+                  onPress={() => setMode("products")}
                 >
                   <Text style={styles.optionText}>Pick from products</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => {
+                    onClose();
+                    navigation.navigate("FavoriteFoods", {
+                      editingFoodId: food.id,
+                      mealId: meal.id,
+                      returnTo: "EditFood",
+                    });
+
+                  }}
+                >
+                  <Text style={styles.optionText}>Pick from Favorites ⭐</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
@@ -177,7 +206,6 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
               </>
             )}
 
-            {/* --- Step 2: Manual edit --- */}
             {mode === "manual" && (
               <>
                 <Text style={styles.title}>Edit Food Manually</Text>
@@ -237,62 +265,108 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                 </View>
               </>
             )}
-          </View>
-        </View>
-      </Modal>
 
-      {/* PRODUCT PICKER MODAL */}
-      <Modal visible={productPickerVisible} animationType="slide">
-        <View style={{ flex: 1, padding: 20 }}>
-          <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
-            Choose a Food
-          </Text>
+            {mode === "products" && (
+              <>
+                <Text style={styles.productTitle}>Choose a Food</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Search products..."
-            value={productSearch}
-            onChangeText={setProductSearch}
-          />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search products..."
+                  value={productSearch}
+                  onChangeText={setProductSearch}
+                  autoFocus
+                />
 
-          <FlatList
-            data={
-              productSearch.trim() === ""
-                ? products
-                : products.filter((p) =>
-                    p.name.toLowerCase().includes(productSearch.toLowerCase())
-                  )
-            }
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productItem}
-                onPress={() => {
-                  saveFromProduct(item);
-                  setProductPickerVisible(false);
-                }}
-              >
-                <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productInfo}>
-                  {item.carbohydrates} g carbs
-                </Text>
-              </TouchableOpacity>
+                <FlatList
+                  data={
+                    productSearch.trim() === ""
+                      ? products
+                      : products.filter((p) =>
+                        p.name.toLowerCase().includes(productSearch.toLowerCase())
+                      )
+                  }
+                  keyboardShouldPersistTaps="handled"
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.productItem}
+                      onPress={() => {
+                        setPendingProduct(item);
+                        setProductServingSize(String(food.servingSize || 100));
+                        setAmountPopupVisible(true);
+                      }}
+                    >
+                      <Text style={styles.productName}>{item.name}</Text>
+                      <Text style={styles.productInfo}>
+                        {item.carbohydrates} g carbs
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.productsList}
+                />
+
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.modalCancelButton}
+                    onPress={() => {
+                      setAmountPopupVisible(false);
+                      setPendingProduct(null);
+                      setMode("choose");
+                    }}
+                  >
+                    <Text style={styles.modalCancelButtonText}>Back</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalCancelButton}
+                    onPress={() => {
+                      setAmountPopupVisible(false);
+                      setPendingProduct(null);
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.modalCancelButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {amountPopupVisible && pendingProduct && (
+                  <View style={styles.amountOverlay}>
+                    <View style={styles.amountPopup}>
+                      <Text style={styles.title}>How many grams?</Text>
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={productServingSize}
+                        onChangeText={setProductServingSize}
+                        autoFocus
+                        selectTextOnFocus
+                      />
+
+                      <TouchableOpacity
+                        style={[
+                          styles.optionButton,
+                          !(parseInt(productServingSize, 10) > 0) && { opacity: 0.4 },
+                        ]}
+                        disabled={!(parseInt(productServingSize, 10) > 0)}
+                        onPress={() => saveFromProduct(pendingProduct, parseInt(productServingSize, 10))}
+                      >
+                        <Text style={styles.optionText}>Add</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => setAmountPopupVisible(false)}
+                      >
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </>
             )}
-          />
-
-          <TouchableOpacity
-            style={{
-              padding: 12,
-              backgroundColor: "#e5e7eb",
-              borderRadius: 8,
-              marginTop: 20,
-              alignSelf: "center",
-              width: "50%",
-            }}
-            onPress={() => setProductPickerVisible(false)}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </>
@@ -312,11 +386,20 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
   },
+  productModal: {
+    width: "92%",
+    maxHeight: "88%",
+  },
   title: {
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 16,
     textAlign: "center",
+  },
+  productTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 12,
   },
   optionButton: {
     backgroundColor: "#4BA3C3",
@@ -337,21 +420,60 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   productItem: {
-    padding: 10,
-    backgroundColor: "#f3f4f6",
+    padding: 12,
+    backgroundColor: "#fff",
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   productName: {
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   productInfo: {
+    fontSize: 14,
     color: "gray",
+  },
+  productsList: {
+    maxHeight: 360,
+    marginBottom: 12,
+  },
+  amountOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+  },
+  amountPopup: {
+    width: "85%",
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 12,
+  },
+  searchInput: {
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    marginBottom: 12,
+    marginTop: 4,
+    fontSize: 16,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 14,
     marginTop: 10,
+  },
+  modalCancelButton: {
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  modalCancelButtonText: {
+    color: "gray",
+    fontSize: 16,
   },
   cancelButton: {
     padding: 12,
@@ -365,6 +487,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     flex: 1,
     marginLeft: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cancelText: {
     textAlign: "center",

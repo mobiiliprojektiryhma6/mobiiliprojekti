@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
-import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
 import CarbsPerMealChart from "../components/CarbsPerMealChart";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
+import GramsPopup from "../components/GramsPopup";
 
 type Meal = {
   id: string;
@@ -34,11 +36,65 @@ export default function FoodDiaryScreen() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [targetCarbs, setTargetCarbs] = useState<number | null>(null);
-  const [targetSource, setTargetSource] = useState<"manual" | "recommended" | "missing">("missing");
   const [targetReason, setTargetReason] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(getDayKey());
-  
+
+  const [showGramsPopup, setShowGramsPopup] = useState(false);
+  const [foodToAdjust, setFoodToAdjust] = useState<FoodItem | null>(null);
+
+
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+
+  useEffect(() => {
+    if (route.name !== "FoodDiary") return;
+
+    const selected = route.params?.selectedFavoriteFood;
+    const editingFoodId = route.params?.editingFoodId;
+    const mealId = route.params?.mealId;
+
+    if (!selected || !editingFoodId || !mealId) return;
+
+    if (meals.length === 0) return;
+
+    if (!user) return;
+
+    // Find the meal
+    const mealIndex = meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = meals[mealIndex];
+
+    // Replace the food
+    const updatedFoods = meal.foods.map(f =>
+      f.id === editingFoodId ? selected : f
+    );
+
+    // Recalculate totals
+    const totalCarbs = updatedFoods.reduce((sum, f) => sum + (f.carbohydrates ?? 0), 0);
+    const totalEnergy = updatedFoods.reduce((sum, f) => sum + (f.energy ?? 0), 0);
+    const totalProtein = updatedFoods.reduce((sum, f) => sum + (f.protein ?? 0), 0);
+    const totalFat = updatedFoods.reduce((sum, f) => sum + (f.fat ?? 0), 0);
+
+    // Save to Firestore
+    const mealRef = doc(db, "meals", user.uid, "entries", mealId);
+    updateDoc(mealRef, {
+      foods: updatedFoods,
+      totalCarbohydrates: totalCarbs,
+      totalEnergy,
+      totalProtein,
+      totalFat
+    });
+
+    if (route.name === "FoodDiary") {
+      setFoodToAdjust(selected);
+      setShowGramsPopup(true);
+    }
+
+  }, [route.params, meals, user]);
+
+
   useEffect(() => {
     if (!user) return;
 
@@ -76,7 +132,6 @@ export default function FoodDiaryScreen() {
       });
 
       setTargetCarbs(resolvedTarget.target);
-      setTargetSource(resolvedTarget.source);
       setTargetReason(resolvedTarget.reason ?? null);
     };
 
@@ -92,12 +147,12 @@ export default function FoodDiaryScreen() {
   }
 
   const getCarbStatusColor = (carbs: number, target: number | null) => {
-  if (target === null) return "#999"; 
+    if (target === null) return "#999";
 
-  if (carbs > target) return "#EF4444"; 
-  if (carbs > target * 0.85) return "#FBBF24"; 
-  return "#10B981"; 
-};
+    if (carbs > target) return "#EF4444";
+    if (carbs > target * 0.85) return "#FBBF24";
+    return "#10B981";
+  };
 
 
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -123,24 +178,22 @@ export default function FoodDiaryScreen() {
     { carbs: 0, energy: 0, protein: 0, fat: 0 }
   );
 
- const mealTypeNutrition = mealTypes.reduce((acc, type) => {
-  const mealsOfType = grouped[type];
+  const mealTypeNutrition = mealTypes.reduce((acc, type) => {
+    const mealsOfType = grouped[type];
 
-  const totals = mealsOfType.reduce(
-    (sum, m) => ({
-      carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
-      protein: sum.protein + (m.totalProtein ?? 0),
-      fat: sum.fat + (m.totalFat ?? 0),
-      energy: sum.energy + (m.totalEnergy ?? 0),
-    }),
-    { carbs: 0, protein: 0, fat: 0, energy: 0 }
-  );
+    const totals = mealsOfType.reduce(
+      (sum, m) => ({
+        carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
+        protein: sum.protein + (m.totalProtein ?? 0),
+        fat: sum.fat + (m.totalFat ?? 0),
+        energy: sum.energy + (m.totalEnergy ?? 0),
+      }),
+      { carbs: 0, protein: 0, fat: 0, energy: 0 }
+    );
 
-  acc[type] = totals;
-  return acc;
-}, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
-
-  const remainingCarbs = targetCarbs !== null ? targetCarbs - dailyTotals.carbs : null;
+    acc[type] = totals;
+    return acc;
+  }, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
 
   const goToPreviousDay = () => {
     const d = new Date(selectedDate);
@@ -152,6 +205,57 @@ export default function FoodDiaryScreen() {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + 1);
     setSelectedDate(getDayKey(d));
+  };
+
+  const handleGramsSave = async (grams: number) => {
+    if (!foodToAdjust || !user) return;
+
+    const multiplier = grams / 100;
+
+    const updatedFood = {
+      ...foodToAdjust,
+      servingSize: grams,
+      carbohydrates: (foodToAdjust.carbohydrates ?? 0) * multiplier,
+      protein: (foodToAdjust.protein ?? 0) * multiplier,
+      fat: (foodToAdjust.fat ?? 0) * multiplier,
+      energy: (foodToAdjust.energy ?? 0) * multiplier,
+    };
+
+    const mealId = route.params?.mealId;
+    const editingFoodId = route.params?.editingFoodId;
+    if (!mealId || !editingFoodId) return;
+
+    const mealIndex = meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = meals[mealIndex];
+
+    const updatedFoods = meal.foods.map(f =>
+      f.id === editingFoodId ? updatedFood : f
+    );
+
+    const totalCarbs = updatedFoods.reduce((sum, f) => sum + (f.carbohydrates ?? 0), 0);
+    const totalEnergy = updatedFoods.reduce((sum, f) => sum + (f.energy ?? 0), 0);
+    const totalProtein = updatedFoods.reduce((sum, f) => sum + (f.protein ?? 0), 0);
+    const totalFat = updatedFoods.reduce((sum, f) => sum + (f.fat ?? 0), 0);
+
+    const mealRef = doc(db, "meals", user.uid, "entries", mealId);
+    await updateDoc(mealRef, {
+      foods: updatedFoods,
+      totalCarbohydrates: totalCarbs,
+      totalEnergy,
+      totalProtein,
+      totalFat
+    });
+
+    setShowGramsPopup(false);
+    setFoodToAdjust(null);
+
+    navigation.setParams({
+      selectedFavoriteFood: undefined,
+      editingFoodId: undefined,
+      mealId: undefined
+    });
   };
 
 
@@ -195,16 +299,6 @@ export default function FoodDiaryScreen() {
                   ]}
                 />
               </View>
-
-
-              <Text style={styles.targetMeta}>
-                {targetSource === "manual" ? "Custom" : "Recommended"}
-              </Text>
-              <Text style={[styles.targetMeta, remainingCarbs !== null && remainingCarbs < 0 && styles.targetOver]}>
-                {remainingCarbs !== null && remainingCarbs >= 0
-                  ? `${remainingCarbs.toFixed(1)} g left`
-                  : `${Math.abs(remainingCarbs ?? 0).toFixed(1)} g over target`}
-              </Text>
             </>
           ) : (
             <Text style={styles.targetMissing}>
@@ -275,13 +369,22 @@ export default function FoodDiaryScreen() {
                       index={index + 1}
                     />
 
-                ))}
+                  ))}
               </>
             )}
           </View>
         ))}
       </ScrollView>
 
+      {showGramsPopup && foodToAdjust && (
+        <GramsPopup
+          food={foodToAdjust}
+          onClose={() => setShowGramsPopup(false)}
+          onSave={(grams) => handleGramsSave(grams)}
+
+        />
+
+      )}
     </View>
   );
 }
@@ -383,49 +486,49 @@ const styles = StyleSheet.create({
   },
 
   mealHeader: {
-  fontSize: 20,
-  fontWeight: "700",
-  marginBottom: 8,
-  marginTop: 10,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    marginTop: 10,
   },
   mealTypeSummary: {
-  fontSize: 13,
-  color: "#444",
-  marginBottom: 6,
-  marginLeft: 4,
-},
-mealTypeSummaryCard: {
-  backgroundColor: "#fff",
-  padding: 8,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: "#d0d0d0",
-  marginBottom: 10,
-  marginTop: -4,
-  marginHorizontal: 4,
-},
+    fontSize: 13,
+    color: "#444",
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  mealTypeSummaryCard: {
+    backgroundColor: "#fff",
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    marginBottom: 10,
+    marginTop: -4,
+    marginHorizontal: 4,
+  },
 
-mealTypeSummaryRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 2,
-},
+  mealTypeSummaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
 
-mealTypeSummaryItem: {
-  fontSize: 12,
-  color: "#444",
-},
-progressTrack: {
-  height: 10,
-  backgroundColor: "#E5E7EB",
-  borderRadius: 6,
-  marginTop: 6,
-  marginBottom: 4,
-},
+  mealTypeSummaryItem: {
+    fontSize: 12,
+    color: "#444",
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 6,
+    marginTop: 6,
+    marginBottom: 4,
+  },
 
-progressFill: {
-  height: 10,
-  borderRadius: 6,
-},
+  progressFill: {
+    height: 10,
+    borderRadius: 6,
+  },
 
 });

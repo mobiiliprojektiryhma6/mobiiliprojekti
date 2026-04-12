@@ -6,6 +6,8 @@ import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import EditFood from "./EditFood";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { getFavoriteFoods } from "../firebase/favorites";
+import { addFavoriteMeal, removeFavoriteMeal, getFavoriteMeals } from "../firebase/favoriteMeals";
 
 type Meal = {
   id: string;
@@ -67,9 +69,9 @@ export default function DiaryMealCard({ meal, index }: Props) {
 
   const timeString = meal.timestamp
     ? meal.timestamp.toDate().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      hour: "2-digit",
+      minute: "2-digit",
+    })
     : "";
 
   const totalCarbs = meal.totalCarbohydrates ?? 0;
@@ -96,14 +98,36 @@ export default function DiaryMealCard({ meal, index }: Props) {
     });
   };
 
+  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      const favs = await getFavoriteFoods();
+      setFavoriteFoods(favs);
+    };
+    loadFavorites();
+  }, []);
+
+  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const favs = await getFavoriteMeals();
+      setFavoriteMeals(favs);
+    };
+    load();
+  }, []);
+
   // Replacement from FoodSearch
   useEffect(() => {
     const params = route.params;
 
-    if (!params?.replaceFood || !user) return;
+    if (!params?.replaceFood || !user || params.mealId !== meal.id) return;
 
     const product = params.replaceFood;
     const editingFoodId = params.editingFoodId;
+
+    if (!editingFoodId) return;
 
     const updatedFoods = meal.foods.map((f) =>
       f.id === editingFoodId ? { ...product, id: editingFoodId } : f
@@ -112,20 +136,24 @@ export default function DiaryMealCard({ meal, index }: Props) {
     const totals = calculateMealTotals(updatedFoods);
     const mealRef = doc(db, "meals", user.uid, "entries", meal.id);
 
-    updateDoc(mealRef, {
-      foods: updatedFoods,
-      ...totals,
-    });
+    const updateMeal = async () => {
+      await updateDoc(mealRef, {
+        foods: updatedFoods,
+        ...totals,
+      });
 
-    navigation.setParams({
-      replaceFood: undefined,
-      editingFoodId: undefined,
-      mealId: undefined,
-    });
+      navigation.setParams({
+        replaceFood: undefined,
+        editingFoodId: undefined,
+        mealId: undefined,
+      });
 
-    setEditModalVisible(false);
-    setFoodToEdit(null);
-  }, [route.params?.replaceFood]);
+      setEditModalVisible(false);
+      setFoodToEdit(null);
+    };
+
+    updateMeal();
+  }, [route.params?.replaceFood, route.params?.mealId, meal.id, meal.foods, navigation, user]);
 
   return (
     <>
@@ -135,10 +163,31 @@ export default function DiaryMealCard({ meal, index }: Props) {
         style={styles.card}
       >
         <View style={styles.header}>
-          <Text style={styles.headerText}>
-            {meal.mealType} #{index}
-          </Text>
 
+          {/* Group meal title + star together */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.headerText}>
+              {meal.mealType} #{index}
+            </Text>
+
+            <TouchableOpacity
+              onPress={async () => {
+                if (favoriteMeals.some(m => m.id === meal.id)) {
+                  await removeFavoriteMeal(meal.id);
+                } else {
+                  await addFavoriteMeal(meal);
+                }
+                const favs = await getFavoriteMeals();
+                setFavoriteMeals(favs);
+              }}
+            >
+              <Text style={{ fontSize: 22, marginLeft: 8 }}>
+                {favoriteMeals.some(m => m.id === meal.id) ? "⭐" : "☆"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Right side: carbs + time */}
           <View style={{ alignItems: "flex-end" }}>
             <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
             <Text style={styles.timeText}>{timeString}</Text>
@@ -150,17 +199,28 @@ export default function DiaryMealCard({ meal, index }: Props) {
         {expanded && (
           <View style={styles.body}>
             <View style={styles.section}>
-              {meal.foods.map((food) => (
-                <View key={food.id} style={styles.foodRow}>
-                  <Text style={styles.foodName}>
-                    {food.name}
-                    {food.servingSize ? ` (${food.servingSize} g)` : ""}
-                  </Text>
-                  <Text style={styles.foodCarbs}>
-                    {food.carbohydrates.toFixed(1)} g
-                  </Text>
-                </View>
-              ))}
+              {meal.foods.map((food) => {
+                const baseName = food.name.split("(")[0].trim().toLowerCase();
+
+                const isFavorite = favoriteFoods.some(f =>
+                  f.id === food.id ||
+                  f.name.toLowerCase() === baseName
+                );
+
+                return (
+                  <View key={food.id} style={styles.foodRow}>
+                    <Text style={styles.foodName}>
+                      {isFavorite ? "⭐ " : ""}
+                      {food.name}
+                      {food.servingSize ? ` (${food.servingSize} g)` : ""}
+                    </Text>
+
+                    <Text style={styles.foodCarbs}>
+                      {food.carbohydrates.toFixed(1)} g
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.section}>
@@ -221,18 +281,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D1D5DB",
     overflow: "hidden",
-  }, 
+  },
 
   header: {
-  backgroundColor: "#4A90E2",   
-  paddingVertical: 10,
-  paddingHorizontal: 16,
-  borderRadius: 12,
-  marginBottom: 12,
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-},
+    backgroundColor: "#4A90E2",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
 
   headerText: {
     fontSize: 16,
@@ -288,11 +348,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
- barRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 8,
-},
+  barRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
 
   barTrack: {
     flex: 1,
@@ -309,42 +369,42 @@ const styles = StyleSheet.create({
   },
 
   barLabel: {
-  width: 90,              
-  fontSize: 14,
-  color: "#374151",
-},
+    width: 90,
+    fontSize: 14,
+    color: "#374151",
+  },
 
-timeText: {
-  fontSize: 14,
-  color: "#4B5563",
-  fontWeight: "500",
-},
-actionColumn: {
-  justifyContent: "center",
-  alignItems: "flex-end",
-  marginLeft: 8,
-},
+  timeText: {
+    fontSize: 14,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  actionColumn: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    marginLeft: 8,
+  },
 
-editButton: {
-  backgroundColor: "#3B82F6",
-  color: "white",
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 6,
-  fontSize: 12,
-  overflow: "hidden",
-  marginBottom: 4,
-},
+  editButton: {
+    backgroundColor: "#3B82F6",
+    color: "white",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    fontSize: 12,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
 
-deleteButton: {
-  backgroundColor: "#EF4444",
-  color: "white",
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 6,
-  fontSize: 12,
-  overflow: "hidden",
-},
+  deleteButton: {
+    backgroundColor: "#EF4444",
+    color: "white",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    fontSize: 12,
+    overflow: "hidden",
+  },
 
 
 });
