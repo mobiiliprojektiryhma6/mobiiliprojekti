@@ -19,7 +19,7 @@ import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../fireba
 
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
-- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
+- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner.
 - BarcodeScanner: camera page  where users can scan a product's barcode to look its nutritional info. After scanning the product data is sent back to FoodSearchScreen
 
 1. FoodSearchScreen - User taps camera button -> BarcodeScanner (navigation.navigate("Scanner"))
@@ -117,11 +117,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         loadProducts();
     }, []);
 
-    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"                                                                                                                                                                                                                                       
-      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)                                                                                                                                                                          
-      - Starts with?     "chocolate".startsWith("ch")  → also "best"                                                                                                                                                                                         
-      - Contains?        "white chocolate".includes("ch") → goes to "similar" list                                                                                                                                                                           
-      - No match?        → doesn't show 
+    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"
+      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)
+      - Starts with?     "chocolate".startsWith("ch")  → also "best"
+      - Contains?        "white chocolate".includes("ch") → goes to "similar" list
+      - No match?        → doesn't show
   Fast because product is loaded in memory -> no network call needed
     */
     useEffect(() => {
@@ -153,14 +153,14 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     }, [query, products]);
 
     /* Debounced Open Food Facts API search - At the same time the app searched Open Food Facts online DB but with 300ms delay (debounce)
-    - User types "c"     → timer starts (300ms)                                                                                                                                                                                                                
-    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User stops typing  → 300ms passes → API call fires for "cho" 
-    
+    - User types "c"     → timer starts (300ms)
+    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)
+    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)
+    - User stops typing  → 300ms passes → API call fires for "cho"
+
     Why debounce? Without it, the app would make an API call for every single keystroke (c, ch, cho, ...) = Wasteful and slow
     The debounce waits until the user pauses typing, then makes one call
-  
+
     The API returns data (calories, carbs, protein, and fat per 100 g and it is displayed in the results)
     */
     useEffect(() => {
@@ -257,7 +257,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         if (selectedItem?.id === item.id) {
             setSelectedItem(null); // already selected -> close it
         } else {
-            setSelectedItem(item); // select and expand 
+            setSelectedItem(item); // select and expand
         }
     };
 
@@ -319,7 +319,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* ⭐ Favorite toggle */}
+                    {/* Favorite toggle */}
                     <TouchableOpacity onPress={() => toggleFavorite(item)}>
                         <Text style={{ fontSize: 22, marginLeft: 10 }}>
                             {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
@@ -329,16 +329,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             );
         }
 
-                            {/* Header */}
-                            <View style={styles.detailHeader}>
-                                <Text style={styles.detailName} numberOfLines={2}>{item.name}</Text>
-                                <Text style={styles.detailPerNote}>per 100 g</Text>
-        
         // EXPANDED VIEW (selected)
         return (
             <View key={`${source}-${item.id}`} style={{ position: "relative" }}>
-
-                {/* Card press area */}
                 <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
                     <View style={styles.detailCard}>
 
@@ -350,11 +343,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
 
                             <View style={styles.detailHeaderRight}>
-                                <View style={styles.detailEnergyBadge}>
-                                    <Text style={styles.detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={styles.detailEnergyUnit}>kcal</Text>
-                                </View>
-
                                 <TouchableOpacity onPress={() => toggleFavorite(item)}>
                                     <Text style={styles.starIcon}>
                                         {favoriteFoods.some(f => f.id === item.id) ? "⭐" : "☆"}
@@ -363,38 +351,16 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
                         </View>
 
-
-                            {/* Divider */}
-                            <View style={styles.detailDivider} />
-
-                            {/* Nutrition circle - PieGram <3 */}
-                            <NutritionCircle
-                                carbs={item.carbohydrates}
-                                protein={item.protein}
-                                fat={item.fat}
-                                calories={item.energy}
-                            />
-
-                            {/* Nutrient rows */}
-                            {[
-                                { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
-                                { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
-                                { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
-                            ].map(({ label, value, unit, color, ref }) => (
-                                <View key={label} style={styles.detailNutrientBlock}>
-                                    <View style={styles.detailNutrientRow}>
-                                        <View style={[styles.detailDot, { backgroundColor: color }]} />
-                                        <Text style={styles.detailNutrientLabel}>{label}</Text>
-                                        <Text style={styles.detailNutrientValue}>
-                                            {value}
-                                            <Text style={styles.detailNutrientUnit}> {unit}</Text>
-                                        </Text>
-                                    </View>
-                                    <View style={styles.detailBarTrack}>
-                                        <View style={[
-
                         {/* Divider */}
                         <View style={styles.detailDivider} />
+
+                        {/* Nutrition circle */}
+                        <NutritionCircle
+                            carbs={item.carbohydrates}
+                            protein={item.protein}
+                            fat={item.fat}
+                            calories={item.energy}
+                        />
 
                         {/* Nutrients */}
                         {[
@@ -435,7 +401,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                     </View>
                 </TouchableOpacity>
-
             </View>
         );
     };
@@ -601,12 +566,8 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         borderWidth: 1,
         borderColor: "#ddd",
-    },
-    resultItemSelected: {
-        borderColor: "#009FE3",
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        marginBottom: 0,
+        flexDirection: "row",
+        alignItems: "center",
     },
     resultName: {
         fontSize: 15,
@@ -616,27 +577,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: "#666",
         marginTop: 2,
-    },
-    nutrientRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
-    nutrientLabel: {
-        fontSize: 16,
-        color: "#333",
-    },
-    nutrientValue: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    perNote: {
-        marginTop: 10,
-        fontSize: 13,
-        color: "#999",
-        textAlign: "right",
     },
     loadingRow: {
         flexDirection: "row",
@@ -714,117 +654,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     detailCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#009FE3",
-    shadowColor: "#009FE3",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-},
-detailHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 14,
-},
-detailHeaderLeft: {
-    flex: 1,
-    paddingRight: 12,
-},
-detailName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1A1A2E",
-    letterSpacing: -0.3,
-    marginBottom: 3,
-},
-detailPerNote: {
-    fontSize: 11,
-    color: "#9B9B9B",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-},
-detailEnergyBadge: {
-    backgroundColor: "#FEECEC",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-    minWidth: 64,
-},
-detailEnergyValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#E74C3C",
-    letterSpacing: -0.5,
-},
-detailEnergyUnit: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#E74C3C",
-    opacity: 0.8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-},
-detailDivider: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
-    marginBottom: 14,
-},
-detailNutrientBlock: {
-    marginBottom: 10,
-},
-detailNutrientRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-},
-detailDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-},
-detailNutrientLabel: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#555",
-},
-detailNutrientValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A1A2E",
-},
-detailNutrientUnit: {
-    fontSize: 12,
-    fontWeight: "400",
-    color: "#9B9B9B",
-},
-detailBarTrack: {
-    height: 4,
-    backgroundColor: "#F0F0F0",
-    borderRadius: 2,
-    marginLeft: 16,
-    overflow: "hidden",
-},
-detailBarFill: {
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.75,
-},
-addButton: {
-    marginTop: 14,
-    backgroundColor: "#009FE3",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
         backgroundColor: "#FFFFFF",
         borderRadius: 16,
         padding: 16,
@@ -847,6 +676,10 @@ addButton: {
         flex: 1,
         paddingRight: 12,
     },
+    detailHeaderRight: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
     detailName: {
         fontSize: 17,
         fontWeight: "700",
@@ -858,28 +691,6 @@ addButton: {
         fontSize: 11,
         color: "#9B9B9B",
         fontWeight: "500",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    detailEnergyBadge: {
-        backgroundColor: "#FFF3E0",
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        alignItems: "center",
-        minWidth: 64,
-    },
-    detailEnergyValue: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#E67E22",
-        letterSpacing: -0.5,
-    },
-    detailEnergyUnit: {
-        fontSize: 11,
-        fontWeight: "600",
-        color: "#E67E22",
-        opacity: 0.8,
         textTransform: "uppercase",
         letterSpacing: 0.5,
     },
@@ -943,15 +754,9 @@ addButton: {
         fontWeight: "700",
         letterSpacing: 0.3,
     },
-    detailHeaderRight: {
-  flexDirection: "row",
-  alignItems: "center",
-},
-
-starIcon: {
-  fontSize: 24,
-  marginLeft: 10,
-  marginTop: 2, // tiny vertical alignment tweak
-},
-
+    starIcon: {
+        fontSize: 24,
+        marginLeft: 10,
+        marginTop: 2,
+    },
 });
