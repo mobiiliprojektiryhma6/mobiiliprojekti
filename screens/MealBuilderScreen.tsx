@@ -58,6 +58,11 @@ export default function MealBuilderScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
+  const selectedDateParam = route.params?.selectedDate;
+const selectedDate = selectedDateParam
+  ? new Date(selectedDateParam)
+  : new Date();
+
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
       setAuthReady(true);
@@ -176,7 +181,7 @@ export default function MealBuilderScreen() {
       return;
     }
 
-    const dateString = getDayKey();
+    const dateString = getDayKey(selectedDate);
 
     const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
     const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
@@ -367,7 +372,7 @@ export default function MealBuilderScreen() {
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
-                navigation.navigate("FoodSearch");
+               navigation.navigate("FoodSearch", { selectedDate });
               }}
             >
               <Text style={styles.modalAddButtonText}>Search online</Text>

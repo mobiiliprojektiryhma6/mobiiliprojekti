@@ -271,6 +271,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
         navigation.navigate("MealBuilder", {
             addedFood: item,
+            selectedDate: route.params?.selectedDate,
         });
     };
 
