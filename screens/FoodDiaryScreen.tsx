@@ -10,6 +10,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 import GramsPopup from "../components/GramsPopup";
+import WeeklyCarbSummary from "../components/WeeklyCarbSummary";
 
 type Meal = {
   id: string;
@@ -43,6 +44,9 @@ export default function FoodDiaryScreen() {
   const [showGramsPopup, setShowGramsPopup] = useState(false);
   const [foodToAdjust, setFoodToAdjust] = useState<FoodItem | null>(null);
 
+  const [weeklyCarbEntries, setWeeklyCarbEntries] = useState<
+    { date: string; carbs: number }[]
+  >([]);
 
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -94,6 +98,55 @@ export default function FoodDiaryScreen() {
 
   }, [route.params, meals, user]);
 
+useEffect(() => {
+  if (!user) return;
+
+  const base = new Date(selectedDate);
+
+// getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+const day = base.getDay();
+
+// Convert Sunday (0) to 6, Monday (1) to 0, etc.
+const offsetToMonday = (day + 6) % 7;
+
+// Find Monday of the selected week
+const monday = new Date(base);
+monday.setDate(base.getDate() - offsetToMonday);
+
+// Build Mon → Sun
+const dates: string[] = [];
+for (let i = 0; i < 7; i++) {
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + i);
+  dates.push(getDayKey(d));
+}
+
+
+  const q = query(
+    collection(db, "meals", user.uid, "entries"),
+    where("dateString", "in", dates)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => doc.data() as Meal);
+
+    const groupedByDay: Record<string, number> = {};
+    dates.forEach((d) => (groupedByDay[d] = 0));
+
+    data.forEach((meal) => {
+      groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+    });
+
+    const result = dates
+      .slice()       // copy
+      .reverse()     // oldest → newest
+      .map((d) => ({ date: d, carbs: groupedByDay[d] }));
+
+    setWeeklyCarbEntries(result);
+  });
+
+  return unsubscribe;
+}, [user, selectedDate]);  
 
   useEffect(() => {
     if (!user) return;
@@ -324,6 +377,10 @@ export default function FoodDiaryScreen() {
         </View>
 
         <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
+
+        <Text style={styles.summaryTitle}>Weekly Carb Summary</Text>
+
+        <WeeklyCarbSummary data={weeklyCarbEntries} />
 
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
