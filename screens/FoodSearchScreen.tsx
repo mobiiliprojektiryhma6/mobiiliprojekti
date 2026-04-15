@@ -3,7 +3,6 @@ import {
     View,
     Text,
     TextInput,
-    StyleSheet,
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
@@ -17,18 +16,7 @@ import NutritionCircle from "../components/NutritionalCircle";
 import { saveProductsToFirestore } from "../src/utils/productCache";
 import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
 
-import { globalStyles } from "../src/styles/globalStyles"
-
-/* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
-- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner.
-- BarcodeScanner: camera page  where users can scan a product's barcode to look its nutritional info. After scanning the product data is sent back to FoodSearchScreen
-
-1. FoodSearchScreen - User taps camera button -> BarcodeScanner (navigation.navigate("Scanner"))
-2. BarcodeScanner - User scans barcode -> API lookup (navigation.navigate("FoodSearch", { scannedProduct }))
-3. FoodSearchScreen - useEffect picks up (route.params.scannedProduct) and displays product's nutritional info
-
-The data is passed through navigation, small data package is attacked to the navigation action
-*/
+import { globalStyles } from "../src/styles/globalStyles";
 
 export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const route = useRoute<any>();
@@ -38,12 +26,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const [scannedProduct, setScannedProduct] = useState<FoodItem | null>(null);
     const [searchTrigger, setSearchTrigger] = useState("");
 
-    // Handle scanned product from BarcodeScanner - When BarcodeScanner navigates back with a scanned product
-    /* if (route.params?.scannedProduct) {
-          setScannedProduct(item); // save it
-          setSelectedItem(item); // auto-expand its detail card
-          navigation.setParams({ scannedProduct: undefined }); // clean up so it does not trigger again
-    */
     const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
 
     useEffect(() => {
@@ -84,11 +66,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         }
     }, [route.params?.scannedProduct]);
 
-    // Firestore results (instant)
     const [localBest, setLocalBest] = useState<FoodItem[]>([]);
     const [localSimilar, setLocalSimilar] = useState<FoodItem[]>([]);
 
-    // Open Food Facts results (debounced API call)
     const [apiResults, setApiResults] = useState<FoodItem[]>([]);
     const [apiLoading, setApiLoading] = useState(false);
     const [servingSizeModalVisible, setServingSizeModalVisible] = useState(false);
@@ -101,7 +81,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Load local data from Firestore, convert to array and save to state
     useEffect(() => {
         const loadProducts = async () => {
             try {
@@ -118,13 +97,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         loadProducts();
     }, []);
 
-    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"
-      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)
-      - Starts with?     "chocolate".startsWith("ch")  → also "best"
-      - Contains?        "white chocolate".includes("ch") → goes to "similar" list
-      - No match?        → doesn't show
-  Fast because product is loaded in memory -> no network call needed
-    */
     useEffect(() => {
         if (query.trim().length === 0) {
             setLocalBest([]);
@@ -153,21 +125,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         setLocalSimilar(similar);
     }, [query, products]);
 
-    /* Debounced Open Food Facts API search - At the same time the app searched Open Food Facts online DB but with 300ms delay (debounce)
-    - User types "c"     → timer starts (300ms)
-    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)
-    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)
-    - User stops typing  → 300ms passes → API call fires for "cho"
-
-    Why debounce? Without it, the app would make an API call for every single keystroke (c, ch, cho, ...) = Wasteful and slow
-    The debounce waits until the user pauses typing, then makes one call
-
-    The API returns data (calories, carbs, protein, and fat per 100 g and it is displayed in the results)
-    */
     useEffect(() => {
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-        }
+        if (debounceRef.current) clearTimeout(debounceRef.current);
 
         const q = searchTrigger;
 
@@ -177,7 +136,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             return;
         }
 
-        // Skip API call if we already have enough local results
         if (localBest.length >= 3) {
             setApiResults([]);
             setApiLoading(false);
@@ -193,16 +151,10 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                 const url =
                     `https://world.openfoodfacts.net/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=5`;
 
-                const response = await fetch(url, {
-                    headers: {
-                        "User-Agent": "FoodAppSchoolProject/1.0 (test@test.com)",
-                        "Accept": "application/json",
-                    },
-                });
+                const response = await fetch(url);
                 const text = await response.text();
 
                 if (!text.startsWith("{")) {
-                    console.log("Not JSON:", text);
                     setApiResults([]);
                     setApiLoading(false);
                     return;
@@ -218,16 +170,15 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             return {
                                 id: p.code || p.product_name.toLowerCase().replace(/\s+/g, "-"),
                                 name: p.product_name,
-                                energy: Math.round(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? 0),
-                                carbohydrates:
-                                    Math.round((n.carbohydrates_100g ?? n.carbohydrates ?? 0) * 10) / 10,
-                                protein: Math.round((n.proteins_100g ?? n.proteins ?? 0) * 10) / 10,
-                                fat: Math.round((n.fat_100g ?? n.fat ?? 0) * 10) / 10,
+                                energy: Math.round(n["energy-kcal_100g"] ?? 0),
+                                carbohydrates: Math.round((n.carbohydrates_100g ?? 0) * 10) / 10,
+                                protein: Math.round((n.proteins_100g ?? 0) * 10) / 10,
+                                fat: Math.round((n.fat_100g ?? 0) * 10) / 10,
                                 barcode: p.code || "",
                             };
                         });
+
                     setApiResults(items);
-                    // Cache new products to Firestore for future searches
                     saveProductsToFirestore(items).catch(console.error);
                 } else {
                     setApiResults([]);
@@ -249,16 +200,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const hasAny = hasLocal || apiResults.length > 0;
     const showNoResults = query.trim().length > 0 && !hasAny && !apiLoading;
 
-    /* The UI - tap to expand/collapse
-    - Each food item shows a compact view (name + one-line summary)
-    - When tapped, it expands into a detail card showing nutritional info
-    - Tap again to close the card */
-
     const handleSelect = (item: FoodItem) => {
         if (selectedItem?.id === item.id) {
-            setSelectedItem(null); // already selected -> close it
+            setSelectedItem(null);
         } else {
-            setSelectedItem(item); // select and expand
+            setSelectedItem(item);
         }
     };
 
@@ -322,12 +268,12 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             {item.energy} kcal | Carbs {item.carbohydrates}g | Protein {item.protein}g | Fat {item.fat}g
                         </Text>
                     </TouchableOpacity>
+                )}
 
                 {isSelected && (
                     <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
                         <View style={globalStyles.card}>
 
-                            {/* Header */}
                             <View style={globalStyles.foodSearch_detailHeader}>
                                 <View style={globalStyles.foodSearch_detailHeaderLeft}>
                                     <Text style={globalStyles.foodSearch_detailName} numberOfLines={2}>
@@ -342,11 +288,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                 </View>
                             </View>
 
-                            {/* Divider */}
                             <View style={globalStyles.foodSearch_detailDivider} />
 
-                            {/* Nutrient rows */}
-                            {[
+                            {[ 
                                 { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
                                 { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
                                 { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
@@ -375,7 +319,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                 </View>
                             ))}
 
-                            {/* Add button */}
                             <TouchableOpacity
                                 style={globalStyles.buttonPrimary}
                                 activeOpacity={0.8}
@@ -386,19 +329,9 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                 </Text>
                             </TouchableOpacity>
 
-                        {/* Add button */}
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            activeOpacity={0.8}
-                            onPress={() => handleAddFood(item)}
-                        >
-                            <Text style={styles.addButtonText}>
-                                {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
-                            </Text>
-                        </TouchableOpacity>
-
-                    </View>
-                </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                )}
             </View>
         );
     };
@@ -409,7 +342,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                 contentContainerStyle={globalStyles.container}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Search bar with camera icon */}
                 <View style={globalStyles.foodSearch_searchRow}>
                     <TextInput
                         style={globalStyles.input}
@@ -429,7 +361,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* Scanned product result */}
                 {scannedProduct && !selectedItem && (
                     <View style={globalStyles.foodSearch_resultsSection}>
                         <Text style={globalStyles.sectionTitle}>Scanned Product</Text>
@@ -437,14 +368,12 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                     </View>
                 )}
 
-                {/* Selected item detail view */}
                 {selectedItem ? (
                     <View style={globalStyles.foodSearch_resultsSection}>
                         {renderFoodItem(selectedItem, "selected")}
                     </View>
                 ) : (
                     <>
-                        {/* Firestore results */}
                         {(localBest.length > 0 || localSimilar.length > 0) && (
                             <View style={globalStyles.foodSearch_resultsSection}>
                                 <Text style={globalStyles.sectionTitle}>Your Foods</Text>
@@ -453,7 +382,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             </View>
                         )}
 
-                        {/* Open Food Facts results */}
                         {apiLoading && (
                             <View style={globalStyles.row}>
                                 <ActivityIndicator size="small" color="#009FE3" />
@@ -477,7 +405,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                 )}
             </ScrollView>
 
-            {/* Replacement modal */}
             <Modal visible={servingSizeModalVisible} transparent animationType="fade">
                 <View style={globalStyles.modalOverlay}>
                     <View style={globalStyles.modalBox}>

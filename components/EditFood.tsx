@@ -5,7 +5,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
 } from "react-native";
 import { FoodItem } from "../types/FoodItem";
@@ -13,7 +12,7 @@ import { doc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
-import { globalStyles } from "../src/styles/globalStyles"
+import { globalStyles } from "../src/styles/globalStyles";
 
 // --- Helper: recalc totals ---
 function calculateMealTotals(foods: FoodItem[]) {
@@ -82,7 +81,6 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
     const grams = Number(servingSize) || 0;
 
-    // scale factor based on original serving size
     const originalGrams = food.servingSize || 100;
     const factor = grams / originalGrams;
 
@@ -123,7 +121,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
     const updatedFood: FoodItem = {
       ...product,
-      id: food.id, // keep same ID
+      id: food.id,
       servingSize: grams,
       per100g: false,
       energy: scaleValue(product.energy, grams),
@@ -149,11 +147,11 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
   return (
     <>
-      {/* MAIN EDIT MODAL */}
       <Modal transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={[styles.modal, mode === "products" && styles.productModal]}>
-            
+        <View style={globalStyles.modalOverlay}>
+          <View style={[globalStyles.modalBox, mode === "products" && globalStyles.editFood_productModal]}>
+
+            {/* CHOOSE MODE */}
             {mode === "choose" && (
               <>
                 <Text style={globalStyles.modalTitle}>Edit Food</Text>
@@ -168,12 +166,12 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                 <TouchableOpacity
                   style={globalStyles.editFood_optionButton}
                   onPress={() => {
-                    onClose()
+                    onClose();
                     navigation.navigate("FoodSearch", {
                       editingFoodId: food.id,
                       mealId: meal.id,
                       returnTo: "EditFood",
-                    })
+                    });
                   }}
                 >
                   <Text style={globalStyles.editFood_optionText}>Search online</Text>
@@ -187,7 +185,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.optionButton}
+                  style={globalStyles.editFood_optionButton}
                   onPress={() => {
                     onClose();
                     navigation.navigate("FavoriteFoods", {
@@ -195,18 +193,18 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                       mealId: meal.id,
                       returnTo: "EditFood",
                     });
-
                   }}
                 >
-                  <Text style={styles.optionText}>Pick from Favorites ⭐</Text>
+                  <Text style={globalStyles.editFood_optionText}>Pick from Favorites ⭐</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Text style={globalStyles.modalCancel}>Cancel</Text>
                 </TouchableOpacity>
               </>
             )}
 
+            {/* MANUAL MODE */}
             {mode === "manual" && (
               <>
                 <Text style={globalStyles.modalTitle}>Edit Food Manually</Text>
@@ -259,7 +257,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
               </>
             )}
 
-            {/* PRODUCT PICKER */}
+            {/* PRODUCT MODE */}
             {mode === "products" && (
               <>
                 <Text style={globalStyles.modalTitle}>Choose a Food</Text>
@@ -277,17 +275,17 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                     productSearch.trim() === ""
                       ? products
                       : products.filter((p) =>
-                        p.name.toLowerCase().includes(productSearch.toLowerCase())
-                      )
+                          p.name.toLowerCase().includes(productSearch.toLowerCase())
+                        )
                   }
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={globalStyles.editFood_productItem}
                       onPress={() => {
-                        setPendingProduct(item)
-                        setProductServingSize(String(food.servingSize || 100))
-                        setAmountPopupVisible(true)
+                        setPendingProduct(item);
+                        setProductServingSize(String(food.servingSize || 100));
+                        setAmountPopupVisible(true);
                       }}
                     >
                       <Text style={globalStyles.editFood_productName}>{item.name}</Text>
@@ -302,9 +300,9 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                 <View style={globalStyles.editFood_buttonRow}>
                   <TouchableOpacity
                     onPress={() => {
-                      setAmountPopupVisible(false)
-                      setPendingProduct(null)
-                      setMode("choose")
+                      setAmountPopupVisible(false);
+                      setPendingProduct(null);
+                      setMode("choose");
                     }}
                   >
                     <Text style={globalStyles.modalCancel}>Back</Text>
@@ -312,9 +310,9 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
                   <TouchableOpacity
                     onPress={() => {
-                      setAmountPopupVisible(false)
-                      setPendingProduct(null)
-                      onClose()
+                      setAmountPopupVisible(false);
+                      setPendingProduct(null);
+                      onClose();
                     }}
                   >
                     <Text style={globalStyles.modalCancel}>Close</Text>
@@ -351,9 +349,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                         <Text style={globalStyles.editFood_optionText}>Add</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        onPress={() => setAmountPopupVisible(false)}
-                      >
+                      <TouchableOpacity onPress={() => setAmountPopupVisible(false)}>
                         <Text style={globalStyles.modalCancel}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
@@ -367,152 +363,3 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modal: {
-    width: "85%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-  },
-  productModal: {
-    width: "92%",
-    maxHeight: "88%",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  productTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  optionButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  optionText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
-  },
-  productItem: {
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  productInfo: {
-    fontSize: 14,
-    color: "gray",
-  },
-  productsList: {
-    maxHeight: 360,
-    marginBottom: 12,
-  },
-  amountOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-  },
-  amountPopup: {
-    width: "85%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-  },
-  searchInput: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    marginBottom: 12,
-    marginTop: 4,
-    fontSize: 16,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 14,
-    marginTop: 10,
-  },
-  modalCancelButton: {
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  modalCancelButtonText: {
-    color: "gray",
-    fontSize: 16,
-  },
-  cancelButton: {
-    padding: 12,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  saveButton: {
-    padding: 12,
-    backgroundColor: "#3B82F6",
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelText: {
-    textAlign: "center",
-    color: "#374151",
-    fontWeight: "600",
-  },
-  saveText: {
-    textAlign: "center",
-    color: "#fff",
-    fontWeight: "600",
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 12,
-  },
-  inputField: {
-    flex: 1,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  unitLabel: {
-    fontSize: 16,
-    color: "#555",
-    marginLeft: 8,
-    fontWeight: "500",
-  },
-});

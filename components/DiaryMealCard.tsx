@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { FoodItem } from "../types/FoodItem";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -8,7 +8,7 @@ import EditFood from "./EditFood";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getFavoriteFoods } from "../firebase/favorites";
 import { addFavoriteMeal, removeFavoriteMeal, getFavoriteMeals } from "../firebase/favoriteMeals";
-import { globalStyles } from "../src/styles/globalStyles"
+import { globalStyles } from "../src/styles/globalStyles";
 
 type Meal = {
   id: string;
@@ -70,9 +70,9 @@ export default function DiaryMealCard({ meal, index }: Props) {
 
   const timeString = meal.timestamp
     ? meal.timestamp.toDate().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "";
 
   const totalCarbs = meal.totalCarbohydrates ?? 0;
@@ -100,6 +100,7 @@ export default function DiaryMealCard({ meal, index }: Props) {
   };
 
   const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -108,8 +109,6 @@ export default function DiaryMealCard({ meal, index }: Props) {
     };
     loadFavorites();
   }, []);
-
-  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -163,17 +162,16 @@ export default function DiaryMealCard({ meal, index }: Props) {
         onPress={() => setExpanded(!expanded)}
         style={globalStyles.diaryCard}
       >
-        <View style={styles.header}>
-
-          {/* Group meal title + star together */}
+        {/* Header */}
+        <View style={globalStyles.diaryHeader}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={styles.headerText}>
+            <Text style={globalStyles.diaryHeaderText}>
               {meal.mealType} #{index}
             </Text>
 
             <TouchableOpacity
               onPress={async () => {
-                if (favoriteMeals.some(m => m.id === meal.id)) {
+                if (favoriteMeals.some((m) => m.id === meal.id)) {
                   await removeFavoriteMeal(meal.id);
                 } else {
                   await addFavoriteMeal(meal);
@@ -183,12 +181,11 @@ export default function DiaryMealCard({ meal, index }: Props) {
               }}
             >
               <Text style={{ fontSize: 22, marginLeft: 8 }}>
-                {favoriteMeals.some(m => m.id === meal.id) ? "⭐" : "☆"}
+                {favoriteMeals.some((m) => m.id === meal.id) ? "⭐" : "☆"}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Right side: carbs + time */}
           <View style={{ alignItems: "flex-end" }}>
             <Text style={globalStyles.diaryHeaderCarbs}>
               {totalCarbs.toFixed(1)} g carbs
@@ -200,25 +197,24 @@ export default function DiaryMealCard({ meal, index }: Props) {
         {!expanded && <Text style={globalStyles.diaryTapHint}>Tap to expand</Text>}
 
         {expanded && (
-          <View style={styles.body}>
-            <View style={styles.section}>
+          <View style={globalStyles.diaryBody}>
+            {/* Foods */}
+            <View style={globalStyles.diarySection}>
               {meal.foods.map((food) => {
                 const baseName = food.name.split("(")[0].trim().toLowerCase();
-
-                const isFavorite = favoriteFoods.some(f =>
-                  f.id === food.id ||
-                  f.name.toLowerCase() === baseName
+                const isFavorite = favoriteFoods.some(
+                  (f) => f.id === food.id || f.name.toLowerCase() === baseName
                 );
 
                 return (
-                  <View key={food.id} style={styles.foodRow}>
-                    <Text style={styles.foodName}>
+                  <View key={food.id} style={globalStyles.diaryFoodRow}>
+                    <Text style={globalStyles.diaryFoodName}>
                       {isFavorite ? "⭐ " : ""}
                       {food.name}
                       {food.servingSize ? ` (${food.servingSize} g)` : ""}
                     </Text>
 
-                    <Text style={styles.foodCarbs}>
+                    <Text style={globalStyles.diaryFoodCarbs}>
                       {food.carbohydrates.toFixed(1)} g
                     </Text>
                   </View>
@@ -226,6 +222,7 @@ export default function DiaryMealCard({ meal, index }: Props) {
               })}
             </View>
 
+            {/* Totals */}
             <View style={globalStyles.diarySection}>
               <Text style={globalStyles.diaryNutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
               <Text style={globalStyles.diaryNutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
@@ -233,11 +230,12 @@ export default function DiaryMealCard({ meal, index }: Props) {
               <Text style={globalStyles.diaryNutrient}>Fat: {totalFat.toFixed(1)} g</Text>
             </View>
 
+            {/* Carbs per food */}
             <View style={globalStyles.diarySection}>
               <Text style={globalStyles.diaryChartTitle}>Carbs per food</Text>
 
               {meal.foods.map((food) => {
-                const pct = totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0
+                const pct = totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
 
                 return (
                   <View key={food.id} style={globalStyles.diaryBarRow}>
@@ -266,7 +264,7 @@ export default function DiaryMealCard({ meal, index }: Props) {
                       </TouchableOpacity>
                     </View>
                   </View>
-                )
+                );
               })}
             </View>
           </View>
@@ -277,5 +275,5 @@ export default function DiaryMealCard({ meal, index }: Props) {
         <EditFood food={foodToEdit} meal={meal} onClose={closeEditModal} />
       )}
     </>
-  )
+  );
 }
