@@ -390,7 +390,7 @@ for (let i = 0; i < 7; i++) {
 
         <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
 
-        <Text style={styles.summaryTitle}>Weekly Carb Summary</Text>
+        <Text style={globalStyles.diary_summaryTitle}>Weekly Carb Summary</Text>
 
         <WeeklyCarbSummary data={weeklyCarbEntries} />
 
