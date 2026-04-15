@@ -13,10 +13,14 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { FoodItem } from "../types/FoodItem";
 import { useRoute } from "@react-navigation/native";
+import NutritionCircle from "../components/NutritionalCircle";
+import { saveProductsToFirestore } from "../src/utils/productCache";
+import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
+
 import { globalStyles } from "../src/styles/globalStyles"
 
 /* Two screens work as a team -> FoodSearchScreen and BarcodeScanner
-- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner. 
+- FoodSearchScreen: search page where users type a food name to find nutritional info. It also has a camera icon that opens BarcodeScanner.
 - BarcodeScanner: camera page  where users can scan a product's barcode to look its nutritional info. After scanning the product data is sent back to FoodSearchScreen
 
 1. FoodSearchScreen - User taps camera button -> BarcodeScanner (navigation.navigate("Scanner"))
@@ -40,12 +44,33 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
           setSelectedItem(item); // auto-expand its detail card
           navigation.setParams({ scannedProduct: undefined }); // clean up so it does not trigger again
     */
+    const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+    useEffect(() => {
+        const loadFavorites = async () => {
+            const favs = await getFavoriteFoods();
+            setFavoriteFoods(favs);
+        };
+        loadFavorites();
+    }, []);
+
+    const toggleFavorite = async (food: FoodItem) => {
+        const isFav = favoriteFoods.some(f => f.id === food.id);
+
+        if (isFav) {
+            await removeFavoriteFood(food.id);
+            setFavoriteFoods(prev => prev.filter(f => f.id !== food.id));
+        } else {
+            await addFavoriteFood(food);
+            setFavoriteFoods(prev => [...prev, food]);
+        }
+    };
 
     useEffect(() => {
         if (route.params?.scannedProduct) {
             const p = route.params.scannedProduct;
             const item: FoodItem = {
-                id: p.barcode || String(Math.random()),
+                id: p.barcode || p.name.toLowerCase().replace(/\s+/g, "-"),
                 name: p.name,
                 energy: p.energy,
                 carbohydrates: p.carbohydrates,
@@ -93,11 +118,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         loadProducts();
     }, []);
 
-    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"                                                                                                                                                                                                                                       
-      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)                                                                                                                                                                          
-      - Starts with?     "chocolate".startsWith("ch")  → also "best"                                                                                                                                                                                         
-      - Contains?        "white chocolate".includes("ch") → goes to "similar" list                                                                                                                                                                           
-      - No match?        → doesn't show 
+    /* Instant local search, every time the user types a letter, this runs intantly - User types "ch"
+      - Exact match?     "ch" === "ch"         → goes to "best" list (top priority)
+      - Starts with?     "chocolate".startsWith("ch")  → also "best"
+      - Contains?        "white chocolate".includes("ch") → goes to "similar" list
+      - No match?        → doesn't show
   Fast because product is loaded in memory -> no network call needed
     */
     useEffect(() => {
@@ -129,14 +154,14 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     }, [query, products]);
 
     /* Debounced Open Food Facts API search - At the same time the app searched Open Food Facts online DB but with 300ms delay (debounce)
-    - User types "c"     → timer starts (300ms)                                                                                                                                                                                                                
-    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)                                                                                                                                                                                       
-    - User stops typing  → 300ms passes → API call fires for "cho" 
-    
+    - User types "c"     → timer starts (300ms)
+    - User types "ch"    → old timer cancelled, NEW timer starts (300ms)
+    - User types "cho"   → old timer cancelled, NEW timer starts (300ms)
+    - User stops typing  → 300ms passes → API call fires for "cho"
+
     Why debounce? Without it, the app would make an API call for every single keystroke (c, ch, cho, ...) = Wasteful and slow
     The debounce waits until the user pauses typing, then makes one call
-  
+
     The API returns data (calories, carbs, protein, and fat per 100 g and it is displayed in the results)
     */
     useEffect(() => {
@@ -147,6 +172,13 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         const q = searchTrigger;
 
         if (q.trim().length < 2) {
+            setApiResults([]);
+            setApiLoading(false);
+            return;
+        }
+
+        // Skip API call if we already have enough local results
+        if (localBest.length >= 3) {
             setApiResults([]);
             setApiLoading(false);
             return;
@@ -184,7 +216,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                         .map((p: any) => {
                             const n = p.nutriments || {};
                             return {
-                                id: p.code || String(Math.random()),
+                                id: p.code || p.product_name.toLowerCase().replace(/\s+/g, "-"),
                                 name: p.product_name,
                                 energy: Math.round(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? 0),
                                 carbohydrates:
@@ -195,6 +227,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             };
                         });
                     setApiResults(items);
+                    // Cache new products to Firestore for future searches
+                    saveProductsToFirestore(items).catch(console.error);
                 } else {
                     setApiResults([]);
                 }
@@ -209,7 +243,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchTrigger]);
+    }, [searchTrigger, localBest.length]);
 
     const hasLocal = localBest.length > 0 || localSimilar.length > 0;
     const hasAny = hasLocal || apiResults.length > 0;
@@ -224,7 +258,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
         if (selectedItem?.id === item.id) {
             setSelectedItem(null); // already selected -> close it
         } else {
-            setSelectedItem(item); // select and expand 
+            setSelectedItem(item); // select and expand
         }
     };
 
@@ -238,6 +272,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
         navigation.navigate("MealBuilder", {
             addedFood: item,
+            selectedDate: route.params?.selectedDate,
         });
     };
 
@@ -287,7 +322,6 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             {item.energy} kcal | Carbs {item.carbohydrates}g | Protein {item.protein}g | Fat {item.fat}g
                         </Text>
                     </TouchableOpacity>
-                )}
 
                 {isSelected && (
                     <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
@@ -352,9 +386,19 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                 </Text>
                             </TouchableOpacity>
 
-                        </View>
-                    </TouchableOpacity>
-                )}
+                        {/* Add button */}
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            activeOpacity={0.8}
+                            onPress={() => handleAddFood(item)}
+                        >
+                            <Text style={styles.addButtonText}>
+                                {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
+                            </Text>
+                        </TouchableOpacity>
+
+                    </View>
+                </TouchableOpacity>
             </View>
         );
     };

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
-import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
 import CarbsPerMealChart from "../components/CarbsPerMealChart";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { globalStyles } from "../src/styles/globalStyles"
 
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
+import GramsPopup from "../components/GramsPopup";
+import WeeklyCarbSummary from "../components/WeeklyCarbSummary";
 
 type Meal = {
   id: string;
@@ -38,6 +41,113 @@ export default function FoodDiaryScreen() {
   const [targetReason, setTargetReason] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(getDayKey());
+
+  const [showGramsPopup, setShowGramsPopup] = useState(false);
+  const [foodToAdjust, setFoodToAdjust] = useState<FoodItem | null>(null);
+
+  const [weeklyCarbEntries, setWeeklyCarbEntries] = useState<
+    { date: string; carbs: number }[]
+  >([]);
+
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+
+  useEffect(() => {
+    if (route.name !== "FoodDiary") return;
+
+    const selected = route.params?.selectedFavoriteFood;
+    const editingFoodId = route.params?.editingFoodId;
+    const mealId = route.params?.mealId;
+
+    if (!selected || !editingFoodId || !mealId) return;
+
+    if (meals.length === 0) return;
+
+    if (!user) return;
+
+    // Find the meal
+    const mealIndex = meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = meals[mealIndex];
+
+    // Replace the food
+    const updatedFoods = meal.foods.map(f =>
+      f.id === editingFoodId ? selected : f
+    );
+
+    // Recalculate totals
+    const totalCarbs = updatedFoods.reduce((sum, f) => sum + (f.carbohydrates ?? 0), 0);
+    const totalEnergy = updatedFoods.reduce((sum, f) => sum + (f.energy ?? 0), 0);
+    const totalProtein = updatedFoods.reduce((sum, f) => sum + (f.protein ?? 0), 0);
+    const totalFat = updatedFoods.reduce((sum, f) => sum + (f.fat ?? 0), 0);
+
+    // Save to Firestore
+    const mealRef = doc(db, "meals", user.uid, "entries", mealId);
+    updateDoc(mealRef, {
+      foods: updatedFoods,
+      totalCarbohydrates: totalCarbs,
+      totalEnergy,
+      totalProtein,
+      totalFat
+    });
+
+    if (route.name === "FoodDiary") {
+      setFoodToAdjust(selected);
+      setShowGramsPopup(true);
+    }
+
+  }, [route.params, meals, user]);
+
+useEffect(() => {
+  if (!user) return;
+
+  const base = new Date(selectedDate);
+
+// getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+const day = base.getDay();
+
+// Convert Sunday (0) to 6, Monday (1) to 0, etc.
+const offsetToMonday = (day + 6) % 7;
+
+// Find Monday of the selected week
+const monday = new Date(base);
+monday.setDate(base.getDate() - offsetToMonday);
+
+// Build Mon → Sun
+const dates: string[] = [];
+for (let i = 0; i < 7; i++) {
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + i);
+  dates.push(getDayKey(d));
+}
+
+
+  const q = query(
+    collection(db, "meals", user.uid, "entries"),
+    where("dateString", "in", dates)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => doc.data() as Meal);
+
+    const groupedByDay: Record<string, number> = {};
+    dates.forEach((d) => (groupedByDay[d] = 0));
+
+    data.forEach((meal) => {
+      groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+    });
+
+    const result = dates
+      .slice()       // copy
+      .reverse()     // oldest → newest
+      .map((d) => ({ date: d, carbs: groupedByDay[d] }));
+
+    setWeeklyCarbEntries(result);
+  });
+
+  return unsubscribe;
+}, [user, selectedDate]);  
 
   useEffect(() => {
     if (!user) return;
@@ -151,6 +261,57 @@ export default function FoodDiaryScreen() {
     setSelectedDate(getDayKey(d));
   };
 
+  const handleGramsSave = async (grams: number) => {
+    if (!foodToAdjust || !user) return;
+
+    const multiplier = grams / 100;
+
+    const updatedFood = {
+      ...foodToAdjust,
+      servingSize: grams,
+      carbohydrates: (foodToAdjust.carbohydrates ?? 0) * multiplier,
+      protein: (foodToAdjust.protein ?? 0) * multiplier,
+      fat: (foodToAdjust.fat ?? 0) * multiplier,
+      energy: (foodToAdjust.energy ?? 0) * multiplier,
+    };
+
+    const mealId = route.params?.mealId;
+    const editingFoodId = route.params?.editingFoodId;
+    if (!mealId || !editingFoodId) return;
+
+    const mealIndex = meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = meals[mealIndex];
+
+    const updatedFoods = meal.foods.map(f =>
+      f.id === editingFoodId ? updatedFood : f
+    );
+
+    const totalCarbs = updatedFoods.reduce((sum, f) => sum + (f.carbohydrates ?? 0), 0);
+    const totalEnergy = updatedFoods.reduce((sum, f) => sum + (f.energy ?? 0), 0);
+    const totalProtein = updatedFoods.reduce((sum, f) => sum + (f.protein ?? 0), 0);
+    const totalFat = updatedFoods.reduce((sum, f) => sum + (f.fat ?? 0), 0);
+
+    const mealRef = doc(db, "meals", user.uid, "entries", mealId);
+    await updateDoc(mealRef, {
+      foods: updatedFoods,
+      totalCarbohydrates: totalCarbs,
+      totalEnergy,
+      totalProtein,
+      totalFat
+    });
+
+    setShowGramsPopup(false);
+    setFoodToAdjust(null);
+
+    navigation.setParams({
+      selectedFavoriteFood: undefined,
+      editingFoodId: undefined,
+      mealId: undefined
+    });
+  };
+
 
   return (
     <View style={globalStyles.container}>
@@ -229,6 +390,10 @@ export default function FoodDiaryScreen() {
 
         <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
 
+        <Text style={styles.summaryTitle}>Weekly Carb Summary</Text>
+
+        <WeeklyCarbSummary data={weeklyCarbEntries} />
+
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
             {grouped[type].length > 0 && (
@@ -272,6 +437,16 @@ export default function FoodDiaryScreen() {
           </View>
         ))}
       </ScrollView>
+
+      {showGramsPopup && foodToAdjust && (
+        <GramsPopup
+          food={foodToAdjust}
+          onClose={() => setShowGramsPopup(false)}
+          onSave={(grams) => handleGramsSave(grams)}
+
+        />
+
+      )}
     </View>
   );
 }

@@ -6,6 +6,8 @@ import { globalStyles } from "../src/styles/globalStyles"
 type Props = {
   food: FoodItem;
   onDelete: (foodId: string) => void;
+  onToggleFavorite: (food: FoodItem) => void;
+  onPress?: () => void;
 };
 
 type NutrientRowProps = {
@@ -40,8 +42,7 @@ function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowP
   );
 }
 
-export default function MealCard({ food, onDelete }: Props) {
-  // Rough daily reference values for bar scaling (per 100g context)
+export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: Props) {
   const refValues = { carbs: 130, protein: 50, fat: 78 };
 
   return (
@@ -89,7 +90,6 @@ export default function MealCard({ food, onDelete }: Props) {
         />
       </View>
 
-      {/* Delete button */}
       <TouchableOpacity
         style={globalStyles.mealCard_deleteButton}
         onPress={() => onDelete(food.id!)}

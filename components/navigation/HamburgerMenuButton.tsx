@@ -11,6 +11,7 @@ type MenuRoute =
     | "MealBuilder"
     | "Profile"
     | "Medications"
+    | "FavoriteMeals"
     | "Logout";
 
 type HamburgerMenuButtonProps = {
