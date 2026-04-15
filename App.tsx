@@ -19,6 +19,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 import MedicationScreen from "./screens/MedicationScreen"
 import FavoriteMeals from "./screens/FavoriteMeals";
 import FavoriteFoodsScreen from "./screens/FavoriteFoodsScreen";
+import { ThemeProvider } from "./src/theme/ThemeContext"
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -54,71 +55,23 @@ export default function App() {
 
   return (
     <View style={styles.root}>
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator>
-          {!email ? (
-            <Stack.Screen
-              name="Login"
-              component={Loginscreen}
-              options={{ headerShown: false }}
-            />
-          ) : (
-            <>
-              <Stack.Screen name="Home" component={Homescreen} options={{
-                title: "Home", headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigationRef.navigate("Profile" as never)}
-                  >
-                    <MaterialIcons name="person" size={28} color="#009FE3" />
-                  </TouchableOpacity>
-                ),
-              }} />
-              <Stack.Screen name="FoodDiary" component={FoodDiaryScreen} options={{
-                title: "Food Diary", headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigationRef.navigate("Profile" as never)}
-                  >
-                    <MaterialIcons name="person" size={28} color="#009FE3" />
-                  </TouchableOpacity>
-                ),
-              }} />
-              <Stack.Screen name="MealBuilder" component={MealBuilderScreen} options={{
-                title: "Meal Builder", headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigationRef.navigate("Profile" as never)}
-                  >
-                    <MaterialIcons name="person" size={28} color="#009FE3" />
-                  </TouchableOpacity>
-                ),
-              }} />
-              <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{
-                title: "Food Search", headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigationRef.navigate("Profile" as never)}
-                  >
-                    <MaterialIcons name="person" size={28} color="#009FE3" />
-                  </TouchableOpacity>
-                ),
-              }} />
-              <Stack.Screen name="Scanner" component={BarcodeScanner} options={{
-                title: "Barcode Scanner", headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigationRef.navigate("Profile" as never)}
-                  >
-                    <MaterialIcons name="person" size={28} color="#009FE3" />
-                  </TouchableOpacity>
-                ),
-              }} />
+      <ThemeProvider>
+        <NavigationContainer ref={navigationRef}>
+          <Stack.Navigator>
+            {!email ? (
               <Stack.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{
-                  title: "Profile",
-                  headerRight: () => (
+                name="Login"
+                component={Loginscreen}
+                options={{ headerShown: false }}
+              />
+            ) : (
+              <>
+                <Stack.Screen name="Home" component={Homescreen} options={{
+                  title: "Home", headerRight: () => (
                     <TouchableOpacity
-                      onPress={() => navigationRef.navigate("AccountSettings" as never)}
+                      onPress={() => navigationRef.navigate("Profile" as never)}
                     >
-                      <MaterialIcons name="settings" size={28} color="#009FE3" />
+                      <MaterialIcons name="person" size={28} color="#009FE3" />
                     </TouchableOpacity>
                   ),
                 }} />
@@ -130,6 +83,62 @@ export default function App() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+                <Stack.Screen name="FoodDiary" component={FoodDiaryScreen} options={{
+                  title: "Food Diary", headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigationRef.navigate("Profile" as never)}
+                    >
+                      <MaterialIcons name="person" size={28} color="#009FE3" />
+                    </TouchableOpacity>
+                  ),
+                }} />
+                <Stack.Screen name="MealBuilder" component={MealBuilderScreen} options={{
+                  title: "Meal Builder", headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigationRef.navigate("Profile" as never)}
+                    >
+                      <MaterialIcons name="person" size={28} color="#009FE3" />
+                    </TouchableOpacity>
+                  ),
+                }} />
+                <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{
+                  title: "Food Search", headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigationRef.navigate("Profile" as never)}
+                    >
+                      <MaterialIcons name="person" size={28} color="#009FE3" />
+                    </TouchableOpacity>
+                  ),
+                }} />
+                <Stack.Screen name="Scanner" component={BarcodeScanner} options={{
+                  title: "Barcode Scanner", headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigationRef.navigate("Profile" as never)}
+                    >
+                      <MaterialIcons name="person" size={28} color="#009FE3" />
+                    </TouchableOpacity>
+                  ),
+                }} />
+                <Stack.Screen
+                  name="Profile"
+                  component={ProfileScreen}
+                  options={{
+                    title: "Profile",
+                    headerRight: () => (
+                      <TouchableOpacity
+                        onPress={() => navigationRef.navigate("AccountSettings" as never)}
+                      >
+                        <MaterialIcons name="settings" size={28} color="#009FE3" />
+                      </TouchableOpacity>
+                    ),
+                  }} />
+                <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
+                <Stack.Screen name="Medications" component={MedicationScreen} options={{ title: "Medications" }} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ThemeProvider>
 
       {!!email && (
         <View pointerEvents="box-none" style={styles.fab}>
