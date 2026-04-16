@@ -1,7 +1,7 @@
-import React from "react"
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native"
-import MaterialIcons from "@expo/vector-icons/MaterialIcons"
-import { globalStyles } from "../src/styles/globalStyles"
+import React from "react";
+import { View, Text, TouchableOpacity, Image } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useTheme } from "../src/theme/ThemeContext";
 
 type ProfileHeaderProps = {
     user: any
@@ -10,21 +10,29 @@ type ProfileHeaderProps = {
 }
 
 export default function ProfileHeader({ user, profileImage, onChooseImage }: ProfileHeaderProps) {
+    const { theme, styles } = useTheme();
     return (
         <>
-            <View style={globalStyles.headerLeft}>
-                <Text style={globalStyles.profileName}>{user?.displayName || "Profile"}</Text>
-                <Text style={globalStyles.emailName}>{user?.email || "Email"}</Text>
+            <View style={styles.headerLeft}>
+                <Text style={[styles.profileName, { color: theme.colors.text }]}>
+                    {user?.displayName || "Profile"}
+                </Text>
+
+                <Text style={[styles.emailName, { color: theme.colors.textSecondary }]}>
+                    {user?.email || "Email"}
+                </Text>
             </View>
 
-            <TouchableOpacity style={globalStyles.profileImage} onPress={onChooseImage}>
+            <TouchableOpacity style={styles.profileImage} onPress={onChooseImage}>
                 {profileImage ? (
-                    <Image source={{ uri: profileImage }} style={{ width: "100%", height: "100%", borderRadius: 30 }} />
+                    <Image
+                        source={{ uri: profileImage }}
+                        style={{ width: "100%", height: "100%", borderRadius: 30 }}
+                    />
                 ) : (
-                    <MaterialIcons name="add" size={40} color="#009FE3" />
+                    <MaterialIcons name="add" size={40} color={theme.colors.primary} />
                 )}
             </TouchableOpacity>
-
         </>
-    )
+    );
 }

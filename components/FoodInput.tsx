@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { FoodItem } from '../types/FoodItem';
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext";
 
 type Props = {
   onSubmit: (food: FoodItem) => void;
@@ -10,6 +10,8 @@ type Props = {
 };
 
 export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = {} }) => {
+  const { theme, styles } = useTheme();
+
   const [name, setName] = React.useState(initial.name ?? '');
   const [energy, setEnergy] = React.useState(String(initial.energy ?? ''));
   const [carbs, setCarbs] = React.useState(String(initial.carbohydrates ?? ''));
@@ -30,16 +32,16 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
   };
 
   return (
-    <View style={globalStyles.foodInput_container}>
+    <View style={styles.foodInput_container}>
       <TextInput
-        style={globalStyles.input}
+        style={styles.input}
         placeholder="Name"
         value={name}
         onChangeText={setName}
       />
 
       <TextInput
-        style={globalStyles.input}
+        style={styles.input}
         placeholder="Energy (kcal)"
         value={energy}
         onChangeText={setEnergy}
@@ -47,7 +49,7 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
       />
 
       <TextInput
-        style={globalStyles.input}
+        style={styles.input}
         placeholder="Carbs (g)"
         value={carbs}
         onChangeText={setCarbs}
@@ -55,7 +57,7 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
       />
 
       <TextInput
-        style={globalStyles.input}
+        style={styles.input}
         placeholder="Protein (g)"
         value={protein}
         onChangeText={setProtein}
@@ -63,7 +65,7 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
       />
 
       <TextInput
-        style={globalStyles.input}
+        style={styles.input}
         placeholder="Fat (g)"
         value={fat}
         onChangeText={setFat}
@@ -73,17 +75,17 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
       {onOpenScanner && (
         <TouchableOpacity
           onPress={onOpenScanner}
-          style={globalStyles.foodInput_cameraButton}
+          style={styles.foodInput_cameraButton}
         >
-          <Text style={globalStyles.foodInput_cameraIcon}>📷</Text>
+          <Text style={styles.foodInput_cameraIcon}>📷</Text>
         </TouchableOpacity>
       )}
 
       <TouchableOpacity
         onPress={handleSubmit}
-        style={globalStyles.buttonPrimary}
+        style={styles.buttonPrimary}
       >
-        <Text style={globalStyles.buttonPrimaryText}>Add Food</Text>
+        <Text style={styles.buttonPrimaryText}>Add Food</Text>
       </TouchableOpacity>
     </View>
   );

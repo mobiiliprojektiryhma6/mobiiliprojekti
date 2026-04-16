@@ -1,10 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useTodayCarbsChart } from "../src/hooks/useTodayCarbsChart";
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext"; 
 
 export default function TodayCarbsChart() {
+    const { theme, styles } = useTheme();
+
     const {
         chartError,
         chartKey,
@@ -19,27 +21,27 @@ export default function TodayCarbsChart() {
     } = useTodayCarbsChart();
 
     return (
-        <View style={globalStyles.todayChart_wrap}>
-            <Text style={globalStyles.todayChart_title}>Today's Carbs</Text>
+        <View style={styles.todayChart_wrap}>
+            <Text style={styles.todayChart_title}>Today's Carbs</Text>
 
-            <View style={globalStyles.todayChart_targetWrap}>
+            <View style={styles.todayChart_targetWrap}>
                 {targetCarbs === null || remainingCarbs === null ? (
-                    <Text style={globalStyles.todayChart_infoText}>
+                    <Text style={styles.todayChart_infoText}>
                         {targetMessage ??
                             "Missing profile info: add weight and height, or set a custom carb target."}
                     </Text>
                 ) : (
                     <>
                         {totalCarbs > targetCarbs && (
-                            <Text style={globalStyles.todayChart_warningText}>
+                            <Text style={styles.todayChart_warningText}>
                                 You are {Math.abs(targetCarbs - totalCarbs).toFixed(1)} g above today&apos;s target.
                             </Text>
                         )}
 
-                        <View style={globalStyles.todayChart_progressTrack}>
+                        <View style={styles.todayChart_progressTrack}>
                             <View
                                 style={[
-                                    globalStyles.todayChart_progressFill,
+                                    styles.todayChart_progressFill,
                                     { width: `${progress * 100}%` },
                                 ]}
                             />
@@ -49,8 +51,12 @@ export default function TodayCarbsChart() {
             </View>
 
             {loadingChart && <Text>Loading chart...</Text>}
-            {!loadingChart && chartError && <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>}
-            {!loadingChart && !chartError && pieData.length === 0 && <Text>No meals logged for today yet.</Text>}
+            {!loadingChart && chartError && (
+                <Text style={styles.todayChart_errorText}>{chartError}</Text>
+            )}
+            {!loadingChart && !chartError && pieData.length === 0 && (
+                <Text>No meals logged for today yet.</Text>
+            )}
 
             {!loadingChart && !chartError && pieData.length > 0 && (
                 <>
@@ -67,12 +73,12 @@ export default function TodayCarbsChart() {
                         absolute
                     />
 
-                    <Text style={globalStyles.todayChart_totalText}>
+                    <Text style={styles.todayChart_totalText}>
                         Total carbs: {totalCarbs.toFixed(1)} g
                     </Text>
 
                     {remainingCarbs !== null && (
-                        <Text style={globalStyles.todayChart_remainingText}>
+                        <Text style={styles.todayChart_remainingText}>
                             Remaining: {remainingCarbs.toFixed(1)} g
                         </Text>
                     )}
@@ -83,7 +89,7 @@ export default function TodayCarbsChart() {
                 !chartError &&
                 pieData.length === 0 &&
                 remainingCarbs !== null && (
-                    <Text style={globalStyles.todayChart_remainingText}>
+                    <Text style={styles.todayChart_remainingText}>
                         Remaining: {remainingCarbs.toFixed(1)} g
                     </Text>
                 )}

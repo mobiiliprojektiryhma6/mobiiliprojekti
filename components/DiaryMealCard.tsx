@@ -8,7 +8,7 @@ import EditFood from "./EditFood";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getFavoriteFoods } from "../firebase/favorites";
 import { addFavoriteMeal, removeFavoriteMeal, getFavoriteMeals } from "../firebase/favoriteMeals";
-import { globalStyles } from "../src/styles/globalStyles";
+import { useTheme } from "../src/theme/ThemeContext";
 
 type Meal = {
   id: string;
@@ -49,6 +49,8 @@ function calculateMealTotals(foods: FoodItem[]) {
 }
 
 export default function DiaryMealCard({ meal, index }: Props) {
+  const { theme, styles } = useTheme();
+
   const [expanded, setExpanded] = useState(false);
 
   const navigation = useNavigation<any>();
@@ -160,12 +162,12 @@ export default function DiaryMealCard({ meal, index }: Props) {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => setExpanded(!expanded)}
-        style={globalStyles.diaryCard}
+        style={styles.diaryCard}   // 🔥 päivitetty
       >
         {/* Header */}
-        <View style={globalStyles.diaryHeader}>
+        <View style={styles.diaryHeader}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={globalStyles.diaryHeaderText}>
+            <Text style={styles.diaryHeaderText}>
               {meal.mealType} #{index}
             </Text>
 
@@ -187,19 +189,19 @@ export default function DiaryMealCard({ meal, index }: Props) {
           </View>
 
           <View style={{ alignItems: "flex-end" }}>
-            <Text style={globalStyles.diaryHeaderCarbs}>
+            <Text style={styles.diaryHeaderCarbs}>
               {totalCarbs.toFixed(1)} g carbs
             </Text>
-            <Text style={globalStyles.diaryTimeText}>{timeString}</Text>
+            <Text style={styles.diaryTimeText}>{timeString}</Text>
           </View>
         </View>
 
-        {!expanded && <Text style={globalStyles.diaryTapHint}>Tap to expand</Text>}
+        {!expanded && <Text style={styles.diaryTapHint}>Tap to expand</Text>}
 
         {expanded && (
-          <View style={globalStyles.diaryBody}>
+          <View style={styles.diaryBody}>
             {/* Foods */}
-            <View style={globalStyles.diarySection}>
+            <View style={styles.diarySection}>
               {meal.foods.map((food) => {
                 const baseName = food.name.split("(")[0].trim().toLowerCase();
                 const isFavorite = favoriteFoods.some(
@@ -207,14 +209,14 @@ export default function DiaryMealCard({ meal, index }: Props) {
                 );
 
                 return (
-                  <View key={food.id} style={globalStyles.diaryFoodRow}>
-                    <Text style={globalStyles.diaryFoodName}>
+                  <View key={food.id} style={styles.diaryFoodRow}>
+                    <Text style={styles.diaryFoodName}>
                       {isFavorite ? "⭐ " : ""}
                       {food.name}
                       {food.servingSize ? ` (${food.servingSize} g)` : ""}
                     </Text>
 
-                    <Text style={globalStyles.diaryFoodCarbs}>
+                    <Text style={styles.diaryFoodCarbs}>
                       {food.carbohydrates.toFixed(1)} g
                     </Text>
                   </View>
@@ -223,44 +225,44 @@ export default function DiaryMealCard({ meal, index }: Props) {
             </View>
 
             {/* Totals */}
-            <View style={globalStyles.diarySection}>
-              <Text style={globalStyles.diaryNutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
-              <Text style={globalStyles.diaryNutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
-              <Text style={globalStyles.diaryNutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
-              <Text style={globalStyles.diaryNutrient}>Fat: {totalFat.toFixed(1)} g</Text>
+            <View style={styles.diarySection}>
+              <Text style={styles.diaryNutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
+              <Text style={styles.diaryNutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
+              <Text style={styles.diaryNutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
+              <Text style={styles.diaryNutrient}>Fat: {totalFat.toFixed(1)} g</Text>
             </View>
 
             {/* Carbs per food */}
-            <View style={globalStyles.diarySection}>
-              <Text style={globalStyles.diaryChartTitle}>Carbs per food</Text>
+            <View style={styles.diarySection}>
+              <Text style={styles.diaryChartTitle}>Carbs per food</Text>
 
               {meal.foods.map((food) => {
                 const pct = totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
 
                 return (
-                  <View key={food.id} style={globalStyles.diaryBarRow}>
-                    <Text style={globalStyles.diaryBarLabel}>{food.name}</Text>
+                  <View key={food.id} style={styles.diaryBarRow}>
+                    <Text style={styles.diaryBarLabel}>{food.name}</Text>
 
-                    <View style={globalStyles.diaryBarTrack}>
+                    <View style={styles.diaryBarTrack}>
                       <View
                         style={[
-                          globalStyles.diaryBarFill,
-                          { width: `${pct}%` },
+                          styles.diaryBarFill,
+                          { width: `${pct}%`, backgroundColor: theme.colors.primary },
                         ]}
                       />
                     </View>
 
-                    <Text style={globalStyles.diaryFoodCarbs}>
+                    <Text style={styles.diaryFoodCarbs}>
                       {food.carbohydrates.toFixed(1)} g
                     </Text>
 
-                    <View style={globalStyles.diaryActionColumn}>
+                    <View style={styles.diaryActionColumn}>
                       <TouchableOpacity onPress={() => openEditModal(food)}>
-                        <Text style={globalStyles.diaryEditButton}>Edit</Text>
+                        <Text style={styles.diaryEditButton}>Edit</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={() => handleDelete(food.id)}>
-                        <Text style={globalStyles.diaryDeleteButton}>Del</Text>
+                        <Text style={styles.diaryDeleteButton}>Del</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

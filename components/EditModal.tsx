@@ -1,6 +1,6 @@
 import React from "react"
 import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native"
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext"
 
 type EditModalProps = {
     visible: boolean
@@ -29,23 +29,26 @@ export default function EditModal({
     onSave,
     onClose,
 }: EditModalProps) {
+
+    const { theme, styles } = useTheme()
+
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <View style={globalStyles.modalOverlay}>
-                <View style={globalStyles.modalBox}>
-                    <Text style={globalStyles.modalTitle}>{title}</Text>
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalBox}>
+                    <Text style={styles.modalTitle}>{title}</Text>
 
                     {type === "personal" ? (
                         <>
                             <TextInput
-                                style={globalStyles.modalInput}
+                                style={styles.modalInput}
                                 placeholder="Height (cm)"
                                 value={personalHeight}
                                 onChangeText={onChangeHeight}
                                 keyboardType="numeric"
                             />
                             <TextInput
-                                style={globalStyles.modalInput}
+                                style={styles.modalInput}
                                 placeholder="Weight (kg)"
                                 value={personalWeight}
                                 onChangeText={onChangeWeight}
@@ -54,20 +57,20 @@ export default function EditModal({
                         </>
                     ) : (
                         <TextInput
-                            style={globalStyles.modalInput}
+                            style={styles.modalInput}
                             placeholder="Write here..."
                             value={modalValue}
                             onChangeText={onChangeValue}
                         />
                     )}
 
-                    <View style={globalStyles.modalButtons}>
+                    <View style={styles.modalButtons}>
                         <TouchableOpacity onPress={onClose}>
-                            <Text style={globalStyles.modalCancel}>Cancel</Text>
+                            <Text style={styles.modalCancel}>Cancel</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={onSave}>
-                            <Text style={globalStyles.modalSave}>Save</Text>
+                            <Text style={styles.modalSave}>Save</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -1,12 +1,15 @@
 import React, { useState } from "react"
 import { View, TextInput, Text, TouchableOpacity, Alert } from "react-native"
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth"
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext" 
 
 interface LoginProps {
     setLoggedIn?: (value: boolean) => void;
 }
+
 export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
+    const { theme, styles } = useTheme() 
+
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
 
@@ -18,11 +21,10 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
 
         try {
             const auth = getAuth();
-            const userCredential = await signInWithEmailAndPassword(auth, email,
-                password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            console.log("✅ User logged in: ", user.email); // user log to terminal
+            console.log("✅ User logged in: ", user.email);
 
             if (setLoggedIn) setLoggedIn(true);
         } catch (error: any) {
@@ -41,12 +43,12 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
 
     return (
         <View style={{ width: "100%", padding: 20 }}>
-            <Text style={[globalStyles.header, { textAlign: "center" }]}>
+            <Text style={[styles.header, { textAlign: "center" }]}>
                 Login 💉
             </Text>
 
             <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
@@ -55,7 +57,7 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
             />
 
             <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
@@ -63,10 +65,10 @@ export default function Login({ setLoggedIn }: LoginProps): React.ReactElement {
             />
 
             <TouchableOpacity
-                style={globalStyles.buttonPrimary}
+                style={styles.buttonPrimary}
                 onPress={handleLogin}
             >
-                <Text style={globalStyles.buttonPrimaryText}>Login 😈</Text>
+                <Text style={styles.buttonPrimaryText}>Login 😈</Text>
             </TouchableOpacity>
         </View>
     )

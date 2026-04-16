@@ -12,7 +12,7 @@ import { doc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
-import { globalStyles } from "../src/styles/globalStyles";
+import { useTheme } from "../src/theme/ThemeContext";
 
 // --- Helper: recalc totals ---
 function calculateMealTotals(foods: FoodItem[]) {
@@ -46,6 +46,8 @@ type Props = {
 };
 
 export default function EditFoodModal({ food, meal, onClose }: Props) {
+  const { theme, styles } = useTheme();
+
   const user = getAuth().currentUser;
   const navigation = useNavigation<any>();
 
@@ -148,23 +150,23 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
   return (
     <>
       <Modal transparent animationType="fade">
-        <View style={globalStyles.modalOverlay}>
-          <View style={[globalStyles.modalBox, mode === "products" && globalStyles.editFood_productModal]}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, mode === "products" && styles.editFood_productModal]}>
 
             {/* CHOOSE MODE */}
             {mode === "choose" && (
               <>
-                <Text style={globalStyles.modalTitle}>Edit Food</Text>
+                <Text style={styles.modalTitle}>Edit Food</Text>
 
                 <TouchableOpacity
-                  style={globalStyles.editFood_optionButton}
+                  style={styles.editFood_optionButton}
                   onPress={() => setMode("manual")}
                 >
-                  <Text style={globalStyles.editFood_optionText}>Edit manually</Text>
+                  <Text style={styles.editFood_optionText}>Edit manually</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={globalStyles.editFood_optionButton}
+                  style={styles.editFood_optionButton}
                   onPress={() => {
                     onClose();
                     navigation.navigate("FoodSearch", {
@@ -174,18 +176,18 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                     });
                   }}
                 >
-                  <Text style={globalStyles.editFood_optionText}>Search online</Text>
+                  <Text style={styles.editFood_optionText}>Search online</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={globalStyles.editFood_optionButton}
+                  style={styles.editFood_optionButton}
                   onPress={() => setMode("products")}
                 >
-                  <Text style={globalStyles.editFood_optionText}>Pick from products</Text>
+                  <Text style={styles.editFood_optionText}>Pick from products</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={globalStyles.editFood_optionButton}
+                  style={styles.editFood_optionButton}
                   onPress={() => {
                     onClose();
                     navigation.navigate("FavoriteFoods", {
@@ -195,11 +197,11 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                     });
                   }}
                 >
-                  <Text style={globalStyles.editFood_optionText}>Pick from Favorites ⭐</Text>
+                  <Text style={styles.editFood_optionText}>Pick from Favorites ⭐</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onClose}>
-                  <Text style={globalStyles.modalCancel}>Cancel</Text>
+                  <Text style={styles.modalCancel}>Cancel</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -207,51 +209,51 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
             {/* MANUAL MODE */}
             {mode === "manual" && (
               <>
-                <Text style={globalStyles.modalTitle}>Edit Food Manually</Text>
+                <Text style={styles.modalTitle}>Edit Food Manually</Text>
 
                 <TextInput
-                  style={globalStyles.modalInput}
+                  style={styles.modalInput}
                   placeholder="Name"
                   value={name}
                   onChangeText={setName}
                 />
 
-                <View style={globalStyles.editFood_inputRow}>
+                <View style={styles.editFood_inputRow}>
                   <TextInput
-                    style={globalStyles.editFood_inputField}
+                    style={styles.editFood_inputField}
                     placeholder="Serving size"
                     keyboardType="numeric"
                     value={servingSize}
                     onChangeText={setServingSize}
                   />
-                  <Text style={globalStyles.editFood_unitLabel}>g</Text>
+                  <Text style={styles.editFood_unitLabel}>g</Text>
                 </View>
 
-                <View style={globalStyles.editFood_inputRow}>
+                <View style={styles.editFood_inputRow}>
                   <TextInput
-                    style={globalStyles.editFood_inputField}
+                    style={styles.editFood_inputField}
                     placeholder="Carbohydrates"
                     keyboardType="numeric"
                     value={carbs}
                     onChangeText={setCarbs}
                   />
-                  <Text style={globalStyles.editFood_unitLabel}>g</Text>
+                  <Text style={styles.editFood_unitLabel}>g</Text>
                 </View>
 
-                <View style={globalStyles.editFood_buttonRow}>
+                <View style={styles.editFood_buttonRow}>
                   <TouchableOpacity onPress={() => setMode("choose")}>
-                    <Text style={globalStyles.modalCancel}>Back</Text>
+                    <Text style={styles.modalCancel}>Back</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={onClose}>
-                    <Text style={globalStyles.modalCancel}>Cancel</Text>
+                    <Text style={styles.modalCancel}>Cancel</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={globalStyles.buttonPrimary}
+                    style={styles.buttonPrimary}
                     onPress={saveManual}
                   >
-                    <Text style={globalStyles.buttonPrimaryText}>Save</Text>
+                    <Text style={styles.buttonPrimaryText}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -260,10 +262,10 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
             {/* PRODUCT MODE */}
             {mode === "products" && (
               <>
-                <Text style={globalStyles.modalTitle}>Choose a Food</Text>
+                <Text style={styles.modalTitle}>Choose a Food</Text>
 
                 <TextInput
-                  style={globalStyles.editFood_searchInput}
+                  style={styles.editFood_searchInput}
                   placeholder="Search products..."
                   value={productSearch}
                   onChangeText={setProductSearch}
@@ -281,23 +283,23 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
                     <TouchableOpacity
-                      style={globalStyles.editFood_productItem}
+                      style={styles.editFood_productItem}
                       onPress={() => {
                         setPendingProduct(item);
                         setProductServingSize(String(food.servingSize || 100));
                         setAmountPopupVisible(true);
                       }}
                     >
-                      <Text style={globalStyles.editFood_productName}>{item.name}</Text>
-                      <Text style={globalStyles.editFood_productInfo}>
+                      <Text style={styles.editFood_productName}>{item.name}</Text>
+                      <Text style={styles.editFood_productInfo}>
                         {item.carbohydrates} g carbs
                       </Text>
                     </TouchableOpacity>
                   )}
-                  style={globalStyles.editFood_productsList}
+                  style={styles.editFood_productsList}
                 />
 
-                <View style={globalStyles.editFood_buttonRow}>
+                <View style={styles.editFood_buttonRow}>
                   <TouchableOpacity
                     onPress={() => {
                       setAmountPopupVisible(false);
@@ -305,7 +307,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                       setMode("choose");
                     }}
                   >
-                    <Text style={globalStyles.modalCancel}>Back</Text>
+                    <Text style={styles.modalCancel}>Back</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -315,17 +317,17 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                       onClose();
                     }}
                   >
-                    <Text style={globalStyles.modalCancel}>Close</Text>
+                    <Text style={styles.modalCancel}>Close</Text>
                   </TouchableOpacity>
                 </View>
 
                 {amountPopupVisible && pendingProduct && (
-                  <View style={globalStyles.editFood_amountOverlay}>
-                    <View style={globalStyles.editFood_amountPopup}>
-                      <Text style={globalStyles.modalTitle}>How many grams?</Text>
+                  <View style={styles.editFood_amountOverlay}>
+                    <View style={styles.editFood_amountPopup}>
+                      <Text style={styles.modalTitle}>How many grams?</Text>
 
                       <TextInput
-                        style={globalStyles.modalInput}
+                        style={styles.modalInput}
                         keyboardType="number-pad"
                         value={productServingSize}
                         onChangeText={setProductServingSize}
@@ -335,7 +337,7 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
 
                       <TouchableOpacity
                         style={[
-                          globalStyles.editFood_optionButton,
+                          styles.editFood_optionButton,
                           !(parseInt(productServingSize, 10) > 0) && { opacity: 0.4 },
                         ]}
                         disabled={!(parseInt(productServingSize, 10) > 0)}
@@ -346,11 +348,11 @@ export default function EditFoodModal({ food, meal, onClose }: Props) {
                           )
                         }
                       >
-                        <Text style={globalStyles.editFood_optionText}>Add</Text>
+                        <Text style={styles.editFood_optionText}>Add</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={() => setAmountPopupVisible(false)}>
-                        <Text style={globalStyles.modalCancel}>Cancel</Text>
+                        <Text style={styles.modalCancel}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

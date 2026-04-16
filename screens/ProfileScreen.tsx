@@ -39,7 +39,7 @@ export default function ProfileScreen() {
     const [useManualCarbTarget, setUseManualCarbTarget] = useState(false)
     const [dailyCarbTarget, setDailyCarbTarget] = useState<string | null>(null)
 
-    const theme = useTheme()
+    const { theme } = useTheme()
     const { user } = useAuth()
 
     const recommendedTarget = useMemo(

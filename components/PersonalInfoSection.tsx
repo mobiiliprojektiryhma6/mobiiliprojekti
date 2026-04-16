@@ -1,7 +1,7 @@
 import React from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
+import { View, Text, TouchableOpacity } from "react-native"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext" 
 
 type PersonalInfoSectionProps = {
     height: string | null
@@ -10,28 +10,29 @@ type PersonalInfoSectionProps = {
 }
 
 export default function PersonalInfoSection({ height, weight, onEdit }: PersonalInfoSectionProps) {
-    return (
-        <View style={globalStyles.section}>
-            <View style={globalStyles.sectionHeader}>
-                <Text style={globalStyles.sectionTitle}>Personal Information</Text>
+    const { theme, styles } = useTheme() 
 
-                <TouchableOpacity style={globalStyles.smallButton} onPress={onEdit}>
-                    <MaterialIcons name="edit" size={22} color="#fff" />
+    return (
+        <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Personal Information</Text>
+
+                <TouchableOpacity style={styles.smallButton} onPress={onEdit}>
+                    <MaterialIcons name="edit" size={22} color={theme.colors.white} />
                 </TouchableOpacity>
             </View>
 
-            <View style={globalStyles.rowBetween}>
-                <View style={globalStyles.column}>
+            <View style={styles.rowBetween}>
+                <View style={styles.column}>
                     <Text>Height (cm):</Text>
-                    {height && <Text style={globalStyles.listItem}>• {height} cm</Text>}
+                    {height && <Text style={styles.listItem}>• {height} cm</Text>}
                 </View>
 
-                <View style={globalStyles.column}>
+                <View style={styles.column}>
                     <Text>Weight (kg):</Text>
-                    {weight && <Text style={globalStyles.listItem}>• {weight} kg</Text>}
+                    {weight && <Text style={styles.listItem}>• {weight} kg</Text>}
                 </View>
             </View>
         </View>
     )
-
 }

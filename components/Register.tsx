@@ -3,9 +3,11 @@ import { View, Text, TextInput, TouchableOpacity } from "react-native"
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { auth } from "../firebase/config"
 import { RegisterForm, initialState } from "../types/RegisterTypes"
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext" 
 
 const Register = () => {
+    const { theme, styles } = useTheme()
+
     const [values, setValues] = useState<RegisterForm>(initialState)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
@@ -40,13 +42,13 @@ const Register = () => {
     return (
         <View style={{ width: "100%", padding: 20, alignItems: "center" }}>
             <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="Display Name"
                 value={values.displayName}
                 onChangeText={(value) => handleChange("displayName", value)}
             />
             <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="Email"
                 value={values.email}
                 onChangeText={(value) => handleChange("email", value)}
@@ -54,7 +56,7 @@ const Register = () => {
                 autoCapitalize="none"
             />
             <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="Password"
                 value={values.password}
                 onChangeText={(value) => handleChange("password", value)}
@@ -66,11 +68,11 @@ const Register = () => {
             )}
 
             <TouchableOpacity
-                style={globalStyles.buttonPrimary}
+                style={styles.buttonPrimary}
                 onPress={handleSubmit}
                 disabled={loading}
             >
-                <Text style={globalStyles.buttonPrimaryText}>
+                <Text style={styles.buttonPrimaryText}>
                     {loading ? "Registering..." : "Register"}
                 </Text>
             </TouchableOpacity>

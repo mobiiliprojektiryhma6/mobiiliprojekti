@@ -82,7 +82,15 @@ export default function App() {
                 <Stack.Screen name="MealBuilder" component={MealBuilderScreen} options={{ title: "Meal Builder" }} />
                 <Stack.Screen name="FoodSearch" component={FoodSearchScreen} options={{ title: "Food Search" }} />
                 <Stack.Screen name="Scanner" component={BarcodeScanner} options={{ title: "Barcode Scanner" }} />
-                <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+                <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile", headerRight: () => (
+                      <TouchableOpacity
+                        onPress={() => navigationRef.navigate("AccountSettings" as never)}
+                      >
+                        <MaterialIcons name="settings" size={28} color="#009FE3" />
+                      </TouchableOpacity>
+                    ),
+                  }}
+                />
                 <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
                 <Stack.Screen name="Medications" component={MedicationScreen} options={{ title: "Medications" }} />
                 <Stack.Screen name="FavoriteMeals" component={FavoriteMeals} options={{ title: "Favorite Meals" }} />

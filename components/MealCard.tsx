@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { FoodItem } from "../types/FoodItem";
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext"; 
 
 type Props = {
   food: FoodItem;
@@ -19,21 +19,23 @@ type NutrientRowProps = {
 };
 
 function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowProps) {
+  const { styles } = useTheme(); 
+
   return (
-    <View style={globalStyles.mealCard_nutrientRow}>
-      <View style={globalStyles.mealCard_nutrientLabelRow}>
-        <View style={[globalStyles.mealCard_nutrientDot, { backgroundColor: color }]} />
-        <Text style={globalStyles.mealCard_nutrientLabel}>{label}</Text>
-        <Text style={globalStyles.mealCard_nutrientValue}>
+    <View style={styles.mealCard_nutrientRow}>
+      <View style={styles.mealCard_nutrientLabelRow}>
+        <View style={[styles.mealCard_nutrientDot, { backgroundColor: color }]} />
+        <Text style={styles.mealCard_nutrientLabel}>{label}</Text>
+        <Text style={styles.mealCard_nutrientValue}>
           {value}
-          <Text style={globalStyles.mealCard_nutrientUnit}> {unit}</Text>
+          <Text style={styles.mealCard_nutrientUnit}> {unit}</Text>
         </Text>
       </View>
 
-      <View style={globalStyles.mealCard_barTrack}>
+      <View style={styles.mealCard_barTrack}>
         <View
           style={[
-            globalStyles.mealCard_barFill,
+            styles.mealCard_barFill,
             { width: `${Math.min(barPercent, 100)}%`, backgroundColor: color },
           ]}
         />
@@ -43,30 +45,32 @@ function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowP
 }
 
 export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: Props) {
+  const { theme, styles } = useTheme(); 
+
   const refValues = { carbs: 130, protein: 50, fat: 78 };
 
   return (
-    <View style={globalStyles.mealCard}>
+    <View style={styles.mealCard}>
       {/* Header */}
-      <View style={globalStyles.mealCard_header}>
-        <View style={globalStyles.mealCard_headerLeft}>
-          <Text style={globalStyles.mealCard_name} numberOfLines={2}>
+      <View style={styles.mealCard_header}>
+        <View style={styles.mealCard_headerLeft}>
+          <Text style={styles.mealCard_name} numberOfLines={2}>
             {food.name}
           </Text>
-          <Text style={globalStyles.mealCard_perServing}>per 100 g</Text>
+          <Text style={styles.mealCard_perServing}>per 100 g</Text>
         </View>
 
-        <View style={globalStyles.mealCard_energyBadge}>
-          <Text style={globalStyles.mealCard_energyValue}>{food.energy}</Text>
-          <Text style={globalStyles.mealCard_energyUnit}>kcal</Text>
+        <View style={styles.mealCard_energyBadge}>
+          <Text style={styles.mealCard_energyValue}>{food.energy}</Text>
+          <Text style={styles.mealCard_energyUnit}>kcal</Text>
         </View>
       </View>
 
       {/* Divider */}
-      <View style={globalStyles.mealCard_divider} />
+      <View style={styles.mealCard_divider} />
 
       {/* Nutrients */}
-      <View style={globalStyles.mealCard_nutrients}>
+      <View style={styles.mealCard_nutrients}>
         <NutrientRow
           label="Carbs"
           value={food.carbohydrates}
@@ -91,11 +95,11 @@ export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: 
       </View>
 
       <TouchableOpacity
-        style={globalStyles.mealCard_deleteButton}
+        style={styles.mealCard_deleteButton}
         onPress={() => onDelete(food.id!)}
         activeOpacity={0.7}
       >
-        <Text style={globalStyles.mealCard_deleteText}>Remove</Text>
+        <Text style={styles.mealCard_deleteText}>Remove</Text>
       </TouchableOpacity>
     </View>
   );

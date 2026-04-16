@@ -6,6 +6,7 @@ import { db } from "../firebase/config";
 import { useAuth } from "../src/hooks/useAuth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext"
 
 
 type MedicationTime = {
@@ -46,6 +47,7 @@ export default function MedicationScreen() {
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme()
 
   //Checkbox (tallennetaan tila myöhemmin AsyncStorageen)
   const [checks, setChecks] = useState<Record<string, boolean>>({});
@@ -228,14 +230,16 @@ export default function MedicationScreen() {
   }
 
   return (
-    <View style={globalStyles.med_root}>
+    <View style={[globalStyles.med_root, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         style={globalStyles.med_scroll}
         contentContainerStyle={globalStyles.med_scrollContent}
       >
         {/* Header */}
         <View style={globalStyles.med_screenHeader}>
-          <Text style={globalStyles.header}>My Medications</Text>
+          <Text style={[globalStyles.header, { color: theme.colors.text }]}>
+            My Medications
+          </Text>
 
           <TouchableOpacity style={globalStyles.med_addButton} onPress={openAddModal}>
             <MaterialIcons name="add" size={26} color="#fff" />
