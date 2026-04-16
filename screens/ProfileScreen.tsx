@@ -11,7 +11,6 @@ import HealthSection from "../components/HealthSection"
 import ProfileHeader from "../components/ProfileHeader"
 import PersonalInfoSection from "../components/PersonalInfoSection"
 import EditModal from "../components/EditModal"
-import { globalStyles } from "../src/styles/globalStyles"
 import { useTheme } from "../src/theme/ThemeContext"
 
 type MedicationEntry = { id: string; name: string }
@@ -39,7 +38,7 @@ export default function ProfileScreen() {
     const [useManualCarbTarget, setUseManualCarbTarget] = useState(false)
     const [dailyCarbTarget, setDailyCarbTarget] = useState<string | null>(null)
 
-    const { theme } = useTheme()
+    const { theme, styles } = useTheme();
     const { user } = useAuth()
 
     const recommendedTarget = useMemo(
@@ -220,8 +219,8 @@ export default function ProfileScreen() {
     }
 
     return (
-        <View style={[globalStyles.container, { backgroundColor: theme.colors.background }]}>
-            <ScrollView contentContainerStyle={globalStyles.screenWithHeader}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <ScrollView contentContainerStyle={styles.screenWithHeader}>
 
                 {/*Username, Email, Profile Picture*/}
                 <ProfileHeader
@@ -238,21 +237,21 @@ export default function ProfileScreen() {
                 />
 
                 {/* DAILY CARB TARGET */}
-                <View style={globalStyles.section}>
-                    <Text style={globalStyles.sectionTitle}>Daily Carb Target:</Text>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Daily Carb Target:</Text>
 
-                    <View style={globalStyles.targetModeRow}>
+                    <View style={styles.targetModeRow}>
                         <TouchableOpacity
                             style={[
-                                globalStyles.modeButton,
-                                !useManualCarbTarget && globalStyles.modeButtonActive,
+                                styles.modeButton,
+                                !useManualCarbTarget && styles.modeButtonActive,
                             ]}
                             onPress={() => setUseManualCarbTarget(false)}
                         >
                             <Text
                                 style={[
-                                    globalStyles.modeButtonText,
-                                    !useManualCarbTarget && globalStyles.modeButtonTextActive,
+                                    styles.modeButtonText,
+                                    !useManualCarbTarget && styles.modeButtonTextActive,
                                 ]}
                             >
                                 Recommended
@@ -261,15 +260,15 @@ export default function ProfileScreen() {
 
                         <TouchableOpacity
                             style={[
-                                globalStyles.modeButton,
-                                useManualCarbTarget && globalStyles.modeButtonActive,
+                                styles.modeButton,
+                                useManualCarbTarget && styles.modeButtonActive,
                             ]}
                             onPress={() => setUseManualCarbTarget(true)}
                         >
                             <Text
                                 style={[
-                                    globalStyles.modeButtonText,
-                                    useManualCarbTarget && globalStyles.modeButtonTextActive,
+                                    styles.modeButtonText,
+                                    useManualCarbTarget && styles.modeButtonTextActive,
                                 ]}
                             >
                                 Custom
@@ -278,29 +277,29 @@ export default function ProfileScreen() {
                     </View>
 
                     {!useManualCarbTarget && recommendedTarget.target !== null && (
-                        <Text style={globalStyles.listItem}>
+                        <Text style={styles.listItem}>
                             • Recommended: {recommendedTarget.target} g/day
                         </Text>
                     )}
 
                     {!useManualCarbTarget && recommendedTarget.target === null && (
-                        <Text style={globalStyles.warningText}>{recommendedTarget.reason}</Text>
+                        <Text style={styles.warningText}>{recommendedTarget.reason}</Text>
                     )}
 
                     {useManualCarbTarget && dailyCarbTarget && (
-                        <Text style={globalStyles.listItem}>
+                        <Text style={styles.listItem}>
                             • Custom target: {dailyCarbTarget} g/day
                         </Text>
                     )}
 
                     {useManualCarbTarget && !dailyCarbTarget && (
-                        <Text style={globalStyles.warningText}>
+                        <Text style={styles.warningText}>
                             Add your custom carb target to use manual mode.
                         </Text>
                     )}
 
                     <TouchableOpacity
-                        style={globalStyles.smallButton}
+                        style={styles.smallButton}
                         onPress={() =>
                             openGenericModal(
                                 "dailyCarbTarget",
@@ -338,18 +337,18 @@ export default function ProfileScreen() {
                     onDelete={removeAllergy}
                 />
 
-                <Text style={globalStyles.sectionTitle}>Links:</Text>
-                <View style={globalStyles.rowCenter}>
+                <Text style={styles.sectionTitle}>Links:</Text>
+                <View style={styles.rowCenter}>
                     <TouchableOpacity onPress={() => openLink("https://www.diabetes.fi/")}>
-                        <Text style={globalStyles.linkButton}>Diabetesliitto</Text>
+                        <Text style={styles.linkButton}>Diabetesliitto</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => openLink("https://www.kanta.fi/omakanta")}>
-                        <Text style={globalStyles.linkButton}>omaKanta</Text>
+                        <Text style={styles.linkButton}>omaKanta</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => openLink("https://www.terveyskyla.fi/diabetestalo")}>
-                        <Text style={globalStyles.linkButton}>Diabetes Talo</Text>
+                        <Text style={styles.linkButton}>Diabetes Talo</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

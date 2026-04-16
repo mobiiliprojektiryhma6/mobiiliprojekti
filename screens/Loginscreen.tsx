@@ -3,19 +3,20 @@ import { View, TouchableOpacity, Text } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import Login from "../components/Login"
 import Register from "../components/Register"
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext"
 
 export default function Loginscreen() {
   const [showRegister, setShowRegister] = useState(false)
+  const { theme, styles } = useTheme()
 
   return (
-    <View style={globalStyles.center}>
+    <View style={styles.center}>
       {showRegister ? <Register /> : <Login />}
 
       <TouchableOpacity onPress={() => setShowRegister(prev => !prev)}>
         <Text
           style={[
-            globalStyles.textPrimary,
+            styles.textPrimary,
             { color: "#007AFF", marginTop: 20, fontWeight: "600" }
           ]}
         >

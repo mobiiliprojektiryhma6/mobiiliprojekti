@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getFavoriteFoods, removeFavoriteFood } from "../firebase/favorites";
 import { FoodItem } from "../types/FoodItem";
+import { useTheme } from "../src/theme/ThemeContext";
 
 export default function FavoriteFoodsScreen() {
     const navigation = useNavigation<any>();
@@ -13,6 +14,7 @@ export default function FavoriteFoodsScreen() {
     const mealId = route.params?.mealId;
 
     const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+    const { theme, styles } = useTheme();
 
     useEffect(() => {
         const load = async () => {
@@ -22,23 +24,22 @@ export default function FavoriteFoodsScreen() {
         load();
     }, []);
 
-const selectFood = (food: FoodItem) => {
-    if (returnTo === "MealBuilder") {
-        navigation.goBack();   
-        setTimeout(() => {
-            navigation.navigate("MealBuilder", {
-                selectedFavoriteFood: food
+    const selectFood = (food: FoodItem) => {
+        if (returnTo === "MealBuilder") {
+            navigation.goBack();
+            setTimeout(() => {
+                navigation.navigate("MealBuilder", {
+                    selectedFavoriteFood: food
+                });
+            }, 0);
+        } else {
+            navigation.navigate("FoodDiary", {
+                selectedFavoriteFood: food,
+                editingFoodId,
+                mealId,
             });
-        }, 0);
-    } else {
-        navigation.navigate("FoodDiary", {
-            selectedFavoriteFood: food,
-            editingFoodId,
-            mealId,
-        });
-    }
-};
-
+        }
+    };
 
     const deleteFavorite = async (food: FoodItem) => {
         await removeFavoriteFood(food.id);
@@ -46,51 +47,35 @@ const selectFood = (food: FoodItem) => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Favorite Foods ⭐</Text>
+        <View style={styles.favorites_container}>
+            <Text style={styles.favorites_title}>Favorite Foods ⭐</Text>
 
             {favoriteFoods.length === 0 && (
-                <Text style={styles.empty}>You have no favorite foods yet.</Text>
+                <Text style={styles.favorites_empty}>
+                    You have no favorite foods yet.
+                </Text>
             )}
 
             <FlatList
                 data={favoriteFoods}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <View style={styles.row}>
+                    <View style={styles.favorites_row}>
                         <TouchableOpacity style={{ flex: 1 }} onPress={() => selectFood(item)}>
-                            <Text style={styles.name}>{item.name}</Text>
-                            <Text style={styles.info}>{item.carbohydrates} g carbs</Text>
+                            <Text style={styles.favorites_name}>{item.name}</Text>
+                            <Text style={styles.favorites_info}>{item.carbohydrates} g carbs</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => deleteFavorite(item)}>
-                            <Text style={styles.delete}>🗑</Text>
+                            <Text style={styles.favorites_delete}>🗑</Text>
                         </TouchableOpacity>
                     </View>
                 )}
             />
 
             <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Text style={styles.close}>Close</Text>
+                <Text style={styles.favorites_close}>Close</Text>
             </TouchableOpacity>
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: "#E5F7FD" },
-    title: { fontSize: 22, fontWeight: "bold", marginBottom: 12 },
-    empty: { color: "gray", marginBottom: 20 },
-    row: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 12,
-        backgroundColor: "#fff",
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    name: { fontSize: 16, fontWeight: "bold" },
-    info: { fontSize: 14, color: "gray" },
-    delete: { fontSize: 22, marginLeft: 10 },
-    close: { textAlign: "center", marginTop: 20, color: "gray" },
-});

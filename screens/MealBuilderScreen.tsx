@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   Modal,
   FlatList,
 } from "react-native";
-import { globalStyles } from "../src/styles/globalStyles"
 
+import { useTheme } from "../src/theme/ThemeContext";
 import { db } from "../firebase/config";
 import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
@@ -18,7 +17,6 @@ import MealCard from "../components/MealCard";
 import { FoodItem } from "../types/FoodItem";
 
 import { useRoute, useNavigation } from "@react-navigation/native";
-
 import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
 
 const getDayKey = (date = new Date()) => {
@@ -29,6 +27,7 @@ const getDayKey = (date = new Date()) => {
 };
 
 export default function MealBuilderScreen() {
+  const { theme, styles } = useTheme();
 
   const [mealType, setMealType] = useState("Lunch");
   const [foods, setFoods] = useState<FoodItem[]>([]);
@@ -53,16 +52,13 @@ export default function MealBuilderScreen() {
   const [servingSizeInput, setServingSizeInput] = useState("100");
   const [selectedProduct, setSelectedProduct] = useState<FoodItem | null>(null);
 
-
   const [productSearch, setProductSearch] = useState("");
 
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
   const selectedDateParam = route.params?.selectedDate;
-const selectedDate = selectedDateParam
-  ? new Date(selectedDateParam)
-  : new Date();
+  const selectedDate = selectedDateParam ? new Date(selectedDateParam) : new Date();
 
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
@@ -116,10 +112,7 @@ const selectedDate = selectedDateParam
   }, []);
 
   const toggleFavorite = async (food: FoodItem) => {
-    console.log("TOGGLE FAVORITE:", food.name, food.id);
-
     const isFav = favoriteFoods.some(f => f.id === food.id);
-    console.log("  was favorite?", isFav);
 
     if (isFav) {
       await removeFavoriteFood(food.id);
@@ -128,8 +121,6 @@ const selectedDate = selectedDateParam
       await addFavoriteFood(food);
       setFavoriteFoods(prev => [...prev, food]);
     }
-
-    console.log("  now favorites:", favoriteFoods.map(f => f.name));
   };
 
   const startEditingFood = (food: FoodItem) => {
@@ -205,7 +196,6 @@ const selectedDate = selectedDateParam
       alert("Meal saved!");
       setFoods([]);
     } catch (error) {
-      console.error("Error saving meal:", error);
       alert("Could not save meal.");
     }
   };
@@ -240,7 +230,6 @@ const selectedDate = selectedDateParam
 
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
 
-  // Load a whole favorite meal into MealBuilder
   useEffect(() => {
     if (route.params?.favoriteMeal) {
       setFoods(route.params.favoriteMeal.foods);
@@ -248,41 +237,40 @@ const selectedDate = selectedDateParam
     }
   }, [route.params?.favoriteMeal]);
 
-  
   useEffect(() => {
-  if (route.params?.selectedFavoriteFood) {
-    const food = route.params.selectedFavoriteFood;
+    if (route.params?.selectedFavoriteFood) {
+      const food = route.params.selectedFavoriteFood;
 
-    setSelectedProduct(food);
-    setServingSizeInput("100");
-    setServingSizeModalVisible(true);
+      setSelectedProduct(food);
+      setServingSizeInput("100");
+      setServingSizeModalVisible(true);
 
-    navigation.setParams({ selectedFavoriteFood: undefined });
-  }
-}, [route.params?.selectedFavoriteFood]);
+      navigation.setParams({ selectedFavoriteFood: undefined });
+    }
+  }, [route.params?.selectedFavoriteFood]);
 
   return (
-    <View style={globalStyles.container}>
-      <Text style={globalStyles.header}>Build Your Meal</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>Build Your Meal</Text>
 
       {/* Meal type selector */}
-      <View style={globalStyles.mealBuilder_section}>
-        <Text style={globalStyles.mealBuilder_label}>Meal</Text>
+      <View style={styles.mealBuilder_section}>
+        <Text style={styles.mealBuilder_label}>Meal</Text>
 
-        <View style={globalStyles.mealBuilder_mealRow}>
+        <View style={styles.mealBuilder_mealRow}>
           {["Breakfast", "Lunch", "Snack", "Dinner"].map((meal) => (
             <TouchableOpacity
               key={meal}
               style={[
-                globalStyles.mealBuilder_mealButton,
-                mealType === meal && globalStyles.mealBuilder_mealButtonSelected,
+                styles.mealBuilder_mealButton,
+                mealType === meal && styles.mealBuilder_mealButtonSelected,
               ]}
               onPress={() => setMealType(meal)}
             >
               <Text
                 style={[
-                  globalStyles.mealBuilder_mealButtonText,
-                  mealType === meal && globalStyles.mealBuilder_mealButtonTextSelected,
+                  styles.mealBuilder_mealButtonText,
+                  mealType === meal && styles.mealBuilder_mealButtonTextSelected,
                 ]}
               >
                 {meal}
@@ -294,16 +282,16 @@ const selectedDate = selectedDateParam
 
       {/* Add food button */}
       <TouchableOpacity
-        style={globalStyles.mealBuilder_addFoodButton}
+        style={styles.mealBuilder_addFoodButton}
         onPress={() => setChooseModalVisible(true)}
       >
-        <Text style={globalStyles.mealBuilder_addFoodButtonText}>Add Food</Text>
+        <Text style={styles.mealBuilder_addFoodButtonText}>Add Food</Text>
       </TouchableOpacity>
 
       {/* Foods list */}
       {foods.length > 0 && (
         <>
-          <Text style={globalStyles.mealBuilder_label}>Foods in this meal:</Text>
+          <Text style={styles.mealBuilder_label}>Foods in this meal:</Text>
 
           <FlatList
             data={foods}
@@ -315,7 +303,6 @@ const selectedDate = selectedDateParam
                 onToggleFavorite={toggleFavorite}
                 onPress={() => startEditingFood(item)}
               />
-
             )}
           />
         </>
@@ -324,36 +311,36 @@ const selectedDate = selectedDateParam
       {/* Save meal */}
       <TouchableOpacity
         style={[
-          globalStyles.mealBuilder_saveButton,
+          styles.mealBuilder_saveButton,
           !mealType && { opacity: 0.4 },
         ]}
         disabled={!mealType}
         onPress={saveMeal}
       >
-        <Text style={globalStyles.mealBuilder_saveButtonText}>Save Meal</Text>
+        <Text style={styles.mealBuilder_saveButtonText}>Save Meal</Text>
       </TouchableOpacity>
 
       {/* CHOOSE FOOD MODAL */}
       <Modal visible={chooseModalVisible} transparent animationType="fade">
-        <View style={globalStyles.modalOverlay}>
-          <View style={globalStyles.modalBox}>
-            <Text style={globalStyles.modalTitle}>Add Food</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Add Food</Text>
 
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalAddButton}
+              style={styles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 setProductModalVisible(true);
               }}
             >
-              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+              <Text style={styles.mealBuilder_modalAddButtonText}>
                 Pick from products
               </Text>
             </TouchableOpacity>
 
             {/* Pick from Favorites */}
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalAddButton}
+              style={styles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 navigation.navigate("FavoriteFoods", { returnTo: "MealBuilder" });
@@ -367,32 +354,28 @@ const selectedDate = selectedDateParam
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
-
-                setTimeout(() => {
-                  navigation.navigate("FavoriteMeals");
-                }, 0);
+                navigation.navigate("FavoriteMeals");
               }}
             >
               <Text style={styles.modalAddButtonText}>Add from Favorite Meals ⭐</Text>
             </TouchableOpacity>
-
 
             {/* Search online */}
             <TouchableOpacity
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
-               navigation.navigate("FoodSearch", { selectedDate });
+                navigation.navigate("FoodSearch", { selectedDate });
               }}
             >
-              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+              <Text style={styles.mealBuilder_modalAddButtonText}>
                 Search online
               </Text>
             </TouchableOpacity>
 
             {/* Add custom food */}
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalAddButton}
+              style={styles.mealBuilder_modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
                 setEditingFoodId(null);
@@ -404,16 +387,16 @@ const selectedDate = selectedDateParam
                 setModalVisible(true);
               }}
             >
-              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+              <Text style={styles.mealBuilder_modalAddButtonText}>
                 Add custom food
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalCancelButton}
+              style={styles.mealBuilder_modalCancelButton}
               onPress={() => setChooseModalVisible(false)}
             >
-              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+              <Text style={styles.mealBuilder_modalCancelButtonText}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -424,10 +407,10 @@ const selectedDate = selectedDateParam
       {/* PRODUCT PICKER MODAL */}
       <Modal visible={productModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
-          <Text style={globalStyles.header}>Choose a Food</Text>
+          <Text style={styles.header}>Choose a Food</Text>
 
           <TextInput
-            style={globalStyles.input}
+            style={styles.input}
             placeholder="Search products..."
             value={productSearch}
             onChangeText={setProductSearch}
@@ -445,7 +428,7 @@ const selectedDate = selectedDateParam
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={globalStyles.mealBuilder_productItem}
+                style={styles.mealBuilder_productItem}
                 onPress={() => {
                   setSelectedProduct(item);
                   setServingSizeInput("100");
@@ -453,8 +436,8 @@ const selectedDate = selectedDateParam
                   setServingSizeModalVisible(true);
                 }}
               >
-                <Text style={globalStyles.mealBuilder_productName}>{item.name}</Text>
-                <Text style={globalStyles.mealBuilder_productInfo}>
+                <Text style={styles.mealBuilder_productName}>{item.name}</Text>
+                <Text style={styles.mealBuilder_productInfo}>
                   {item.carbohydrates} carb
                 </Text>
               </TouchableOpacity>
@@ -462,7 +445,7 @@ const selectedDate = selectedDateParam
           />
 
           <TouchableOpacity onPress={() => setProductModalVisible(false)}>
-            <Text style={globalStyles.textSecondary}>Close</Text>
+            <Text style={styles.textSecondary}>Close</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -470,7 +453,6 @@ const selectedDate = selectedDateParam
       {/* Favorites Modal */}
       <Modal visible={favoritesModalVisible} animationType="slide">
         <View style={{ flex: 1, padding: 20 }}>
-
           <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
             Favorite Foods ⭐
           </Text>
@@ -493,7 +475,6 @@ const selectedDate = selectedDateParam
                 marginBottom: 10,
               }}
             >
-              {/* select food */}
               <TouchableOpacity
                 style={{ flex: 1 }}
                 onPress={() => {
@@ -509,7 +490,6 @@ const selectedDate = selectedDateParam
                 </Text>
               </TouchableOpacity>
 
-              {/* remove from favorites */}
               <TouchableOpacity onPress={() => toggleFavorite(item)}>
                 <Text style={{ fontSize: 22, marginLeft: 10 }}>🗑</Text>
               </TouchableOpacity>
@@ -521,11 +501,10 @@ const selectedDate = selectedDateParam
               Close
             </Text>
           </TouchableOpacity>
-
         </View>
       </Modal>
 
-
+      {/* SERVING SIZE MODAL */}
       <Modal
         visible={servingSizeModalVisible}
         transparent
@@ -536,7 +515,7 @@ const selectedDate = selectedDateParam
             <Text style={styles.modalTitle}>How many grams?</Text>
 
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               keyboardType="number-pad"
               value={servingSizeInput}
               onChangeText={setServingSizeInput}
@@ -546,20 +525,20 @@ const selectedDate = selectedDateParam
 
             <TouchableOpacity
               style={[
-                globalStyles.mealBuilder_modalAddButton,
+                styles.mealBuilder_modalAddButton,
                 !(parseInt(servingSizeInput, 10) > 0) && { opacity: 0.4 },
               ]}
               disabled={!(parseInt(servingSizeInput, 10) > 0)}
               onPress={handleAddWithServingSize}
             >
-              <Text style={globalStyles.mealBuilder_modalAddButtonText}>Add</Text>
+              <Text style={styles.mealBuilder_modalAddButtonText}>Add</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalCancelButton}
+              style={styles.mealBuilder_modalCancelButton}
               onPress={() => setServingSizeModalVisible(false)}
             >
-              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+              <Text style={styles.mealBuilder_modalCancelButtonText}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -569,41 +548,41 @@ const selectedDate = selectedDateParam
 
       {/* ADD / EDIT CUSTOM FOOD MODAL */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={globalStyles.modalOverlay}>
-          <View style={globalStyles.modalBox}>
-            <Text style={globalStyles.modalTitle}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
               {editingFoodId ? "Edit Food" : "Add Food"}
             </Text>
 
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               placeholder="Name"
               value={tempName}
               onChangeText={setTempName}
             />
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               placeholder="Energy (kcal)"
               keyboardType="numeric"
               value={tempEnergy}
               onChangeText={setTempEnergy}
             />
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               placeholder="Carbs (g)"
               keyboardType="numeric"
               value={tempCarbs}
               onChangeText={setTempCarbs}
             />
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               placeholder="Protein (g)"
               keyboardType="numeric"
               value={tempProtein}
               onChangeText={setTempProtein}
             />
             <TextInput
-              style={globalStyles.input}
+              style={styles.input}
               placeholder="Fat (g)"
               keyboardType="numeric"
               value={tempFat}
@@ -611,22 +590,22 @@ const selectedDate = selectedDateParam
             />
 
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalAddButton}
+              style={styles.mealBuilder_modalAddButton}
               onPress={addOrEditFood}
             >
-              <Text style={globalStyles.mealBuilder_modalAddButtonText}>
+              <Text style={styles.mealBuilder_modalAddButtonText}>
                 {editingFoodId ? "Save" : "Add"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={globalStyles.mealBuilder_modalCancelButton}
+              style={styles.mealBuilder_modalCancelButton}
               onPress={() => {
                 setModalVisible(false);
                 setEditingFoodId(null);
               }}
             >
-              <Text style={globalStyles.mealBuilder_modalCancelButtonText}>
+              <Text style={styles.mealBuilder_modalCancelButtonText}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -636,141 +615,3 @@ const selectedDate = selectedDateParam
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#E5F7FD",
-    padding: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  mealRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  mealButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "#D0EAF7",
-    borderRadius: 8,
-  },
-  mealButtonSelected: {
-    backgroundColor: "#4BA3C3",
-  },
-  mealButtonText: {
-    fontSize: 16,
-  },
-  mealButtonTextSelected: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  addFoodButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  addFoodButtonText: {
-    color: "white",
-    fontSize: 18,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "gray",
-    marginBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: "#009FE3",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: {
-    width: "85%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: "#F0F0F0",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  modalAddButton: {
-    backgroundColor: "#4BA3C3",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  modalAddButtonText: {
-    color: "white",
-    fontSize: 16,
-  },
-  modalCancelButton: {
-    alignItems: "center",
-    padding: 10,
-  },
-  modalCancelButtonText: {
-    color: "gray",
-    fontSize: 16,
-  },
-
-  productItem: {
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  productInfo: {
-    fontSize: 14,
-    color: "gray",
-  },
-  searchInput: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    marginBottom: 12,
-    marginTop: 4,
-    fontSize: 16,
-  },
-});

@@ -7,7 +7,7 @@ import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
 import CarbsPerMealChart from "../components/CarbsPerMealChart";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext";
 
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 import GramsPopup from "../components/GramsPopup";
@@ -34,6 +34,7 @@ const getDayKey = (date = new Date()) => {
 
 export default function FoodDiaryScreen() {
   const user = getAuth().currentUser;
+  const { theme, styles } = useTheme();
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,55 +100,55 @@ export default function FoodDiaryScreen() {
 
   }, [route.params, meals, user]);
 
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  const base = new Date(selectedDate);
+    const base = new Date(selectedDate);
 
-// getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
-const day = base.getDay();
+    // getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const day = base.getDay();
 
-// Convert Sunday (0) to 6, Monday (1) to 0, etc.
-const offsetToMonday = (day + 6) % 7;
+    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
+    const offsetToMonday = (day + 6) % 7;
 
-// Find Monday of the selected week
-const monday = new Date(base);
-monday.setDate(base.getDate() - offsetToMonday);
+    // Find Monday of the selected week
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - offsetToMonday);
 
-// Build Mon → Sun
-const dates: string[] = [];
-for (let i = 0; i < 7; i++) {
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + i);
-  dates.push(getDayKey(d));
-}
+    // Build Mon → Sun
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(getDayKey(d));
+    }
 
 
-  const q = query(
-    collection(db, "meals", user.uid, "entries"),
-    where("dateString", "in", dates)
-  );
+    const q = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "in", dates)
+    );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => doc.data() as Meal);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data() as Meal);
 
-    const groupedByDay: Record<string, number> = {};
-    dates.forEach((d) => (groupedByDay[d] = 0));
+      const groupedByDay: Record<string, number> = {};
+      dates.forEach((d) => (groupedByDay[d] = 0));
 
-    data.forEach((meal) => {
-      groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      data.forEach((meal) => {
+        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      });
+
+      const result = dates
+        .slice()       // copy
+        .reverse()     // oldest → newest
+        .map((d) => ({ date: d, carbs: groupedByDay[d] }));
+
+      setWeeklyCarbEntries(result);
     });
 
-    const result = dates
-      .slice()       // copy
-      .reverse()     // oldest → newest
-      .map((d) => ({ date: d, carbs: groupedByDay[d] }));
-
-    setWeeklyCarbEntries(result);
-  });
-
-  return unsubscribe;
-}, [user, selectedDate]);  
+    return unsubscribe;
+  }, [user, selectedDate]);
 
   useEffect(() => {
     if (!user) return;
@@ -314,40 +315,40 @@ for (let i = 0; i < 7; i++) {
 
 
   return (
-    <View style={globalStyles.container}>
-      <View style={globalStyles.diary_dateRow}>
-        <Text style={globalStyles.diary_dateButton} onPress={goToPreviousDay}>
+    <View style={styles.container}>
+      <View style={styles.diary_dateRow}>
+        <Text style={styles.diary_dateButton} onPress={goToPreviousDay}>
           ◀
         </Text>
-        <Text style={globalStyles.diary_dateText}>{selectedDate}</Text>
-        <Text style={globalStyles.diary_dateButton} onPress={goToNextDay}>
+        <Text style={styles.diary_dateText}>{selectedDate}</Text>
+        <Text style={styles.diary_dateButton} onPress={goToNextDay}>
           ▶
         </Text>
       </View>
 
       <ScrollView>
-        <Text style={globalStyles.header}>Today's Meals</Text>
+        <Text style={styles.header}>Today's Meals</Text>
 
-        <View style={globalStyles.diary_targetCard}>
-          <View style={globalStyles.diary_targetHeaderRow}>
-            <Text style={globalStyles.diary_targetTitle}>Daily Carb Target</Text>
+        <View style={styles.diary_targetCard}>
+          <View style={styles.diary_targetHeaderRow}>
+            <Text style={styles.diary_targetTitle}>Daily Carb Target</Text>
           </View>
 
           {targetCarbs !== null ? (
             <>
               <Text
                 style={[
-                  globalStyles.diary_targetLine,
+                  styles.diary_targetLine,
                   { color: getCarbStatusColor(dailyTotals.carbs, targetCarbs) },
                 ]}
               >
                 {dailyTotals.carbs.toFixed(1)} / {targetCarbs} g
               </Text>
 
-              <View style={globalStyles.todayChart_progressTrack}>
+              <View style={styles.todayChart_progressTrack}>
                 <View
                   style={[
-                    globalStyles.todayChart_progressFill,
+                    styles.todayChart_progressFill,
                     {
                       width: `${Math.min((dailyTotals.carbs / targetCarbs) * 100, 100)}%`,
                       backgroundColor: getCarbStatusColor(dailyTotals.carbs, targetCarbs),
@@ -357,31 +358,31 @@ for (let i = 0; i < 7; i++) {
               </View>
             </>
           ) : (
-            <Text style={globalStyles.todayChart_infoText}>
+            <Text style={styles.todayChart_infoText}>
               {targetReason ??
                 "Missing profile info: add weight and height, or set a custom carb target."}
             </Text>
           )}
         </View>
 
-        <View style={globalStyles.diary_summaryCard}>
-          <Text style={globalStyles.diary_summaryTitle}>Daily Totals</Text>
+        <View style={styles.diary_summaryCard}>
+          <Text style={styles.diary_summaryTitle}>Daily Totals</Text>
 
-          <View style={globalStyles.diary_summaryGrid}>
-            <View style={globalStyles.diary_summaryColumn}>
-              <Text style={globalStyles.diary_summaryItem}>
+          <View style={styles.diary_summaryGrid}>
+            <View style={styles.diary_summaryColumn}>
+              <Text style={styles.diary_summaryItem}>
                 Carbs: {dailyTotals.carbs.toFixed(1)} g
               </Text>
-              <Text style={globalStyles.diary_summaryItem}>
+              <Text style={styles.diary_summaryItem}>
                 Protein: {dailyTotals.protein.toFixed(1)} g
               </Text>
             </View>
 
-            <View style={globalStyles.diary_summaryColumn}>
-              <Text style={globalStyles.diary_summaryItem}>
+            <View style={styles.diary_summaryColumn}>
+              <Text style={styles.diary_summaryItem}>
                 Energy: {dailyTotals.energy.toFixed(0)} kcal
               </Text>
-              <Text style={globalStyles.diary_summaryItem}>
+              <Text style={styles.diary_summaryItem}>
                 Fat: {dailyTotals.fat.toFixed(1)} g
               </Text>
             </View>
@@ -390,7 +391,7 @@ for (let i = 0; i < 7; i++) {
 
         <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
 
-        <Text style={globalStyles.diary_summaryTitle}>Weekly Carb Summary</Text>
+        <Text style={styles.diary_summaryTitle}>Weekly Carb Summary</Text>
 
         <WeeklyCarbSummary data={weeklyCarbEntries} />
 
@@ -398,24 +399,24 @@ for (let i = 0; i < 7; i++) {
           <View key={type} style={{ marginBottom: 25 }}>
             {grouped[type].length > 0 && (
               <>
-                <Text style={globalStyles.diary_mealHeader}>{type}</Text>
+                <Text style={styles.diary_mealHeader}>{type}</Text>
 
                 {mealTypeNutrition[type].carbs > 0 && (
-                  <View style={globalStyles.diary_mealTypeSummaryCard}>
-                    <View style={globalStyles.diary_mealTypeSummaryRow}>
-                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
+                  <View style={styles.diary_mealTypeSummaryCard}>
+                    <View style={styles.diary_mealTypeSummaryRow}>
+                      <Text style={styles.diary_mealTypeSummaryItem}>
                         Carbs: {mealTypeNutrition[type].carbs.toFixed(1)} g
                       </Text>
-                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
+                      <Text style={styles.diary_mealTypeSummaryItem}>
                         Protein: {mealTypeNutrition[type].protein.toFixed(1)} g
                       </Text>
                     </View>
 
-                    <View style={globalStyles.diary_mealTypeSummaryRow}>
-                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
+                    <View style={styles.diary_mealTypeSummaryRow}>
+                      <Text style={styles.diary_mealTypeSummaryItem}>
                         Energy: {mealTypeNutrition[type].energy.toFixed(0)} kcal
                       </Text>
-                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
+                      <Text style={styles.diary_mealTypeSummaryItem}>
                         Fat: {mealTypeNutrition[type].fat.toFixed(1)} g
                       </Text>
                     </View>
@@ -443,9 +444,7 @@ for (let i = 0; i < 7; i++) {
           food={foodToAdjust}
           onClose={() => setShowGramsPopup(false)}
           onSave={(grams) => handleGramsSave(grams)}
-
         />
-
       )}
     </View>
   );

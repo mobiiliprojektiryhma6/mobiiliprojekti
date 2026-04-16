@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { View, Text, TouchableOpacity, Alert, TextInput, Modal } from "react-native"
 
-import { globalStyles } from "../src/styles/globalStyles"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 
 import {
@@ -27,7 +26,7 @@ export default function AccountSettingsScreen() {
   const user = auth.currentUser
   const db = getFirestore()
 
-  const { theme, setThemeMode } = useTheme()
+  const { theme, styles, setThemeMode } = useTheme()
 
   const [themeMode, setThemeModeLocal] = useState<"light" | "dark">("light")
 
@@ -149,40 +148,40 @@ export default function AccountSettingsScreen() {
   }
 
   return (
-    <View style={[globalStyles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[globalStyles.header, { color: theme.colors.text }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.header, { color: theme.colors.text }]}>
         Account Settings
       </Text>
 
-      <View style={globalStyles.section}>
-        <TouchableOpacity style={globalStyles.row} onPress={() => openModal("username")}>
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.row} onPress={() => openModal("username")}>
           <MaterialIcons name="person" size={24} color={theme.colors.primary} />
-          <Text style={[globalStyles.rowText, { color: theme.colors.text }]}>Change Username</Text>
+          <Text style={[styles.rowText, { color: theme.colors.text }]}>Change Username</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={globalStyles.row} onPress={() => openModal("password")}>
+        <TouchableOpacity style={styles.row} onPress={() => openModal("password")}>
           <MaterialIcons name="lock" size={24} color={theme.colors.primary} />
-          <Text style={[globalStyles.rowText, { color: theme.colors.text }]}>Change Password</Text>
+          <Text style={[styles.rowText, { color: theme.colors.text }]}>Change Password</Text>
         </TouchableOpacity>
 
         {/* THEME TOGGLE */}
-        <TouchableOpacity style={globalStyles.row} onPress={handleToggleTheme}>
+        <TouchableOpacity style={styles.row} onPress={handleToggleTheme}>
           <MaterialIcons
             name={themeMode === "light" ? "dark-mode" : "light-mode"}
             size={24}
             color={theme.colors.primary}
           />
-          <Text style={[globalStyles.rowText, { color: theme.colors.text }]}>
+          <Text style={[styles.rowText, { color: theme.colors.text }]}>
             {themeMode === "light" ? "Enable Dark Mode" : "Enable Light Mode"}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* DELETE ACCOUNT */}
-      <View style={globalStyles.dangerSection}>
-        <TouchableOpacity style={globalStyles.row} onPress={() => openModal("delete")}>
+      <View style={styles.dangerSection}>
+        <TouchableOpacity style={styles.row} onPress={() => openModal("delete")}>
           <MaterialIcons name="delete" size={24} color={theme.colors.danger} />
-          <Text style={[globalStyles.rowText, { color: theme.colors.danger }]}>
+          <Text style={[styles.rowText, { color: theme.colors.danger }]}>
             Delete Account
           </Text>
         </TouchableOpacity>
@@ -190,26 +189,26 @@ export default function AccountSettingsScreen() {
 
       {/* MODAL */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={globalStyles.modalOverlay}>
-          <View style={globalStyles.modalBox}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
 
             {/* USERNAME MODAL */}
             {modalType === "username" && (
               <>
-                <Text style={globalStyles.modalTitle}>Change Username</Text>
-                <Text style={globalStyles.modalDescription}>
+                <Text style={styles.modalTitle}>Change Username</Text>
+                <Text style={styles.modalDescription}>
                   Enter your new username.
                 </Text>
 
                 <TextInput
                   placeholder="New username"
-                  style={globalStyles.input}
+                  style={styles.input}
                   value={newUsername}
                   onChangeText={setNewUsername}
                 />
 
-                <TouchableOpacity style={globalStyles.saveBtn} onPress={handleChangeUsername}>
-                  <Text style={globalStyles.saveText}>Save</Text>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleChangeUsername}>
+                  <Text style={styles.saveText}>Save</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -217,15 +216,15 @@ export default function AccountSettingsScreen() {
             {/* PASSWORD MODAL */}
             {modalType === "password" && (
               <>
-                <Text style={globalStyles.modalTitle}>Change Password</Text>
-                <Text style={globalStyles.modalDescription}>
+                <Text style={styles.modalTitle}>Change Password</Text>
+                <Text style={styles.modalDescription}>
                   Enter your current password.
                 </Text>
 
                 <TextInput
                   placeholder="Current password"
                   secureTextEntry
-                  style={globalStyles.input}
+                  style={styles.input}
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                 />
@@ -233,13 +232,13 @@ export default function AccountSettingsScreen() {
                 <TextInput
                   placeholder="New password"
                   secureTextEntry
-                  style={globalStyles.input}
+                  style={styles.input}
                   value={newPassword}
                   onChangeText={setNewPassword}
                 />
 
-                <TouchableOpacity style={globalStyles.saveBtn} onPress={handleChangePassword}>
-                  <Text style={globalStyles.saveText}>Save</Text>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword}>
+                  <Text style={styles.saveText}>Save</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -247,11 +246,11 @@ export default function AccountSettingsScreen() {
             {/* DELETE ACCOUNT MODAL */}
             {modalType === "delete" && (
               <>
-                <Text style={globalStyles.modalTitle}>Delete Account</Text>
+                <Text style={styles.modalTitle}>Delete Account</Text>
 
                 <TextInput
                   placeholder="Confirm username"
-                  style={globalStyles.input}
+                  style={styles.input}
                   value={confirmUsername}
                   onChangeText={setConfirmUsername}
                 />
@@ -259,22 +258,22 @@ export default function AccountSettingsScreen() {
                 <TextInput
                   placeholder="Password"
                   secureTextEntry
-                  style={globalStyles.input}
+                  style={styles.input}
                   value={deletePassword}
                   onChangeText={setDeletePassword}
                 />
 
                 <TouchableOpacity
-                  style={[globalStyles.saveBtn, { backgroundColor: theme.colors.danger }]}
+                  style={[styles.saveBtn, { backgroundColor: theme.colors.danger }]}
                   onPress={handleDeleteAccount}
                 >
-                  <Text style={globalStyles.saveText}>Delete Account</Text>
+                  <Text style={styles.saveText}>Delete Account</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            <TouchableOpacity style={globalStyles.cancelBtn} onPress={closeModal}>
-              <Text style={globalStyles.cancelText}>Cancel</Text>
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
           </View>

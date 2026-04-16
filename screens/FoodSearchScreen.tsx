@@ -16,7 +16,7 @@ import NutritionCircle from "../components/NutritionalCircle";
 import { saveProductsToFirestore } from "../src/utils/productCache";
 import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
 
-import { globalStyles } from "../src/styles/globalStyles";
+import { useTheme } from "../src/theme/ThemeContext";
 
 export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const route = useRoute<any>();
@@ -27,6 +27,8 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     const [searchTrigger, setSearchTrigger] = useState("");
 
     const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+    const { theme, styles } = useTheme();
 
     useEffect(() => {
         const loadFavorites = async () => {
@@ -260,11 +262,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             <View key={`${source}-${item.id}`}>
                 {!isSelected && (
                     <TouchableOpacity
-                        style={globalStyles.card}
+                        style={styles.card}
                         onPress={() => handleSelect(item)}
                     >
-                        <Text style={globalStyles.textPrimary}>{item.name}</Text>
-                        <Text style={globalStyles.foodSearch_resultDetail}>
+                        <Text style={styles.textPrimary}>{item.name}</Text>
+                        <Text style={styles.foodSearch_resultDetail}>
                             {item.energy} kcal | Carbs {item.carbohydrates}g | Protein {item.protein}g | Fat {item.fat}g
                         </Text>
                     </TouchableOpacity>
@@ -272,43 +274,43 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                 {isSelected && (
                     <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
-                        <View style={globalStyles.card}>
+                        <View style={styles.card}>
 
-                            <View style={globalStyles.foodSearch_detailHeader}>
-                                <View style={globalStyles.foodSearch_detailHeaderLeft}>
-                                    <Text style={globalStyles.foodSearch_detailName} numberOfLines={2}>
+                            <View style={styles.foodSearch_detailHeader}>
+                                <View style={styles.foodSearch_detailHeaderLeft}>
+                                    <Text style={styles.foodSearch_detailName} numberOfLines={2}>
                                         {item.name}
                                     </Text>
-                                    <Text style={globalStyles.foodSearch_detailPerNote}>per 100 g</Text>
+                                    <Text style={styles.foodSearch_detailPerNote}>per 100 g</Text>
                                 </View>
 
-                                <View style={globalStyles.foodSearch_detailEnergyBadge}>
-                                    <Text style={globalStyles.foodSearch_detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={globalStyles.foodSearch_detailEnergyUnit}>kcal</Text>
+                                <View style={styles.foodSearch_detailEnergyBadge}>
+                                    <Text style={styles.foodSearch_detailEnergyValue}>{item.energy}</Text>
+                                    <Text style={styles.foodSearch_detailEnergyUnit}>kcal</Text>
                                 </View>
                             </View>
 
-                            <View style={globalStyles.foodSearch_detailDivider} />
+                            <View style={styles.foodSearch_detailDivider} />
 
                             {[ 
                                 { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
                                 { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
                                 { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },
                             ].map(({ label, value, unit, color, ref }) => (
-                                <View key={label} style={globalStyles.foodSearch_detailNutrientBlock}>
-                                    <View style={globalStyles.foodSearch_detailNutrientRow}>
-                                        <View style={[globalStyles.foodSearch_detailDot, { backgroundColor: color }]} />
-                                        <Text style={globalStyles.foodSearch_detailNutrientLabel}>{label}</Text>
-                                        <Text style={globalStyles.foodSearch_detailNutrientValue}>
+                                <View key={label} style={styles.foodSearch_detailNutrientBlock}>
+                                    <View style={styles.foodSearch_detailNutrientRow}>
+                                        <View style={[styles.foodSearch_detailDot, { backgroundColor: color }]} />
+                                        <Text style={styles.foodSearch_detailNutrientLabel}>{label}</Text>
+                                        <Text style={styles.foodSearch_detailNutrientValue}>
                                             {value}
-                                            <Text style={globalStyles.foodSearch_detailNutrientUnit}> {unit}</Text>
+                                            <Text style={styles.foodSearch_detailNutrientUnit}> {unit}</Text>
                                         </Text>
                                     </View>
 
-                                    <View style={globalStyles.foodSearch_detailBarTrack}>
+                                    <View style={styles.foodSearch_detailBarTrack}>
                                         <View
                                             style={[
-                                                globalStyles.foodSearch_detailBarFill,
+                                                styles.foodSearch_detailBarFill,
                                                 {
                                                     width: `${Math.min((value / ref) * 100, 100)}%`,
                                                     backgroundColor: color,
@@ -320,11 +322,11 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                             ))}
 
                             <TouchableOpacity
-                                style={globalStyles.buttonPrimary}
+                                style={styles.buttonPrimary}
                                 activeOpacity={0.8}
                                 onPress={() => handleAddFood(item)}
                             >
-                                <Text style={globalStyles.buttonPrimaryText}>
+                                <Text style={styles.buttonPrimaryText}>
                                     {isEditingMealItem ? "Replace in Meal" : "+ Add to Meal"}
                                 </Text>
                             </TouchableOpacity>
@@ -339,12 +341,12 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
     return (
         <>
             <ScrollView
-                contentContainerStyle={globalStyles.container}
+                contentContainerStyle={styles.container}
                 keyboardShouldPersistTaps="handled"
             >
-                <View style={globalStyles.foodSearch_searchRow}>
+                <View style={styles.foodSearch_searchRow}>
                     <TextInput
-                        style={globalStyles.input}
+                        style={styles.input}
                         placeholder="Search food (e.g. bread, chocolate...)"
                         value={query}
                         onChangeText={(text) => setQuery(text)}
@@ -354,7 +356,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                     />
 
                     <TouchableOpacity
-                        style={globalStyles.foodSearch_cameraButton}
+                        style={styles.foodSearch_cameraButton}
                         onPress={() => navigation.navigate("Scanner")}
                     >
                         <Text style={{ fontSize: 22, color: "#fff" }}>📷</Text>
@@ -362,42 +364,42 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                 </View>
 
                 {scannedProduct && !selectedItem && (
-                    <View style={globalStyles.foodSearch_resultsSection}>
-                        <Text style={globalStyles.sectionTitle}>Scanned Product</Text>
+                    <View style={styles.foodSearch_resultsSection}>
+                        <Text style={styles.sectionTitle}>Scanned Product</Text>
                         {renderFoodItem(scannedProduct, "scanned")}
                     </View>
                 )}
 
                 {selectedItem ? (
-                    <View style={globalStyles.foodSearch_resultsSection}>
+                    <View style={styles.foodSearch_resultsSection}>
                         {renderFoodItem(selectedItem, "selected")}
                     </View>
                 ) : (
                     <>
                         {(localBest.length > 0 || localSimilar.length > 0) && (
-                            <View style={globalStyles.foodSearch_resultsSection}>
-                                <Text style={globalStyles.sectionTitle}>Your Foods</Text>
+                            <View style={styles.foodSearch_resultsSection}>
+                                <Text style={styles.sectionTitle}>Your Foods</Text>
                                 {localBest.map((item) => renderFoodItem(item, "local-best"))}
                                 {localSimilar.map((item) => renderFoodItem(item, "local-similar"))}
                             </View>
                         )}
 
                         {apiLoading && (
-                            <View style={globalStyles.row}>
+                            <View style={styles.row}>
                                 <ActivityIndicator size="small" color="#009FE3" />
-                                <Text style={globalStyles.textSecondary}>Searching online...</Text>
+                                <Text style={styles.textSecondary}>Searching online...</Text>
                             </View>
                         )}
 
                         {apiResults.length > 0 && (
-                            <View style={globalStyles.foodSearch_resultsSection}>
-                                <Text style={globalStyles.sectionTitle}>Online Results</Text>
+                            <View style={styles.foodSearch_resultsSection}>
+                                <Text style={styles.sectionTitle}>Online Results</Text>
                                 {apiResults.map((item) => renderFoodItem(item, "api"))}
                             </View>
                         )}
 
                         {showNoResults && (
-                            <Text style={globalStyles.textSecondary}>
+                            <Text style={styles.textSecondary}>
                                 No results found for "{query}"
                             </Text>
                         )}
@@ -406,15 +408,15 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             </ScrollView>
 
             <Modal visible={servingSizeModalVisible} transparent animationType="fade">
-                <View style={globalStyles.modalOverlay}>
-                    <View style={globalStyles.modalBox}>
-                        <Text style={globalStyles.modalTitle}>Set amount before replacing</Text>
-                        <Text style={globalStyles.modalDescription}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Set amount before replacing</Text>
+                        <Text style={styles.modalDescription}>
                             Enter how many grams this meal item should use.
                         </Text>
 
                         <TextInput
-                            style={globalStyles.modalInput}
+                            style={styles.modalInput}
                             keyboardType="number-pad"
                             value={servingSizeInput}
                             onChangeText={setServingSizeInput}
@@ -425,23 +427,23 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                         <TouchableOpacity
                             style={[
-                                globalStyles.buttonPrimary,
+                                styles.buttonPrimary,
                                 !(parseInt(servingSizeInput, 10) > 0) && { opacity: 0.4 },
                             ]}
                             disabled={!(parseInt(servingSizeInput, 10) > 0)}
                             onPress={handleConfirmReplacementAmount}
                         >
-                            <Text style={globalStyles.buttonPrimaryText}>Confirm Replacement</Text>
+                            <Text style={styles.buttonPrimaryText}>Confirm Replacement</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={globalStyles.modalButtons}
+                            style={styles.modalButtons}
                             onPress={() => {
                                 setServingSizeModalVisible(false);
                                 setPendingReplacement(null);
                             }}
                         >
-                            <Text style={globalStyles.modalCancel}>Cancel</Text>
+                            <Text style={styles.modalCancel}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

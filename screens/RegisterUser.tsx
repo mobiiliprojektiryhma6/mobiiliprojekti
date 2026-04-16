@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Register from '../components/Register';
-import { globalStyles } from "../src/styles/globalStyles"
+import { useTheme } from "../src/theme/ThemeContext";
 
 export default function CreateAccountScreen() {
+    const { theme, styles } = useTheme();
+
     return (
-        <View style={globalStyles.center}>
-            <Text style={globalStyles.header}>Create Account</Text>
+        <View style={styles.center}>
+            <Text style={styles.header}>Create Account</Text>
             <Register />
         </View>
     );

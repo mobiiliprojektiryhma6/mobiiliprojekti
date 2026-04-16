@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert, } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { db } from "../firebase/config";
 import { useAuth } from "../src/hooks/useAuth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { globalStyles } from "../src/styles/globalStyles"
-import { useTheme } from "../src/theme/ThemeContext"
-
+import { useTheme } from "../src/theme/ThemeContext";
 
 type MedicationTime = {
   id: string;
@@ -44,10 +52,10 @@ const emptyForm = () => ({
 //MedicationScreen
 export default function MedicationScreen() {
   const { user } = useAuth();
+  const { theme, styles } = useTheme();
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
-  const { theme } = useTheme()
 
   //Checkbox (tallennetaan tila myöhemmin AsyncStorageen)
   const [checks, setChecks] = useState<Record<string, boolean>>({});
@@ -77,7 +85,6 @@ export default function MedicationScreen() {
     }
   }, [user]);
 
-
   //AsyncStoragesta checkboxin tila
   const loadChecks = useCallback(async () => {
     try {
@@ -93,7 +100,6 @@ export default function MedicationScreen() {
     loadChecks();
   }, [loadMedications, loadChecks]);
 
-
   //Toggle päivittää checkboxin tilan AsyncStoragessa
   const toggleCheck = async (medId: string, timeId: string) => {
     const key = `${medId}_${timeId}`;
@@ -105,7 +111,6 @@ export default function MedicationScreen() {
       console.error("Failed to save check state:", e);
     }
   };
-
 
   //Lisää lääke
   const openAddModal = () => {
@@ -128,7 +133,6 @@ export default function MedicationScreen() {
     setModalVisible(true);
   };
 
-
   //Lisää kellonaika lomakkeeseen
   const addTimeToForm = () => {
     const t = form.newTime.trim();
@@ -146,7 +150,6 @@ export default function MedicationScreen() {
       times: prev.times.filter((t) => t.id !== id),
     }));
   };
-
 
   //Tallennetaan muutokset (joko lisäys tai päivitys)
   const saveMedication = async () => {
@@ -192,7 +195,6 @@ export default function MedicationScreen() {
     }
   };
 
-
   //Poista lääkitäs
   const deleteMedication = (med: Medication) => {
     Alert.alert(
@@ -219,39 +221,38 @@ export default function MedicationScreen() {
     );
   };
 
-
   //Ruutu
   if (loading) {
     return (
-      <View style={globalStyles.center}>
+      <View style={styles.center}>
         <ActivityIndicator size="large" color="#009FE3" />
       </View>
     );
   }
 
   return (
-    <View style={[globalStyles.med_root, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.med_root, { backgroundColor: theme.colors.background }]}>
       <ScrollView
-        style={globalStyles.med_scroll}
-        contentContainerStyle={globalStyles.med_scrollContent}
+        style={styles.med_scroll}
+        contentContainerStyle={styles.med_scrollContent}
       >
         {/* Header */}
-        <View style={globalStyles.med_screenHeader}>
-          <Text style={[globalStyles.header, { color: theme.colors.text }]}>
+        <View style={styles.med_screenHeader}>
+          <Text style={[styles.header, { color: theme.colors.text }]}>
             My Medications
           </Text>
 
-          <TouchableOpacity style={globalStyles.med_addButton} onPress={openAddModal}>
+          <TouchableOpacity style={styles.med_addButton} onPress={openAddModal}>
             <MaterialIcons name="add" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
 
         {/* Empty state */}
         {medications.length === 0 && (
-          <View style={globalStyles.med_emptyBox}>
+          <View style={styles.med_emptyBox}>
             <MaterialIcons name="medication" size={48} color="#009FE3" />
-            <Text style={globalStyles.med_emptyText}>No medications added yet.</Text>
-            <Text style={globalStyles.med_emptySubText}>
+            <Text style={styles.med_emptyText}>No medications added yet.</Text>
+            <Text style={styles.med_emptySubText}>
               Tap the + button to add your first medication.
             </Text>
           </View>
@@ -272,40 +273,40 @@ export default function MedicationScreen() {
 
       {/* ADD / EDIT MEDICATION MODAL */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={globalStyles.modalOverlay}>
-          <View style={globalStyles.med_modalBox}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.med_modalBox}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={globalStyles.modalTitle}>
+              <Text style={styles.modalTitle}>
                 {editingId ? "Edit Medication" : "Add Medication"}
               </Text>
 
-              <Text style={globalStyles.med_fieldLabel}>Medication name *</Text>
+              <Text style={styles.med_fieldLabel}>Medication name *</Text>
               <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="e.g. Paracetamol"
                 value={form.name}
                 onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
               />
 
-              <Text style={globalStyles.med_fieldLabel}>Dose</Text>
+              <Text style={styles.med_fieldLabel}>Dose</Text>
               <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="e.g. 500mg, 2 tablets"
                 value={form.dose}
                 onChangeText={(v) => setForm((p) => ({ ...p, dose: v }))}
               />
 
-              <Text style={globalStyles.med_fieldLabel}>Usage</Text>
+              <Text style={styles.med_fieldLabel}>Usage</Text>
               <TextInput
-                style={globalStyles.input}
+                style={styles.input}
                 placeholder="e.g. for blood pressure"
                 value={form.usage}
                 onChangeText={(v) => setForm((p) => ({ ...p, usage: v }))}
               />
 
-              <Text style={globalStyles.med_fieldLabel}>Notes</Text>
+              <Text style={styles.med_fieldLabel}>Notes</Text>
               <TextInput
-                style={[globalStyles.input, globalStyles.med_inputMultiline]}
+                style={[styles.input, styles.med_inputMultiline]}
                 placeholder="e.g. take with food"
                 value={form.notes}
                 onChangeText={(v) => setForm((p) => ({ ...p, notes: v }))}
@@ -314,21 +315,21 @@ export default function MedicationScreen() {
               />
 
               {/* Times */}
-              <Text style={globalStyles.med_fieldLabel}>Scheduled times</Text>
+              <Text style={styles.med_fieldLabel}>Scheduled times</Text>
 
               {form.times.map((slot) => (
-                <View key={slot.id} style={globalStyles.med_timeChip}>
+                <View key={slot.id} style={styles.med_timeChip}>
                   <MaterialIcons name="schedule" size={16} color="#009FE3" />
-                  <Text style={globalStyles.med_timeChipText}>{slot.time}</Text>
+                  <Text style={styles.med_timeChipText}>{slot.time}</Text>
                   <TouchableOpacity onPress={() => removeTimeFromForm(slot.id)}>
                     <MaterialIcons name="close" size={18} color="#d11a2a" />
                   </TouchableOpacity>
                 </View>
               ))}
 
-              <View style={globalStyles.med_timeRow}>
+              <View style={styles.med_timeRow}>
                 <TextInput
-                  style={[globalStyles.input, globalStyles.med_timeInput]}
+                  style={[styles.input, styles.med_timeInput]}
                   placeholder="HH:MM"
                   value={form.newTime}
                   onChangeText={(v) => setForm((p) => ({ ...p, newTime: v }))}
@@ -336,7 +337,7 @@ export default function MedicationScreen() {
                   maxLength={5}
                 />
                 <TouchableOpacity
-                  style={globalStyles.med_addTimeButton}
+                  style={styles.med_addTimeButton}
                   onPress={addTimeToForm}
                 >
                   <MaterialIcons name="add" size={22} color="#fff" />
@@ -344,23 +345,23 @@ export default function MedicationScreen() {
               </View>
 
               {/* Actions */}
-              <View style={globalStyles.med_modalActions}>
+              <View style={styles.med_modalActions}>
                 <TouchableOpacity
-                  style={globalStyles.med_cancelButton}
+                  style={styles.med_cancelButton}
                   onPress={() => setModalVisible(false)}
                 >
-                  <Text style={globalStyles.med_cancelText}>Cancel</Text>
+                  <Text style={styles.med_cancelText}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[globalStyles.med_saveButton, saving && { opacity: 0.6 }]}
+                  style={[styles.med_saveButton, saving && { opacity: 0.6 }]}
                   onPress={saveMedication}
                   disabled={saving}
                 >
                   {saving ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={globalStyles.med_saveText}>
+                    <Text style={styles.med_saveText}>
                       {editingId ? "Save changes" : "Add medication"}
                     </Text>
                   )}
@@ -385,22 +386,24 @@ type CardProps = {
 };
 
 function MedicationCard({ med, checks, onToggleCheck, onEdit, onDelete }: CardProps) {
+  const { styles } = useTheme();
+
   return (
-    <View style={globalStyles.med_card}>
+    <View style={styles.med_card}>
 
       {/* Header */}
-      <View style={globalStyles.med_cardHeader}>
-        <View style={globalStyles.med_cardTitleRow}>
+      <View style={styles.med_cardHeader}>
+        <View style={styles.med_cardTitleRow}>
           <MaterialIcons name="medication" size={20} color="#009FE3" />
-          <Text style={globalStyles.med_cardName}>{med.name}</Text>
+          <Text style={styles.med_cardName}>{med.name}</Text>
         </View>
 
-        <View style={globalStyles.med_cardActions}>
-          <TouchableOpacity onPress={onEdit} style={globalStyles.med_iconButton}>
+        <View style={styles.med_cardActions}>
+          <TouchableOpacity onPress={onEdit} style={styles.med_iconButton}>
             <MaterialIcons name="edit" size={20} color="#4B5563" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onDelete} style={globalStyles.med_iconButton}>
+          <TouchableOpacity onPress={onDelete} style={styles.med_iconButton}>
             <MaterialIcons name="delete" size={20} color="#d11a2a" />
           </TouchableOpacity>
         </View>
@@ -408,34 +411,34 @@ function MedicationCard({ med, checks, onToggleCheck, onEdit, onDelete }: CardPr
 
       {/* Dose */}
       {!!med.dose && (
-        <View style={globalStyles.med_infoRow}>
-          <Text style={globalStyles.med_infoLabel}>Dose</Text>
-          <Text style={globalStyles.med_infoValue}>{med.dose}</Text>
+        <View style={styles.med_infoRow}>
+          <Text style={styles.med_infoLabel}>Dose</Text>
+          <Text style={styles.med_infoValue}>{med.dose}</Text>
         </View>
       )}
 
       {/* Usage */}
       {!!med.usage && (
-        <View style={globalStyles.med_infoRow}>
-          <Text style={globalStyles.med_infoLabel}>Usage</Text>
-          <Text style={globalStyles.med_infoValue}>{med.usage}</Text>
+        <View style={styles.med_infoRow}>
+          <Text style={styles.med_infoLabel}>Usage</Text>
+          <Text style={styles.med_infoValue}>{med.usage}</Text>
         </View>
       )}
 
       {/* Notes */}
       {!!med.notes && (
-        <View style={globalStyles.med_notesRow}>
-          <Text style={globalStyles.med_infoLabel}>Notes</Text>
-          <Text style={globalStyles.med_notesValue}>{med.notes}</Text>
+        <View style={styles.med_notesRow}>
+          <Text style={styles.med_infoLabel}>Notes</Text>
+          <Text style={styles.med_notesValue}>{med.notes}</Text>
         </View>
       )}
 
-      {med.times.length > 0 && <View style={globalStyles.med_divider} />}
+      {med.times.length > 0 && <View style={styles.med_divider} />}
 
       {/* Times */}
       {med.times.length > 0 ? (
         <View>
-          <Text style={globalStyles.med_timesLabel}>Today's schedule</Text>
+          <Text style={styles.med_timesLabel}>Today's schedule</Text>
 
           {med.times.map((slot) => {
             const checkKey = `${med.id}_${slot.id}`;
@@ -444,11 +447,11 @@ function MedicationCard({ med, checks, onToggleCheck, onEdit, onDelete }: CardPr
             return (
               <TouchableOpacity
                 key={slot.id}
-                style={globalStyles.med_timeSlotRow}
+                style={styles.med_timeSlotRow}
                 onPress={() => onToggleCheck(med.id, slot.id)}
                 activeOpacity={0.7}
               >
-                <View style={[globalStyles.med_checkbox, checked && globalStyles.med_checkboxChecked]}>
+                <View style={[styles.med_checkbox, checked && styles.med_checkboxChecked]}>
                   {checked && <MaterialIcons name="check" size={14} color="#fff" />}
                 </View>
 
@@ -458,17 +461,17 @@ function MedicationCard({ med, checks, onToggleCheck, onEdit, onDelete }: CardPr
                   color={checked ? "#9CA3AF" : "#009FE3"}
                 />
 
-                <Text style={[globalStyles.med_timeSlotText, checked && globalStyles.med_timeSlotTextDone]}>
+                <Text style={[styles.med_timeSlotText, checked && styles.med_timeSlotTextDone]}>
                   {slot.time}
                 </Text>
 
-                {checked && <Text style={globalStyles.med_takenBadge}>Taken</Text>}
+                {checked && <Text style={styles.med_takenBadge}>Taken</Text>}
               </TouchableOpacity>
             );
           })}
         </View>
       ) : (
-        <Text style={globalStyles.med_noTimesText}>
+        <Text style={styles.med_noTimesText}>
           No times scheduled — tap edit to add.
         </Text>
       )}

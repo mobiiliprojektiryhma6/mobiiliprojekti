@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { getProductByBarcode, saveProductsToFirestore } from "../src/utils/productCache";
-import { globalStyles } from "../src/styles/globalStyles"
-
+import { useTheme } from "../src/theme/ThemeContext";
 
 export default function BarcodeScanner({ navigation }: { navigation: any }) {
   // First we handle camera permission 
@@ -13,13 +12,14 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const { theme, styles } = useTheme();
+
   /* User scans barcode -> barcode number is captured
   - App calls Open Food Facts API with that number
   - API returns product info (name, calories, carbs, protein, fat)
   - App navigates back to FoodSearchScreen with that data
 
   If the product is not found -> alert and let user scan again */
-
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned || loading) return;
     setScanned(true);
@@ -90,25 +90,24 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   - Granted -> Camera view */
   if (!permission) {
     return (
-      <View style={globalStyles.center}>
-        <ActivityIndicator size="large" color="#009FE3" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={globalStyles.center}>
-        <Text style={globalStyles.barcode_message}>
+      <View style={styles.center}>
+        <Text style={styles.barcode_message}>
           Camera permission is required to scan barcodes.
         </Text>
-        <TouchableOpacity style={globalStyles.button} onPress={requestPermission}>
-          <Text style={globalStyles.buttonText}>Grant Permission</Text>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
 
   /* Camera View
   - barcodeTypes - barcode formats to recognize
@@ -120,7 +119,7 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
   scanned is false (nobody scanned yet) -> give the camera the handleBarcodeScanned function → camera is listening
   scanned is true (we already got one) -> give the camera undefined (nothing) → camera stops listening */
   return (
-    <View style={globalStyles.barcode_container}>
+    <View style={styles.barcode_container}>
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
@@ -130,21 +129,21 @@ export default function BarcodeScanner({ navigation }: { navigation: any }) {
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       />
 
-      <View style={globalStyles.overlay}>
-        <Text style={globalStyles.instructions}>Point the camera at a barcode</Text>
+      <View style={styles.overlay}>
+        <Text style={styles.instructions}>Point the camera at a barcode</Text>
       </View>
 
       {loading && (
-        <View style={globalStyles.loadingOverlay}>
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={globalStyles.loadingText}>Looking up product...</Text>
+          <Text style={styles.loadingText}>Looking up product...</Text>
         </View>
       )}
 
       {scanned && !loading && (
-        <View style={globalStyles.bottomBar}>
-          <TouchableOpacity style={globalStyles.button} onPress={() => setScanned(false)}>
-            <Text style={globalStyles.buttonText}>Scan Again</Text>
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.button} onPress={() => setScanned(false)}>
+            <Text style={styles.buttonText}>Scan Again</Text>
           </TouchableOpacity>
         </View>
       )}
