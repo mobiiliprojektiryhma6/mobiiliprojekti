@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { FoodItem } from '../types/FoodItem';
+import { globalStyles } from "../src/styles/globalStyles"
 
 type Props = {
   onSubmit: (food: FoodItem) => void;
@@ -29,50 +30,61 @@ export const FoodInput: React.FC<Props> = ({ onSubmit, onOpenScanner, initial = 
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Energy (kcal)" value={energy} onChangeText={setEnergy} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Carbs (g)" value={carbs} onChangeText={setCarbs} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Protein (g)" value={protein} onChangeText={setProtein} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Fat (g)" value={fat} onChangeText={setFat} keyboardType="numeric" />
+    <View style={globalStyles.foodInput_container}>
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Energy (kcal)"
+        value={energy}
+        onChangeText={setEnergy}
+        keyboardType="numeric"
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Carbs (g)"
+        value={carbs}
+        onChangeText={setCarbs}
+        keyboardType="numeric"
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Protein (g)"
+        value={protein}
+        onChangeText={setProtein}
+        keyboardType="numeric"
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Fat (g)"
+        value={fat}
+        onChangeText={setFat}
+        keyboardType="numeric"
+      />
 
       {onOpenScanner && (
-        <TouchableOpacity onPress={onOpenScanner} style={styles.cameraButton}>
-          <Text style={styles.cameraIcon}>📷</Text>
+        <TouchableOpacity
+          onPress={onOpenScanner}
+          style={globalStyles.foodInput_cameraButton}
+        >
+          <Text style={globalStyles.foodInput_cameraIcon}>📷</Text>
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
-        <Text style={styles.submitText}>Add Food</Text>
+      <TouchableOpacity
+        onPress={handleSubmit}
+        style={globalStyles.buttonPrimary}
+      >
+        <Text style={globalStyles.buttonPrimaryText}>Add Food</Text>
       </TouchableOpacity>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { 
-    padding: 10 
-  },
-  input: { 
-    borderWidth: 1, 
-    borderRadius: 8, 
-    padding: 10, 
-    marginBottom: 10 
-  },
-  cameraButton: { 
-    padding: 8, 
-    alignSelf: 'flex-start' 
-  },
-  cameraIcon: { 
-    fontSize: 24 
-  },
-  submitButton: { 
-    backgroundColor: '#4CAF50', 
-    padding: 12, borderRadius: 8 
-  },
-  submitText: { 
-    color: 'white', 
-    textAlign: 'center', 
-    fontWeight: 'bold' 
-  },
-});

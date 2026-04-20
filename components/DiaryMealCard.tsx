@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { FoodItem } from "../types/FoodItem";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -8,6 +8,7 @@ import EditFood from "./EditFood";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getFavoriteFoods } from "../firebase/favorites";
 import { addFavoriteMeal, removeFavoriteMeal, getFavoriteMeals } from "../firebase/favoriteMeals";
+import { globalStyles } from "../src/styles/globalStyles";
 
 type Meal = {
   id: string;
@@ -69,9 +70,9 @@ export default function DiaryMealCard({ meal, index }: Props) {
 
   const timeString = meal.timestamp
     ? meal.timestamp.toDate().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "";
 
   const totalCarbs = meal.totalCarbohydrates ?? 0;
@@ -99,6 +100,7 @@ export default function DiaryMealCard({ meal, index }: Props) {
   };
 
   const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -107,8 +109,6 @@ export default function DiaryMealCard({ meal, index }: Props) {
     };
     loadFavorites();
   }, []);
-
-  const [favoriteMeals, setFavoriteMeals] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -160,19 +160,18 @@ export default function DiaryMealCard({ meal, index }: Props) {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => setExpanded(!expanded)}
-        style={styles.card}
+        style={globalStyles.diaryCard}
       >
-        <View style={styles.header}>
-
-          {/* Group meal title + star together */}
+        {/* Header */}
+        <View style={globalStyles.diaryHeader}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={styles.headerText}>
+            <Text style={globalStyles.diaryHeaderText}>
               {meal.mealType} #{index}
             </Text>
 
             <TouchableOpacity
               onPress={async () => {
-                if (favoriteMeals.some(m => m.id === meal.id)) {
+                if (favoriteMeals.some((m) => m.id === meal.id)) {
                   await removeFavoriteMeal(meal.id);
                 } else {
                   await addFavoriteMeal(meal);
@@ -182,40 +181,40 @@ export default function DiaryMealCard({ meal, index }: Props) {
               }}
             >
               <Text style={{ fontSize: 22, marginLeft: 8 }}>
-                {favoriteMeals.some(m => m.id === meal.id) ? "⭐" : "☆"}
+                {favoriteMeals.some((m) => m.id === meal.id) ? "⭐" : "☆"}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Right side: carbs + time */}
           <View style={{ alignItems: "flex-end" }}>
-            <Text style={styles.headerCarbs}>{totalCarbs.toFixed(1)} g carbs</Text>
-            <Text style={styles.timeText}>{timeString}</Text>
+            <Text style={globalStyles.diaryHeaderCarbs}>
+              {totalCarbs.toFixed(1)} g carbs
+            </Text>
+            <Text style={globalStyles.diaryTimeText}>{timeString}</Text>
           </View>
         </View>
 
-        {!expanded && <Text style={styles.tapHint}>Tap to expand</Text>}
+        {!expanded && <Text style={globalStyles.diaryTapHint}>Tap to expand</Text>}
 
         {expanded && (
-          <View style={styles.body}>
-            <View style={styles.section}>
+          <View style={globalStyles.diaryBody}>
+            {/* Foods */}
+            <View style={globalStyles.diarySection}>
               {meal.foods.map((food) => {
                 const baseName = food.name.split("(")[0].trim().toLowerCase();
-
-                const isFavorite = favoriteFoods.some(f =>
-                  f.id === food.id ||
-                  f.name.toLowerCase() === baseName
+                const isFavorite = favoriteFoods.some(
+                  (f) => f.id === food.id || f.name.toLowerCase() === baseName
                 );
 
                 return (
-                  <View key={food.id} style={styles.foodRow}>
-                    <Text style={styles.foodName}>
+                  <View key={food.id} style={globalStyles.diaryFoodRow}>
+                    <Text style={globalStyles.diaryFoodName}>
                       {isFavorite ? "⭐ " : ""}
                       {food.name}
                       {food.servingSize ? ` (${food.servingSize} g)` : ""}
                     </Text>
 
-                    <Text style={styles.foodCarbs}>
+                    <Text style={globalStyles.diaryFoodCarbs}>
                       {food.carbohydrates.toFixed(1)} g
                     </Text>
                   </View>
@@ -223,39 +222,45 @@ export default function DiaryMealCard({ meal, index }: Props) {
               })}
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.nutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
-              <Text style={styles.nutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
-              <Text style={styles.nutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
-              <Text style={styles.nutrient}>Fat: {totalFat.toFixed(1)} g</Text>
+            {/* Totals */}
+            <View style={globalStyles.diarySection}>
+              <Text style={globalStyles.diaryNutrient}>Carbs: {totalCarbs.toFixed(1)} g</Text>
+              <Text style={globalStyles.diaryNutrient}>Energy: {totalEnergy.toFixed(0)} kcal</Text>
+              <Text style={globalStyles.diaryNutrient}>Protein: {totalProtein.toFixed(1)} g</Text>
+              <Text style={globalStyles.diaryNutrient}>Fat: {totalFat.toFixed(1)} g</Text>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.chartTitle}>Carbs per food</Text>
+            {/* Carbs per food */}
+            <View style={globalStyles.diarySection}>
+              <Text style={globalStyles.diaryChartTitle}>Carbs per food</Text>
 
               {meal.foods.map((food) => {
-                const pct =
-                  totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
+                const pct = totalCarbs > 0 ? (food.carbohydrates / totalCarbs) * 100 : 0;
 
                 return (
-                  <View key={food.id} style={styles.barRow}>
-                    <Text style={styles.barLabel}>{food.name}</Text>
+                  <View key={food.id} style={globalStyles.diaryBarRow}>
+                    <Text style={globalStyles.diaryBarLabel}>{food.name}</Text>
 
-                    <View style={styles.barTrack}>
-                      <View style={[styles.barFill, { width: `${pct}%` }]} />
+                    <View style={globalStyles.diaryBarTrack}>
+                      <View
+                        style={[
+                          globalStyles.diaryBarFill,
+                          { width: `${pct}%` },
+                        ]}
+                      />
                     </View>
 
-                    <Text style={styles.foodCarbs}>
+                    <Text style={globalStyles.diaryFoodCarbs}>
                       {food.carbohydrates.toFixed(1)} g
                     </Text>
 
-                    <View style={styles.actionColumn}>
+                    <View style={globalStyles.diaryActionColumn}>
                       <TouchableOpacity onPress={() => openEditModal(food)}>
-                        <Text style={styles.editButton}>Edit</Text>
+                        <Text style={globalStyles.diaryEditButton}>Edit</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={() => handleDelete(food.id)}>
-                        <Text style={styles.deleteButton}>Del</Text>
+                        <Text style={globalStyles.diaryDeleteButton}>Del</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -272,139 +277,3 @@ export default function DiaryMealCard({ meal, index }: Props) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    overflow: "hidden",
-  },
-
-  header: {
-    backgroundColor: "#4A90E2",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  headerText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-  },
-
-  headerCarbs: {
-    fontSize: 14,
-    color: "#4B5563",
-  },
-
-  tapHint: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-
-  body: {
-    padding: 16,
-  },
-
-  section: {
-    marginBottom: 24,
-  },
-
-  foodRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-
-  foodName: {
-    fontSize: 14,
-    color: "#374151",
-  },
-
-  foodCarbs: {
-    fontSize: 14,
-    color: "#4B5563",
-  },
-
-  nutrient: {
-    fontSize: 14,
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 8,
-  },
-
-  barRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-
-  barTrack: {
-    flex: 1,
-    height: 14,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    marginHorizontal: 8,
-  },
-
-  barFill: {
-    height: 14,
-    backgroundColor: "#3B82F6",
-    borderRadius: 4,
-  },
-
-  barLabel: {
-    width: 90,
-    fontSize: 14,
-    color: "#374151",
-  },
-
-  timeText: {
-    fontSize: 14,
-    color: "#4B5563",
-    fontWeight: "500",
-  },
-  actionColumn: {
-    justifyContent: "center",
-    alignItems: "flex-end",
-    marginLeft: 8,
-  },
-
-  editButton: {
-    backgroundColor: "#3B82F6",
-    color: "white",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontSize: 12,
-    overflow: "hidden",
-    marginBottom: 4,
-  },
-
-  deleteButton: {
-    backgroundColor: "#EF4444",
-    color: "white",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontSize: 12,
-    overflow: "hidden",
-  },
-
-
-});

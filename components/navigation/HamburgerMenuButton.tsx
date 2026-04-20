@@ -4,13 +4,14 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { BottomSheet } from "react-native-btr";
 import { useHamburgerMenuButton } from "../../src/hooks/useHamburgerMenuButton";
 import type { HamburgerMenuButtonProps } from "../../types/HamburgerMenuButtonTypes";
+import { globalStyles } from "../../src/styles/globalStyles";
 
 const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
     const { isVisible, navigateToScreen, toggleMenu } = useHamburgerMenuButton({ onNavigate });
 
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={toggleMenu} style={styles.button} activeOpacity={0.8}>
+        <View>
+            <TouchableOpacity onPress={toggleMenu} style={globalStyles.hamburgerButton} activeOpacity={0.8}>
                 <Icon name="menu" size={28} color="#fff" />
             </TouchableOpacity>
 
@@ -22,34 +23,11 @@ const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
                     <TouchableOpacity onPress={() => navigateToScreen("MealBuilder")}><Text style={styles.menuItem}>Meal Builder</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Medications")}><Text style={styles.menuItem}>Medications</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Logout")}><Text style={styles.menuItem}>Logout</Text></TouchableOpacity>
+
                 </View>
             </BottomSheet>
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {},
-    button: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: "#007AFF",
-        alignItems: "center",
-        justifyContent: "center",
-        elevation: 8,
-        zIndex: 10,
-    },
-    menu: {
-        backgroundColor: "#fff",
-        padding: 20,
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-    },
-    menuItem: {
-        fontSize: 18,
-        paddingVertical: 10,
-    },
-});
 
 export default HamburgerMenuButton;

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useTodayCarbsChart } from "../src/hooks/useTodayCarbsChart";
+import { globalStyles } from "../src/styles/globalStyles"
 
 export default function TodayCarbsChart() {
     const {
@@ -15,7 +16,7 @@ export default function TodayCarbsChart() {
     return (
         <View style={styles.chartWrap}>
             {loadingChart && <Text>Loading chart...</Text>}
-            {!loadingChart && chartError && <Text style={styles.errorText}>{chartError}</Text>}
+            {!loadingChart && chartError && <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>}
             {!loadingChart && !chartError && pieData.length === 0 && <Text>No meals logged for today yet.</Text>}
 
             {!loadingChart && !chartError && pieData.length > 0 && (
@@ -51,3 +52,27 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
 });
+
+                    <Text style={globalStyles.todayChart_totalText}>
+                        Total carbs: {totalCarbs.toFixed(1)} g
+                    </Text>
+
+                    {remainingCarbs !== null && (
+                        <Text style={globalStyles.todayChart_remainingText}>
+                            Remaining: {remainingCarbs.toFixed(1)} g
+                        </Text>
+                    )}
+                </>
+            )}
+
+            {!loadingChart &&
+                !chartError &&
+                pieData.length === 0 &&
+                remainingCarbs !== null && (
+                    <Text style={globalStyles.todayChart_remainingText}>
+                        Remaining: {remainingCarbs.toFixed(1)} g
+                    </Text>
+                )}
+        </View>
+    );
+}

@@ -1,22 +1,12 @@
 import React, { useState } from "react"
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    TextInput,
-    Modal,
-} from "react-native"
+import { View, Text, TouchableOpacity, Alert, TextInput, Modal, } from "react-native"
+
+import { globalStyles } from "../src/styles/globalStyles"
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
-import {
-    getAuth,
-    updateProfile,
-    updatePassword,
-    EmailAuthProvider,
-    reauthenticateWithCredential,
-} from "firebase/auth"
+import { getAuth, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, } from "firebase/auth"
 import { getFirestore, doc, deleteDoc } from "firebase/firestore"
+import { useTheme } from "../src/theme/ThemeContext"
 
 export default function AccountSettingsScreen() {
     const auth = getAuth()
@@ -46,6 +36,8 @@ export default function AccountSettingsScreen() {
         setConfirmUsername("")
         setDeletePassword("")
     }
+
+    const theme = useTheme()
 
     // Vaihda käyttäjänimi
     const handleChangeUsername = async () => {
@@ -112,51 +104,53 @@ export default function AccountSettingsScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Account Settings</Text>
+        <View style={[globalStyles.container, { backgroundColor: theme.colors.background }]}>
+            <Text style={[globalStyles.header, { color: theme.colors.text }]}>
+                Account Settings
+            </Text>
 
-            <View style={styles.section}>
-                <TouchableOpacity style={styles.row} onPress={() => openModal("username")}>
+            <View style={globalStyles.section}>
+                <TouchableOpacity style={globalStyles.row} onPress={() => openModal("username")}>
                     <MaterialIcons name="person" size={24} color="#009FE3" />
-                    <Text style={styles.rowText}>Change Username</Text>
+                    <Text style={globalStyles.rowText}>Change Username</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.row} onPress={() => openModal("password")}>
+                <TouchableOpacity style={globalStyles.row} onPress={() => openModal("password")}>
                     <MaterialIcons name="lock" size={24} color="#009FE3" />
-                    <Text style={styles.rowText}>Change Password</Text>
+                    <Text style={globalStyles.rowText}>Change Password</Text>
                 </TouchableOpacity>
             </View>
 
             {/* PUNAINEN DELETE ACCOUNT -BOKSI */}
-            <View style={styles.dangerSection}>
-                <TouchableOpacity style={styles.row} onPress={() => openModal("delete")}>
+            <View style={globalStyles.dangerSection}>
+                <TouchableOpacity style={globalStyles.row} onPress={() => openModal("delete")}>
                     <MaterialIcons name="delete" size={24} color="#d9534f" />
-                    <Text style={[styles.rowText, { color: "#d9534f" }]}>Delete Account</Text>
+                    <Text style={[globalStyles.rowText, { color: "#d9534f" }]}>Delete Account</Text>
                 </TouchableOpacity>
             </View>
 
             {/* MODAL */}
             <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
+                <View style={globalStyles.modalOverlay}>
+                    <View style={globalStyles.modalBox}>
 
                         {/* USERNAME MODAL */}
                         {modalType === "username" && (
                             <>
-                                <Text style={styles.modalTitle}>Change Username</Text>
-                                <Text style={styles.modalDescription}>
+                                <Text style={globalStyles.modalTitle}>Change Username</Text>
+                                <Text style={globalStyles.modalDescription}>
                                     Enter your new username. This name will appear on your profile.
                                 </Text>
 
                                 <TextInput
                                     placeholder="New username"
-                                    style={styles.input}
+                                    style={globalStyles.input}
                                     value={newUsername}
                                     onChangeText={setNewUsername}
                                 />
 
-                                <TouchableOpacity style={styles.saveBtn} onPress={handleChangeUsername}>
-                                    <Text style={styles.saveText}>Save</Text>
+                                <TouchableOpacity style={globalStyles.saveBtn} onPress={handleChangeUsername}>
+                                    <Text style={globalStyles.saveText}>Save</Text>
                                 </TouchableOpacity>
                             </>
                         )}
@@ -164,18 +158,18 @@ export default function AccountSettingsScreen() {
                         {/* PASSWORD MODAL */}
                         {modalType === "password" && (
                             <>
-                                <Text style={styles.modalTitle}>Change Password</Text>
-                                <Text style={styles.modalDescription}>
+                                <Text style={globalStyles.modalTitle}>Change Password</Text>
+                                <Text style={globalStyles.modalDescription}>
                                     Enter your current password to verify your identity.
                                 </Text>
-                                <Text style={styles.modalDescription}>
+                                <Text style={globalStyles.modalDescription}>
                                     Then choose a new password.
                                 </Text>
 
                                 <TextInput
                                     placeholder="Current password"
                                     secureTextEntry
-                                    style={styles.input}
+                                    style={globalStyles.input}
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
                                 />
@@ -183,13 +177,13 @@ export default function AccountSettingsScreen() {
                                 <TextInput
                                     placeholder="New password"
                                     secureTextEntry
-                                    style={styles.input}
+                                    style={globalStyles.input}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                 />
 
-                                <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword}>
-                                    <Text style={styles.saveText}>Save</Text>
+                                <TouchableOpacity style={globalStyles.saveBtn} onPress={handleChangePassword}>
+                                    <Text style={globalStyles.saveText}>Save</Text>
                                 </TouchableOpacity>
                             </>
                         )}
@@ -197,17 +191,17 @@ export default function AccountSettingsScreen() {
                         {/* DELETE ACCOUNT MODAL */}
                         {modalType === "delete" && (
                             <>
-                                <Text style={styles.modalTitle}>Delete Account</Text>
-                                <Text style={styles.modalDescription}>
+                                <Text style={globalStyles.modalTitle}>Delete Account</Text>
+                                <Text style={globalStyles.modalDescription}>
                                     To confirm deletion, type your username exactly as it appears.
                                 </Text>
-                                <Text style={styles.modalDescription}>
+                                <Text style={globalStyles.modalDescription}>
                                     You must also enter your password to verify your identity.
                                 </Text>
 
                                 <TextInput
                                     placeholder="Confirm username"
-                                    style={styles.input}
+                                    style={globalStyles.input}
                                     value={confirmUsername}
                                     onChangeText={setConfirmUsername}
                                 />
@@ -215,22 +209,22 @@ export default function AccountSettingsScreen() {
                                 <TextInput
                                     placeholder="Password"
                                     secureTextEntry
-                                    style={styles.input}
+                                    style={globalStyles.input}
                                     value={deletePassword}
                                     onChangeText={setDeletePassword}
                                 />
 
                                 <TouchableOpacity
-                                    style={[styles.saveBtn, { backgroundColor: "#d9534f" }]}
+                                    style={[globalStyles.saveBtn, { backgroundColor: "#d9534f" }]}
                                     onPress={handleDeleteAccount}
                                 >
-                                    <Text style={styles.saveText}>Delete Account</Text>
+                                    <Text style={globalStyles.saveText}>Delete Account</Text>
                                 </TouchableOpacity>
                             </>
                         )}
 
-                        <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
-                            <Text style={styles.cancelText}>Cancel</Text>
+                        <TouchableOpacity style={globalStyles.cancelBtn} onPress={closeModal}>
+                            <Text style={globalStyles.cancelText}>Cancel</Text>
                         </TouchableOpacity>
 
                     </View>
@@ -240,88 +234,3 @@ export default function AccountSettingsScreen() {
         </View>
     )
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#E5F7FD",
-        padding: 20,
-    },
-    header: {
-        fontSize: 26,
-        fontWeight: "bold",
-        marginBottom: 20,
-    },
-    section: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        paddingVertical: 10,
-        marginBottom: 20,
-        elevation: 2,
-    },
-    dangerSection: {
-        borderWidth: 2,
-        borderColor: "#d9534f",
-        borderRadius: 12,
-        paddingVertical: 10,
-        marginBottom: 20,
-        backgroundColor: "#fff5f5",
-    },
-    row: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-    },
-    rowText: {
-        fontSize: 18,
-        marginLeft: 12,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    modalBox: {
-        width: "85%",
-        backgroundColor: "#fff",
-        padding: 20,
-        borderRadius: 12,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 12,
-    },
-    modalDescription: {
-        fontSize: 14,
-        color: "#555",
-        marginBottom: 10,
-    },
-    input: {
-        backgroundColor: "#f2f2f2",
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 12,
-    },
-    saveBtn: {
-        backgroundColor: "#009FE3",
-        padding: 12,
-        borderRadius: 8,
-        alignItems: "center",
-        marginTop: 4,
-    },
-    saveText: {
-        color: "#fff",
-        fontSize: 16,
-    },
-    cancelBtn: {
-        marginTop: 10,
-        alignItems: "center",
-    },
-    cancelText: {
-        color: "#555",
-        fontSize: 16,
-    },
-})
