@@ -272,7 +272,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
 
                 {isSelected && (
                     <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.95}>
-                        <View style={globalStyles.card}>
+                        <View style={[globalStyles.card, globalStyles.foodSearch_detailCard]}>
 
                             <View style={globalStyles.foodSearch_detailHeader}>
                                 <View style={globalStyles.foodSearch_detailHeaderLeft}>
@@ -282,15 +282,28 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                                     <Text style={globalStyles.foodSearch_detailPerNote}>per 100 g</Text>
                                 </View>
 
-                                <View style={globalStyles.foodSearch_detailEnergyBadge}>
-                                    <Text style={globalStyles.foodSearch_detailEnergyValue}>{item.energy}</Text>
-                                    <Text style={globalStyles.foodSearch_detailEnergyUnit}>kcal</Text>
-                                </View>
+                                <TouchableOpacity
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        toggleFavorite(item);
+                                    }}
+                                    style={globalStyles.foodSearch_favoriteButton}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <Text style={globalStyles.foodSearch_favoriteIcon}>
+                                        {favoriteFoods.some((f) => f.id === item.id) ? "★" : "☆"}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
 
-                            <View style={globalStyles.foodSearch_detailDivider} />
+                            <NutritionCircle
+                                carbs={item.carbohydrates}
+                                protein={item.protein}
+                                fat={item.fat}
+                                calories={item.energy}
+                            />
 
-                            {[ 
+                            {[
                                 { label: "Carbohydrates", value: item.carbohydrates, unit: "g", color: "#E67E22", ref: 130 },
                                 { label: "Protein", value: item.protein, unit: "g", color: "#2980B9", ref: 50 },
                                 { label: "Fat", value: item.fat, unit: "g", color: "#27AE60", ref: 78 },

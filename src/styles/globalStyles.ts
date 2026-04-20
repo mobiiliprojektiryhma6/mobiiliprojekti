@@ -892,7 +892,16 @@ export const globalStyles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "flex-start",
         justifyContent: "space-between",
-        marginBottom: 14,
+        marginBottom: 6,
+    },
+    foodSearch_detailCard: {
+        borderWidth: 1,
+        borderColor: "#009FE3",
+        shadowColor: "#009FE3",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
     },
     foodSearch_detailHeaderLeft: {
         flex: 1,
@@ -912,27 +921,16 @@ export const globalStyles = StyleSheet.create({
         textTransform: "uppercase",
         letterSpacing: 0.5,
     },
-    foodSearch_detailEnergyBadge: {
-        backgroundColor: "#FFF3E0",
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+    foodSearch_favoriteButton: {
+        width: 32,
+        height: 32,
         alignItems: "center",
-        minWidth: 64,
+        justifyContent: "center",
+        marginLeft: 8,
     },
-    foodSearch_detailEnergyValue: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#E67E22",
-        letterSpacing: -0.5,
-    },
-    foodSearch_detailEnergyUnit: {
-        fontSize: 11,
-        fontWeight: "600",
-        color: "#E67E22",
-        opacity: 0.8,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
+    foodSearch_favoriteIcon: {
+        fontSize: 22,
+        color: "#1A1A2E",
     },
     foodSearch_detailDivider: {
         height: 1,
