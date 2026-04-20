@@ -11,43 +11,10 @@ export default function TodayCarbsChart() {
         chartWidth,
         loadingChart,
         pieData,
-        progress,
-        remainingCarbs,
-        targetCarbs,
-        targetMessage,
-        totalCarbs,
     } = useTodayCarbsChart();
 
     return (
-        <View style={globalStyles.todayChart_wrap}>
-            <Text style={globalStyles.todayChart_title}>Today's Carbs</Text>
-
-            <View style={globalStyles.todayChart_targetWrap}>
-                {targetCarbs === null || remainingCarbs === null ? (
-                    <Text style={globalStyles.todayChart_infoText}>
-                        {targetMessage ??
-                            "Missing profile info: add weight and height, or set a custom carb target."}
-                    </Text>
-                ) : (
-                    <>
-                        {totalCarbs > targetCarbs && (
-                            <Text style={globalStyles.todayChart_warningText}>
-                                You are {Math.abs(targetCarbs - totalCarbs).toFixed(1)} g above today&apos;s target.
-                            </Text>
-                        )}
-
-                        <View style={globalStyles.todayChart_progressTrack}>
-                            <View
-                                style={[
-                                    globalStyles.todayChart_progressFill,
-                                    { width: `${progress * 100}%` },
-                                ]}
-                            />
-                        </View>
-                    </>
-                )}
-            </View>
-
+        <View style={styles.chartWrap}>
             {loadingChart && <Text>Loading chart...</Text>}
             {!loadingChart && chartError && <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>}
             {!loadingChart && !chartError && pieData.length === 0 && <Text>No meals logged for today yet.</Text>}
@@ -66,6 +33,25 @@ export default function TodayCarbsChart() {
                         chartConfig={{ color: () => "#000" }}
                         absolute
                     />
+                </>
+            )}
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    chartWrap: {
+        marginTop: 0,
+        marginBottom: 16,
+        alignItems: "center",
+        paddingVertical: 0,
+        paddingHorizontal: 10,
+    },
+    errorText: {
+        color: "#B00020",
+        textAlign: "center",
+    },
+});
 
                     <Text style={globalStyles.todayChart_totalText}>
                         Total carbs: {totalCarbs.toFixed(1)} g

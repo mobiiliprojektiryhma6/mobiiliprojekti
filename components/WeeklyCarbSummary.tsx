@@ -9,6 +9,7 @@ type CarbEntry = {
 
 type Props = {
     data: CarbEntry[];
+    comparisonData?: CarbEntry[];
 };
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -26,32 +27,12 @@ function getWeekdayTotals(entries: CarbEntry[]) {
     return totals;
 }
 
-function computeLeastSquares(values: number[]) {
-    const n = values.length;
-    const x = values.map((_, i) => i + 1);
-    const y = values;
-
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((acc, xi, i) => acc + xi * y[i], 0);
-    const sumX2 = x.reduce((acc, xi) => acc + xi * xi, 0);
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-
-    return { slope, intercept };
-}
-
-export default function WeeklyCarbSummary({ data }: Props) {
+export default function WeeklyCarbSummary({ data, comparisonData = [] }: Props) {
     const totals = getWeekdayTotals(data);
-    const { slope, intercept } = computeLeastSquares(totals);
-    const trend = totals.map((_, i) => slope * (i + 1) + intercept);
+    const lastWeekTotals = getWeekdayTotals(comparisonData);
 
     return (
-        <View style={{ marginTop: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
-                Weekly Carb Summary
-            </Text>
+        <View style={{ marginTop: 8 }}>
 
             {/* Y-axis label */}
             <Text style={{ textAlign: "center", marginBottom: 4, color: "#555" }}>
@@ -68,7 +49,7 @@ export default function WeeklyCarbSummary({ data }: Props) {
                             strokeWidth: 2,
                         },
                         {
-                            data: trend,
+                            data: lastWeekTotals,
                             color: () => "#FF9800", // orange
                             strokeWidth: 2,
                         },
@@ -125,7 +106,7 @@ export default function WeeklyCarbSummary({ data }: Props) {
                             marginRight: 6,
                         }}
                     />
-                    <Text>Trendline</Text>
+                    <Text>Last week (same day)</Text>
                 </View>
             </View>
         </View>
