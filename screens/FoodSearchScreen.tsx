@@ -344,7 +344,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
             >
                 <View style={globalStyles.foodSearch_searchRow}>
                     <TextInput
-                        style={globalStyles.input}
+                        style={[globalStyles.input, { flex: 1, marginBottom: 0 }]}
                         placeholder="Search food (e.g. bread, chocolate...)"
                         value={query}
                         onChangeText={(text) => setQuery(text)}
@@ -354,7 +354,7 @@ export default function FoodSearchScreen({ navigation }: { navigation: any }) {
                     />
 
                     <TouchableOpacity
-                        style={globalStyles.foodSearch_cameraButton}
+                        style={[globalStyles.foodSearch_cameraButton, { alignSelf: "center" }]}
                         onPress={() => navigation.navigate("Scanner")}
                     >
                         <Text style={{ fontSize: 22, color: "#fff" }}>📷</Text>
