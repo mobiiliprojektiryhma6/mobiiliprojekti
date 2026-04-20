@@ -11,20 +11,20 @@ export default function TodayCarbsChart() {
         chartWidth,
         loadingChart,
         pieData,
-        remainingCarbs,
-        targetMessage,
-        totalCarbs,
     } = useTodayCarbsChart();
 
     return (
         <View style={globalStyles.todayChart_wrap}>
             {loadingChart && <Text>Loading chart...</Text>}
-            {!loadingChart && chartError && <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>}
-            {!loadingChart && !chartError && targetMessage && (
-                <Text style={globalStyles.todayChart_warningText}>{targetMessage}</Text>
+
+            {!loadingChart && chartError && (
+                <Text style={globalStyles.todayChart_errorText}>{chartError}</Text>
             )}
+
             {!loadingChart && !chartError && pieData.length === 0 && (
-                <Text style={globalStyles.textSecondary}>No meals logged for today yet.</Text>
+                <Text style={globalStyles.textSecondary}>
+                    No meals logged for today yet.
+                </Text>
             )}
 
             {!loadingChart && !chartError && pieData.length > 0 && (
