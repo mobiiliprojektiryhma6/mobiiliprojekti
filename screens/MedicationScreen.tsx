@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert} from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp} from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../src/hooks/useAuth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { globalStyles } from "../src/styles/globalStyles"
 
 
 type MedicationTime = {
@@ -55,7 +56,7 @@ export default function MedicationScreen() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
-//Firestore
+  //Firestore
   const loadMedications = useCallback(async () => {
     if (!user) return;
     try {
@@ -74,8 +75,8 @@ export default function MedicationScreen() {
     }
   }, [user]);
 
- 
-//AsyncStoragesta checkboxin tila
+
+  //AsyncStoragesta checkboxin tila
   const loadChecks = useCallback(async () => {
     try {
       const raw = await AsyncStorage.getItem(getTodayCheckKey());
@@ -91,7 +92,7 @@ export default function MedicationScreen() {
   }, [loadMedications, loadChecks]);
 
 
-//Toggle päivittää checkboxin tilan AsyncStoragessa
+  //Toggle päivittää checkboxin tilan AsyncStoragessa
   const toggleCheck = async (medId: string, timeId: string) => {
     const key = `${medId}_${timeId}`;
     const updated = { ...checks, [key]: !checks[key] };
@@ -104,14 +105,14 @@ export default function MedicationScreen() {
   };
 
 
-//Lisää lääke
+  //Lisää lääke
   const openAddModal = () => {
     setEditingId(null);
     setForm(emptyForm());
     setModalVisible(true);
   };
 
-//Muokkaa lääkken tietoja
+  //Muokkaa lääkken tietoja
   const openEditModal = (med: Medication) => {
     setEditingId(med.id);
     setForm({
@@ -126,7 +127,7 @@ export default function MedicationScreen() {
   };
 
 
-//Lisää kellonaika lomakkeeseen
+  //Lisää kellonaika lomakkeeseen
   const addTimeToForm = () => {
     const t = form.newTime.trim();
     if (!/^\d{2}:\d{2}$/.test(t)) {
@@ -189,7 +190,7 @@ export default function MedicationScreen() {
     }
   };
 
- 
+
   //Poista lääkitäs
   const deleteMedication = (med: Medication) => {
     Alert.alert(
@@ -217,38 +218,42 @@ export default function MedicationScreen() {
   };
 
 
-//Ruutu
+  //Ruutu
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={globalStyles.center}>
         <ActivityIndicator size="large" color="#009FE3" />
       </View>
     );
   }
 
   return (
-    <View style={styles.root}>
+    <View style={globalStyles.med_root}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={globalStyles.med_scroll}
+        contentContainerStyle={globalStyles.med_scrollContent}
       >
-        <View style={styles.screenHeader}>
-          <Text style={styles.screenTitle}>My Medications</Text>
-          <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
+        {/* Header */}
+        <View style={globalStyles.med_screenHeader}>
+          <Text style={globalStyles.header}>My Medications</Text>
+
+          <TouchableOpacity style={globalStyles.med_addButton} onPress={openAddModal}>
             <MaterialIcons name="add" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
 
+        {/* Empty state */}
         {medications.length === 0 && (
-          <View style={styles.emptyBox}>
+          <View style={globalStyles.med_emptyBox}>
             <MaterialIcons name="medication" size={48} color="#009FE3" />
-            <Text style={styles.emptyText}>No medications added yet.</Text>
-            <Text style={styles.emptySubText}>
+            <Text style={globalStyles.med_emptyText}>No medications added yet.</Text>
+            <Text style={globalStyles.med_emptySubText}>
               Tap the + button to add your first medication.
             </Text>
           </View>
         )}
 
+        {/* Medication cards */}
         {medications.map((med) => (
           <MedicationCard
             key={med.id}
@@ -261,42 +266,42 @@ export default function MedicationScreen() {
         ))}
       </ScrollView>
 
-      {/* Lisäys/muokkaus */}
+      {/* ADD / EDIT MEDICATION MODAL */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.med_modalBox}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>
+              <Text style={globalStyles.modalTitle}>
                 {editingId ? "Edit Medication" : "Add Medication"}
               </Text>
 
-              <Text style={styles.fieldLabel}>Medication name *</Text>
+              <Text style={globalStyles.med_fieldLabel}>Medication name *</Text>
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="e.g. Paracetamol"
                 value={form.name}
                 onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
               />
 
-              <Text style={styles.fieldLabel}>Dose</Text>
+              <Text style={globalStyles.med_fieldLabel}>Dose</Text>
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="e.g. 500mg, 2 tablets"
                 value={form.dose}
                 onChangeText={(v) => setForm((p) => ({ ...p, dose: v }))}
               />
 
-              <Text style={styles.fieldLabel}>Usage</Text>
+              <Text style={globalStyles.med_fieldLabel}>Usage</Text>
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="e.g. for blood pressure"
                 value={form.usage}
                 onChangeText={(v) => setForm((p) => ({ ...p, usage: v }))}
               />
 
-              <Text style={styles.fieldLabel}>Notes</Text>
+              <Text style={globalStyles.med_fieldLabel}>Notes</Text>
               <TextInput
-                style={[styles.input, styles.inputMultiline]}
+                style={[globalStyles.input, globalStyles.med_inputMultiline]}
                 placeholder="e.g. take with food"
                 value={form.notes}
                 onChangeText={(v) => setForm((p) => ({ ...p, notes: v }))}
@@ -304,51 +309,54 @@ export default function MedicationScreen() {
                 numberOfLines={3}
               />
 
-              {/* Aika */}
-              <Text style={styles.fieldLabel}>Scheduled times</Text>
+              {/* Times */}
+              <Text style={globalStyles.med_fieldLabel}>Scheduled times</Text>
 
               {form.times.map((slot) => (
-                <View key={slot.id} style={styles.timeChip}>
+                <View key={slot.id} style={globalStyles.med_timeChip}>
                   <MaterialIcons name="schedule" size={16} color="#009FE3" />
-                  <Text style={styles.timeChipText}>{slot.time}</Text>
+                  <Text style={globalStyles.med_timeChipText}>{slot.time}</Text>
                   <TouchableOpacity onPress={() => removeTimeFromForm(slot.id)}>
                     <MaterialIcons name="close" size={18} color="#d11a2a" />
                   </TouchableOpacity>
                 </View>
               ))}
 
-              <View style={styles.timeRow}>
+              <View style={globalStyles.med_timeRow}>
                 <TextInput
-                  style={[styles.input, styles.timeInput]}
+                  style={[globalStyles.input, globalStyles.med_timeInput]}
                   placeholder="HH:MM"
                   value={form.newTime}
                   onChangeText={(v) => setForm((p) => ({ ...p, newTime: v }))}
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
                 />
-                <TouchableOpacity style={styles.addTimeButton} onPress={addTimeToForm}>
+                <TouchableOpacity
+                  style={globalStyles.med_addTimeButton}
+                  onPress={addTimeToForm}
+                >
                   <MaterialIcons name="add" size={22} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              {/* Toiminnot */}
-              <View style={styles.modalActions}>
+              {/* Actions */}
+              <View style={globalStyles.med_modalActions}>
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={globalStyles.med_cancelButton}
                   onPress={() => setModalVisible(false)}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={globalStyles.med_cancelText}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.saveButton, saving && { opacity: 0.6 }]}
+                  style={[globalStyles.med_saveButton, saving && { opacity: 0.6 }]}
                   onPress={saveMedication}
                   disabled={saving}
                 >
                   {saving ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.saveText}>
+                    <Text style={globalStyles.med_saveText}>
                       {editingId ? "Save changes" : "Add medication"}
                     </Text>
                   )}
@@ -374,373 +382,92 @@ type CardProps = {
 
 function MedicationCard({ med, checks, onToggleCheck, onEdit, onDelete }: CardProps) {
   return (
-    <View style={styles.card}>
+    <View style={globalStyles.med_card}>
 
-      {/* Otsikko ja toiminnot */}
-      <View style={styles.cardHeader}>
-        <View style={styles.cardTitleRow}>
+      {/* Header */}
+      <View style={globalStyles.med_cardHeader}>
+        <View style={globalStyles.med_cardTitleRow}>
           <MaterialIcons name="medication" size={20} color="#009FE3" />
-          <Text style={styles.cardName}>{med.name}</Text>
+          <Text style={globalStyles.med_cardName}>{med.name}</Text>
         </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
+
+        <View style={globalStyles.med_cardActions}>
+          <TouchableOpacity onPress={onEdit} style={globalStyles.med_iconButton}>
             <MaterialIcons name="edit" size={20} color="#4B5563" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
+
+          <TouchableOpacity onPress={onDelete} style={globalStyles.med_iconButton}>
             <MaterialIcons name="delete" size={20} color="#d11a2a" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Dose/Annos */}
+      {/* Dose */}
       {!!med.dose && (
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Dose</Text>
-          <Text style={styles.infoValue}>{med.dose}</Text>
+        <View style={globalStyles.med_infoRow}>
+          <Text style={globalStyles.med_infoLabel}>Dose</Text>
+          <Text style={globalStyles.med_infoValue}>{med.dose}</Text>
         </View>
       )}
 
-      {/* Usage/Käyttö */}
+      {/* Usage */}
       {!!med.usage && (
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Usage</Text>
-          <Text style={styles.infoValue}>{med.usage}</Text>
+        <View style={globalStyles.med_infoRow}>
+          <Text style={globalStyles.med_infoLabel}>Usage</Text>
+          <Text style={globalStyles.med_infoValue}>{med.usage}</Text>
         </View>
       )}
 
-      {/* Notes/Huomioitavaa */}
+      {/* Notes */}
       {!!med.notes && (
-        <View style={styles.notesRow}>
-          <Text style={styles.infoLabel}>Notes</Text>
-          <Text style={styles.notesValue}>{med.notes}</Text>
+        <View style={globalStyles.med_notesRow}>
+          <Text style={globalStyles.med_infoLabel}>Notes</Text>
+          <Text style={globalStyles.med_notesValue}>{med.notes}</Text>
         </View>
       )}
 
-      {med.times.length > 0 && <View style={styles.divider} />}
+      {med.times.length > 0 && <View style={globalStyles.med_divider} />}
 
-      {/* Time & Checkboxes / Ajat ja checkboxit */}
-      {med.times.length > 0 && (
+      {/* Times */}
+      {med.times.length > 0 ? (
         <View>
-          <Text style={styles.timesLabel}>Today's schedule</Text>
+          <Text style={globalStyles.med_timesLabel}>Today's schedule</Text>
+
           {med.times.map((slot) => {
             const checkKey = `${med.id}_${slot.id}`;
             const checked = !!checks[checkKey];
+
             return (
               <TouchableOpacity
                 key={slot.id}
-                style={styles.timeSlotRow}
+                style={globalStyles.med_timeSlotRow}
                 onPress={() => onToggleCheck(med.id, slot.id)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                  {checked && (
-                    <MaterialIcons name="check" size={14} color="#fff" />
-                  )}
+                <View style={[globalStyles.med_checkbox, checked && globalStyles.med_checkboxChecked]}>
+                  {checked && <MaterialIcons name="check" size={14} color="#fff" />}
                 </View>
+
                 <MaterialIcons
                   name="schedule"
                   size={16}
                   color={checked ? "#9CA3AF" : "#009FE3"}
                 />
-                <Text style={[styles.timeSlotText, checked && styles.timeSlotTextDone]}>
+
+                <Text style={[globalStyles.med_timeSlotText, checked && globalStyles.med_timeSlotTextDone]}>
                   {slot.time}
                 </Text>
-                {checked && (
-                  <Text style={styles.takenBadge}>Taken</Text>
-                )}
+
+                {checked && <Text style={globalStyles.med_takenBadge}>Taken</Text>}
               </TouchableOpacity>
             );
           })}
         </View>
-      )}
-
-      {med.times.length === 0 && (
-        <Text style={styles.noTimesText}>No times scheduled — tap edit to add.</Text>
+      ) : (
+        <Text style={globalStyles.med_noTimesText}>
+          No times scheduled — tap edit to add.
+        </Text>
       )}
     </View>
   );
 }
-
-//Tyylit
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#E5F7FD",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#E5F7FD",
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  screenTitle: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-
-  emptyBox: {
-    alignItems: "center",
-    marginTop: 60,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  cardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2937",
-    flexShrink: 1,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  iconButton: {
-    padding: 6,
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: 6,
-    gap: 8,
-  },
-  infoLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-    width: 52,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  notesRow: {
-    marginBottom: 6,
-    gap: 4,
-  },
-  notesValue: {
-    fontSize: 14,
-    color: "#374151",
-    fontStyle: "italic",
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 12,
-  },
-
-  timesLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  timeSlotRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 6,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#009FE3",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  checkboxChecked: {
-    backgroundColor: "#009FE3",
-    borderColor: "#009FE3",
-  },
-  timeSlotText: {
-    fontSize: 15,
-    color: "#1F2937",
-    fontWeight: "500",
-  },
-  timeSlotTextDone: {
-    color: "#9CA3AF",
-    textDecorationLine: "line-through",
-  },
-  takenBadge: {
-    marginLeft: "auto",
-    fontSize: 12,
-    color: "#009FE3",
-    fontWeight: "600",
-    backgroundColor: "#E5F7FD",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  noTimesText: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-    marginTop: 4,
-  },
-
-  screenHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  addButton: {
-    backgroundColor: "#009FE3",
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  modalBox: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    maxHeight: "90%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 20,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: "#1F2937",
-    marginBottom: 12,
-  },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: "top",
-  },
-
-  timeRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 8,
-  },
-  timeInput: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  addTimeButton: {
-    backgroundColor: "#009FE3",
-    width: 46,
-    height: 46,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  timeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#E5F7FD",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  timeChipText: {
-    flex: 1,
-    fontSize: 15,
-    color: "#1F2937",
-    fontWeight: "500",
-  },
-
-  modalActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-    paddingBottom: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-  },
-  cancelText: {
-    fontSize: 15,
-    color: "#6B7280",
-    fontWeight: "600",
-  },
-  saveButton: {
-    flex: 2,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    backgroundColor: "#009FE3",
-  },
-  saveText: {
-    fontSize: 15,
-    color: "#fff",
-    fontWeight: "700",
-  },
-});

@@ -7,6 +7,7 @@ import DiaryMealCard from "../components/DiaryMealCard";
 import { FoodItem } from "../types/FoodItem";
 import CarbsPerMealChart from "../components/CarbsPerMealChart";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { globalStyles } from "../src/styles/globalStyles"
 
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 import GramsPopup from "../components/GramsPopup";
@@ -45,6 +46,9 @@ export default function FoodDiaryScreen() {
   const [foodToAdjust, setFoodToAdjust] = useState<FoodItem | null>(null);
 
   const [weeklyCarbEntries, setWeeklyCarbEntries] = useState<
+    { date: string; carbs: number }[]
+  >([]);
+  const [previousWeeklyCarbEntries, setPreviousWeeklyCarbEntries] = useState<
     { date: string; carbs: number }[]
   >([]);
 
@@ -98,55 +102,85 @@ export default function FoodDiaryScreen() {
 
   }, [route.params, meals, user]);
 
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  const base = new Date(selectedDate);
+    const base = new Date(selectedDate);
 
-// getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
-const day = base.getDay();
+    // getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const day = base.getDay();
 
-// Convert Sunday (0) to 6, Monday (1) to 0, etc.
-const offsetToMonday = (day + 6) % 7;
+    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
+    const offsetToMonday = (day + 6) % 7;
 
-// Find Monday of the selected week
-const monday = new Date(base);
-monday.setDate(base.getDate() - offsetToMonday);
+    // Find Monday of the selected week
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - offsetToMonday);
 
-// Build Mon → Sun
-const dates: string[] = [];
-for (let i = 0; i < 7; i++) {
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + i);
-  dates.push(getDayKey(d));
-}
+    // Build Mon → Sun
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(getDayKey(d));
+    }
+
+    // Build previous Mon → Sun
+    const previousMonday = new Date(monday);
+    previousMonday.setDate(monday.getDate() - 7);
+
+    const previousDates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(previousMonday);
+      d.setDate(previousMonday.getDate() + i);
+      previousDates.push(getDayKey(d));
+    }
 
 
-  const q = query(
-    collection(db, "meals", user.uid, "entries"),
-    where("dateString", "in", dates)
-  );
+    const q = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "in", dates)
+    );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => doc.data() as Meal);
+    const previousQ = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "in", previousDates)
+    );
 
-    const groupedByDay: Record<string, number> = {};
-    dates.forEach((d) => (groupedByDay[d] = 0));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data() as Meal);
 
-    data.forEach((meal) => {
-      groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      const groupedByDay: Record<string, number> = {};
+      dates.forEach((d) => (groupedByDay[d] = 0));
+
+      data.forEach((meal) => {
+        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      });
+
+      const result = dates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
+
+      setWeeklyCarbEntries(result);
     });
 
-    const result = dates
-      .slice()       // copy
-      .reverse()     // oldest → newest
-      .map((d) => ({ date: d, carbs: groupedByDay[d] }));
+    const previousUnsubscribe = onSnapshot(previousQ, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data() as Meal);
 
-    setWeeklyCarbEntries(result);
-  });
+      const groupedByDay: Record<string, number> = {};
+      previousDates.forEach((d) => (groupedByDay[d] = 0));
 
-  return unsubscribe;
-}, [user, selectedDate]);  
+      data.forEach((meal) => {
+        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      });
+
+      const result = previousDates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
+      setPreviousWeeklyCarbEntries(result);
+    });
+
+    return () => {
+      unsubscribe();
+      previousUnsubscribe();
+    };
+  }, [user, selectedDate]);
 
   useEffect(() => {
     if (!user) return;
@@ -313,38 +347,40 @@ for (let i = 0; i < 7; i++) {
 
 
   return (
-    <View style={{ flex: 1 }}>
-
-      <View style={styles.dateRow}>
-        <Text style={styles.dateButton} onPress={goToPreviousDay}>◀</Text>
-        <Text style={styles.dateText}>{selectedDate}</Text>
-        <Text style={styles.dateButton} onPress={goToNextDay}>▶</Text>
+    <View style={globalStyles.container}>
+      <View style={globalStyles.diary_dateRow}>
+        <Text style={globalStyles.diary_dateButton} onPress={goToPreviousDay}>
+          ◀
+        </Text>
+        <Text style={globalStyles.diary_dateText}>{selectedDate}</Text>
+        <Text style={globalStyles.diary_dateButton} onPress={goToNextDay}>
+          ▶
+        </Text>
       </View>
 
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>Today's Meals</Text>
+      <ScrollView>
+        <Text style={globalStyles.header}>Today's Meals</Text>
 
-        <View style={styles.targetCard}>
-          <View style={styles.targetHeaderRow}>
-            <Text style={styles.targetTitle}>Daily Carb Target</Text>
+        <View style={globalStyles.diary_targetCard}>
+          <View style={globalStyles.diary_targetHeaderRow}>
+            <Text style={globalStyles.diary_targetTitle}>Daily Carb Target</Text>
           </View>
 
           {targetCarbs !== null ? (
             <>
               <Text
                 style={[
-                  styles.targetLine,
-                  { color: getCarbStatusColor(dailyTotals.carbs, targetCarbs) }
+                  globalStyles.diary_targetLine,
+                  { color: getCarbStatusColor(dailyTotals.carbs, targetCarbs) },
                 ]}
               >
                 {dailyTotals.carbs.toFixed(1)} / {targetCarbs} g
               </Text>
 
-              {/* Progress bar */}
-              <View style={styles.progressTrack}>
+              <View style={globalStyles.todayChart_progressTrack}>
                 <View
                   style={[
-                    styles.progressFill,
+                    globalStyles.todayChart_progressFill,
                     {
                       width: `${Math.min((dailyTotals.carbs / targetCarbs) * 100, 100)}%`,
                       backgroundColor: getCarbStatusColor(dailyTotals.carbs, targetCarbs),
@@ -354,78 +390,83 @@ for (let i = 0; i < 7; i++) {
               </View>
             </>
           ) : (
-            <Text style={styles.targetMissing}>
-              {targetReason ?? "Missing profile info: add weight and height, or set a custom carb target."}
+            <Text style={globalStyles.todayChart_infoText}>
+              {targetReason ??
+                "Missing profile info: add weight and height, or set a custom carb target."}
             </Text>
           )}
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Daily Totals</Text>
+        <View style={globalStyles.diary_summaryCard}>
+          <Text style={globalStyles.diary_summaryTitle}>Daily Totals</Text>
 
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryColumn}>
-              <Text style={styles.summaryItem}>Carbs: {dailyTotals.carbs.toFixed(1)} g</Text>
-              <Text style={styles.summaryItem}>Protein: {dailyTotals.protein.toFixed(1)} g</Text>
+          <View style={globalStyles.diary_summaryGrid}>
+            <View style={globalStyles.diary_summaryColumn}>
+              <Text style={globalStyles.diary_summaryItem}>
+                Carbs: {dailyTotals.carbs.toFixed(1)} g
+              </Text>
+              <Text style={globalStyles.diary_summaryItem}>
+                Protein: {dailyTotals.protein.toFixed(1)} g
+              </Text>
             </View>
 
-            <View style={styles.summaryColumn}>
-              <Text style={styles.summaryItem}>Energy: {dailyTotals.energy.toFixed(0)} kcal</Text>
-              <Text style={styles.summaryItem}>Fat: {dailyTotals.fat.toFixed(1)} g</Text>
+            <View style={globalStyles.diary_summaryColumn}>
+              <Text style={globalStyles.diary_summaryItem}>
+                Energy: {dailyTotals.energy.toFixed(0)} kcal
+              </Text>
+              <Text style={globalStyles.diary_summaryItem}>
+                Fat: {dailyTotals.fat.toFixed(1)} g
+              </Text>
             </View>
           </View>
         </View>
 
         <CarbsPerMealChart mealTypeNutrition={mealTypeNutrition} />
 
-        <Text style={styles.summaryTitle}>Weekly Carb Summary</Text>
+        <Text style={globalStyles.diary_summaryTitle}>Weekly Carb Summary</Text>
 
-        <WeeklyCarbSummary data={weeklyCarbEntries} />
+        <WeeklyCarbSummary
+          data={weeklyCarbEntries}
+          comparisonData={previousWeeklyCarbEntries}
+        />
 
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
             {grouped[type].length > 0 && (
               <>
-
-                <Text style={styles.mealHeader}>{type}</Text>
+                <Text style={globalStyles.diary_mealHeader}>{type}</Text>
 
                 {mealTypeNutrition[type].carbs > 0 && (
-                  <View style={styles.mealTypeSummaryCard}>
-                    <View style={styles.mealTypeSummaryRow}>
-                      <Text style={styles.mealTypeSummaryItem}>
+                  <View style={globalStyles.diary_mealTypeSummaryCard}>
+                    <View style={globalStyles.diary_mealTypeSummaryRow}>
+                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
                         Carbs: {mealTypeNutrition[type].carbs.toFixed(1)} g
                       </Text>
-                      <Text style={styles.mealTypeSummaryItem}>
+                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
                         Protein: {mealTypeNutrition[type].protein.toFixed(1)} g
                       </Text>
                     </View>
 
-                    <View style={styles.mealTypeSummaryRow}>
-                      <Text style={styles.mealTypeSummaryItem}>
+                    <View style={globalStyles.diary_mealTypeSummaryRow}>
+                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
                         Energy: {mealTypeNutrition[type].energy.toFixed(0)} kcal
                       </Text>
-                      <Text style={styles.mealTypeSummaryItem}>
+                      <Text style={globalStyles.diary_mealTypeSummaryItem}>
                         Fat: {mealTypeNutrition[type].fat.toFixed(1)} g
                       </Text>
                     </View>
                   </View>
                 )}
 
-
                 {grouped[type]
                   .sort((a, b) => {
                     if (a.timestamp && b.timestamp) {
-                      return a.timestamp.toMillis() - b.timestamp.toMillis();
+                      return a.timestamp.toMillis() - b.timestamp.toMillis()
                     }
-                    return 0;
+                    return 0
                   })
                   .map((meal, index) => (
-                    <DiaryMealCard
-                      key={meal.id}
-                      meal={meal}
-                      index={index + 1}
-                    />
-
+                    <DiaryMealCard key={meal.id} meal={meal} index={index + 1} />
                   ))}
               </>
             )}
@@ -445,147 +486,3 @@ for (let i = 0; i < 7; i++) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#E5F7FD",
-    padding: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-
-  dateRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
-  dateButton: {
-    fontSize: 22,
-    paddingHorizontal: 20,
-    color: "#4A90E2",
-  },
-
-  dateText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  summaryCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    marginBottom: 20,
-  },
-
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-
-  summaryGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  summaryColumn: {
-    flex: 1,
-  },
-
-  summaryItem: {
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  targetCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    marginBottom: 16,
-  },
-  targetHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  targetTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  targetLine: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  targetMeta: {
-    fontSize: 14,
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-  targetOver: {
-    color: "#B00020",
-    fontWeight: "600",
-  },
-  targetMissing: {
-    fontSize: 14,
-    color: "#B00020",
-  },
-
-  mealHeader: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 10,
-  },
-  mealTypeSummary: {
-    fontSize: 13,
-    color: "#444",
-    marginBottom: 6,
-    marginLeft: 4,
-  },
-  mealTypeSummaryCard: {
-    backgroundColor: "#fff",
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    marginBottom: 10,
-    marginTop: -4,
-    marginHorizontal: 4,
-  },
-
-  mealTypeSummaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 2,
-  },
-
-  mealTypeSummaryItem: {
-    fontSize: 12,
-    color: "#444",
-  },
-  progressTrack: {
-    height: 10,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 6,
-    marginTop: 6,
-    marginBottom: 4,
-  },
-
-  progressFill: {
-    height: 10,
-    borderRadius: 6,
-  },
-
-});
