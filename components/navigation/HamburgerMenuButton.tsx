@@ -1,31 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { BottomSheet } from "react-native-btr";
-
-type MenuRoute =
-    | "Home"
-    | "FoodDiary"
-    | "FoodSearch"
-    | "MealBuilder"
-    | "Profile"
-    | "Medications"
-    | "FavoriteMeals"
-    | "Logout";
-
-type HamburgerMenuButtonProps = {
-    onNavigate: (screenName: MenuRoute) => void;
-};
+import { useHamburgerMenuButton } from "../../src/hooks/useHamburgerMenuButton";
+import type { HamburgerMenuButtonProps } from "../../types/HamburgerMenuButtonTypes";
 
 const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
-    const [isVisible, setIsVisible] = useState(false);
-
-    const toggleMenu = () => setIsVisible((v) => !v);
-
-    const navigateToScreen = (screenName: MenuRoute) => {
-        onNavigate(screenName);
-        setIsVisible(false);
-    };
+    const { isVisible, navigateToScreen, toggleMenu } = useHamburgerMenuButton({ onNavigate });
 
     return (
         <View style={styles.container}>
@@ -39,7 +20,6 @@ const HamburgerMenuButton = ({ onNavigate }: HamburgerMenuButtonProps) => {
                     <TouchableOpacity onPress={() => navigateToScreen("FoodDiary")}><Text style={styles.menuItem}>Food Diary</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("FoodSearch")}><Text style={styles.menuItem}>Food Search</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("MealBuilder")}><Text style={styles.menuItem}>Meal Builder</Text></TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigateToScreen("Profile")}><Text style={styles.menuItem}>Profile</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Medications")}><Text style={styles.menuItem}>Medications</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => navigateToScreen("Logout")}><Text style={styles.menuItem}>Logout</Text></TouchableOpacity>
                 </View>

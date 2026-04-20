@@ -47,6 +47,9 @@ export default function FoodDiaryScreen() {
   const [weeklyCarbEntries, setWeeklyCarbEntries] = useState<
     { date: string; carbs: number }[]
   >([]);
+  const [previousWeeklyCarbEntries, setPreviousWeeklyCarbEntries] = useState<
+    { date: string; carbs: number }[]
+  >([]);
 
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -98,55 +101,85 @@ export default function FoodDiaryScreen() {
 
   }, [route.params, meals, user]);
 
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  const base = new Date(selectedDate);
+    const base = new Date(selectedDate);
 
-// getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
-const day = base.getDay();
+    // getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const day = base.getDay();
 
-// Convert Sunday (0) to 6, Monday (1) to 0, etc.
-const offsetToMonday = (day + 6) % 7;
+    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
+    const offsetToMonday = (day + 6) % 7;
 
-// Find Monday of the selected week
-const monday = new Date(base);
-monday.setDate(base.getDate() - offsetToMonday);
+    // Find Monday of the selected week
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - offsetToMonday);
 
-// Build Mon → Sun
-const dates: string[] = [];
-for (let i = 0; i < 7; i++) {
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + i);
-  dates.push(getDayKey(d));
-}
+    // Build Mon → Sun
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(getDayKey(d));
+    }
+
+    // Build previous Mon → Sun
+    const previousMonday = new Date(monday);
+    previousMonday.setDate(monday.getDate() - 7);
+
+    const previousDates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(previousMonday);
+      d.setDate(previousMonday.getDate() + i);
+      previousDates.push(getDayKey(d));
+    }
 
 
-  const q = query(
-    collection(db, "meals", user.uid, "entries"),
-    where("dateString", "in", dates)
-  );
+    const q = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "in", dates)
+    );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => doc.data() as Meal);
+    const previousQ = query(
+      collection(db, "meals", user.uid, "entries"),
+      where("dateString", "in", previousDates)
+    );
 
-    const groupedByDay: Record<string, number> = {};
-    dates.forEach((d) => (groupedByDay[d] = 0));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data() as Meal);
 
-    data.forEach((meal) => {
-      groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      const groupedByDay: Record<string, number> = {};
+      dates.forEach((d) => (groupedByDay[d] = 0));
+
+      data.forEach((meal) => {
+        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      });
+
+      const result = dates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
+
+      setWeeklyCarbEntries(result);
     });
 
-    const result = dates
-      .slice()       // copy
-      .reverse()     // oldest → newest
-      .map((d) => ({ date: d, carbs: groupedByDay[d] }));
+    const previousUnsubscribe = onSnapshot(previousQ, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data() as Meal);
 
-    setWeeklyCarbEntries(result);
-  });
+      const groupedByDay: Record<string, number> = {};
+      previousDates.forEach((d) => (groupedByDay[d] = 0));
 
-  return unsubscribe;
-}, [user, selectedDate]);  
+      data.forEach((meal) => {
+        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
+      });
+
+      const result = previousDates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
+      setPreviousWeeklyCarbEntries(result);
+    });
+
+    return () => {
+      unsubscribe();
+      previousUnsubscribe();
+    };
+  }, [user, selectedDate]);
 
   useEffect(() => {
     if (!user) return;
@@ -380,7 +413,10 @@ for (let i = 0; i < 7; i++) {
 
         <Text style={styles.summaryTitle}>Weekly Carb Summary</Text>
 
-        <WeeklyCarbSummary data={weeklyCarbEntries} />
+        <WeeklyCarbSummary
+          data={weeklyCarbEntries}
+          comparisonData={previousWeeklyCarbEntries}
+        />
 
         {mealTypes.map((type) => (
           <View key={type} style={{ marginBottom: 25 }}>
