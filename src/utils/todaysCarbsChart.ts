@@ -50,7 +50,8 @@ export const mapMealsToPieSlices = (meals: MealEntryData[]): PieSlice[] => {
     const groupedMeals = new Map<string, { name: string; carbs: number; color: string }>();
 
     meals.forEach((meal, index) => {
-        const carbs = (meal.foods ?? []).reduce((sum, food) => sum + Number(food?.carbohydrates ?? 0), 0);
+        const carbsFromFoods = (meal.foods ?? []).reduce((sum, food) => sum + Number(food?.carbohydrates ?? 0), 0);
+        const carbs = carbsFromFoods > 0 ? carbsFromFoods : Number(meal.totalCarbohydrates ?? 0);
         if (carbs <= 0) return;
 
         const normalizedMealType = normalizeMealType(meal.mealType);
