@@ -159,6 +159,8 @@ export default function ProfileScreen() {
             setWeight(w)
 
             await saveToFirestore({ height: h, weight: w })
+            console.log("✅ New height set!")
+            console.log("✅ New weight set!")
             setModalVisible(false)
             return
         }

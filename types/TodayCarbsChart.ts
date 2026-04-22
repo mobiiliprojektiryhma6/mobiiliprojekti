@@ -9,4 +9,5 @@ export type PieSlice = {
 export type MealEntryData = {
     mealType?: string;
     foods?: Array<{ carbohydrates?: number }>;
+    totalCarbohydrates?: number;
 };
