@@ -6,6 +6,10 @@ import { useTodayCarbsChart } from "../src/hooks/useTodayCarbsChart";
 export default function Homescreen() {
   const { targetCarbs, remainingCarbs, totalCarbs } = useTodayCarbsChart();
 
+  React.useEffect(() => {
+    console.log("Graph updated!");
+  }, [totalCarbs, targetCarbs, remainingCarbs]);
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.headerBox}>
