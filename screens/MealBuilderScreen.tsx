@@ -11,7 +11,7 @@ import {
 import { globalStyles } from "../src/styles/globalStyles"
 
 import { db } from "../firebase/config";
-import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 import MealCard from "../components/MealCard";
@@ -19,21 +19,16 @@ import { FoodItem } from "../types/FoodItem";
 
 import { useRoute, useNavigation } from "@react-navigation/native";
 
-import { getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from "../firebase/favorites";
-
-const getDayKey = (date = new Date()) => {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
+import { getDayKey } from "../src/utils/dateUtils";
+import { scaleFoodByServingSize, calculateFoodTotals } from "../src/utils/mealNutritionUtils";
+import { useFavoriteFoods } from "../src/hooks/useFavoriteFoods";
+import { useMealBuilderProducts } from "../src/hooks/useMealBuilderProducts";
 
 export default function MealBuilderScreen() {
 
   const [mealType, setMealType] = useState("Lunch");
   const [foods, setFoods] = useState<FoodItem[]>([]);
 
-  const [products, setProducts] = useState<FoodItem[]>([]);
   const [productModalVisible, setProductModalVisible] = useState(false);
   const [chooseModalVisible, setChooseModalVisible] = useState(false);
 
@@ -60,9 +55,9 @@ export default function MealBuilderScreen() {
   const navigation = useNavigation<any>();
 
   const selectedDateParam = route.params?.selectedDate;
-const selectedDate = selectedDateParam
-  ? new Date(selectedDateParam)
-  : new Date();
+  const selectedDate = selectedDateParam
+    ? new Date(selectedDateParam)
+    : new Date();
 
   useEffect(() => {
     const unsub = getAuth().onAuthStateChanged(() => {
@@ -71,21 +66,7 @@ const selectedDate = selectedDateParam
     return unsub;
   }, []);
 
-  useEffect(() => {
-    if (!authReady) return;
-
-    const loadProducts = async () => {
-      const snapshot = await getDocs(collection(db, "products"));
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as FoodItem[];
-
-      setProducts(items);
-    };
-
-    loadProducts();
-  }, [authReady]);
+  const { products } = useMealBuilderProducts(authReady);
 
   useEffect(() => {
     if (route.params?.addedFood) {
@@ -105,32 +86,7 @@ const selectedDate = selectedDateParam
     }
   }, [route.params?.customFood]);
 
-  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
-
-  useEffect(() => {
-    const loadFavorites = async () => {
-      const favs = await getFavoriteFoods();
-      setFavoriteFoods(favs);
-    };
-    loadFavorites();
-  }, []);
-
-  const toggleFavorite = async (food: FoodItem) => {
-    console.log("TOGGLE FAVORITE:", food.name, food.id);
-
-    const isFav = favoriteFoods.some(f => f.id === food.id);
-    console.log("  was favorite?", isFav);
-
-    if (isFav) {
-      await removeFavoriteFood(food.id);
-      setFavoriteFoods(prev => [...prev.filter(f => f.id !== food.id)]);
-    } else {
-      await addFavoriteFood(food);
-      setFavoriteFoods(prev => [...prev, food]);
-    }
-
-    console.log("  now favorites:", favoriteFoods.map(f => f.name));
-  };
+  const { favoriteFoods, toggleFavorite } = useFavoriteFoods();
 
   const startEditingFood = (food: FoodItem) => {
     setTempName(food.name);
@@ -184,10 +140,7 @@ const selectedDate = selectedDateParam
 
     const dateString = getDayKey(selectedDate);
 
-    const totalEnergy = foods.reduce((sum, f) => sum + f.energy, 0);
-    const totalCarbohydrates = foods.reduce((sum, f) => sum + f.carbohydrates, 0);
-    const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
-    const totalFat = foods.reduce((sum, f) => sum + f.fat, 0);
+    const totals = calculateFoodTotals(foods);
 
     try {
       await addDoc(collection(db, "meals", user.uid, "entries"), {
@@ -196,10 +149,10 @@ const selectedDate = selectedDateParam
         dateString,
         dayKey: dateString,
         foods,
-        totalEnergy,
-        totalCarbohydrates,
-        totalProtein,
-        totalFat,
+        totalEnergy: totals.energy,
+        totalCarbohydrates: totals.carbs,
+        totalProtein: totals.protein,
+        totalFat: totals.fat,
       });
 
       alert("Meal saved!");
@@ -210,27 +163,13 @@ const selectedDate = selectedDateParam
     }
   };
 
-  const scaleValue = (value: number, grams: number) => {
-    const scaled = value * (grams / 100);
-    return Math.round(scaled * 10) / 10;
-  };
-
   const handleAddWithServingSize = () => {
     if (!selectedProduct) return;
 
     const grams = parseInt(servingSizeInput, 10);
     if (!grams || grams <= 0) return;
 
-    const scaledFood: FoodItem = {
-      ...selectedProduct,
-      id: selectedProduct.id,
-      servingSize: grams,
-      per100g: false,
-      energy: scaleValue(selectedProduct.energy, grams),
-      carbohydrates: scaleValue(selectedProduct.carbohydrates, grams),
-      protein: scaleValue(selectedProduct.protein, grams),
-      fat: scaleValue(selectedProduct.fat, grams),
-    };
+    const scaledFood: FoodItem = scaleFoodByServingSize(selectedProduct, grams);
 
     setFoods((prev) => [...prev, scaledFood]);
 
@@ -248,18 +187,18 @@ const selectedDate = selectedDateParam
     }
   }, [route.params?.favoriteMeal]);
 
-  
+
   useEffect(() => {
-  if (route.params?.selectedFavoriteFood) {
-    const food = route.params.selectedFavoriteFood;
+    if (route.params?.selectedFavoriteFood) {
+      const food = route.params.selectedFavoriteFood;
 
-    setSelectedProduct(food);
-    setServingSizeInput("100");
-    setServingSizeModalVisible(true);
+      setSelectedProduct(food);
+      setServingSizeInput("100");
+      setServingSizeModalVisible(true);
 
-    navigation.setParams({ selectedFavoriteFood: undefined });
-  }
-}, [route.params?.selectedFavoriteFood]);
+      navigation.setParams({ selectedFavoriteFood: undefined });
+    }
+  }, [route.params?.selectedFavoriteFood]);
 
   return (
     <View style={globalStyles.container}>
@@ -382,7 +321,7 @@ const selectedDate = selectedDateParam
               style={styles.modalAddButton}
               onPress={() => {
                 setChooseModalVisible(false);
-               navigation.navigate("FoodSearch", { selectedDate });
+                navigation.navigate("FoodSearch", { selectedDate });
               }}
             >
               <Text style={globalStyles.mealBuilder_modalAddButtonText}>

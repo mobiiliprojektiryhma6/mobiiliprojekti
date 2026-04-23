@@ -1224,7 +1224,12 @@ export const globalStyles = StyleSheet.create({
         backgroundColor: "#fff",
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
         padding: 24,
+        width: "94%",
+        alignSelf: "center",
+        maxWidth: 560,
         maxHeight: "90%",
     },
     med_fieldLabel: {

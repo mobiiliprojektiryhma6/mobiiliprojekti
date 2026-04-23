@@ -1,22 +1,7 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { FoodItem } from "../types/FoodItem";
+import { View, Text, TouchableOpacity } from "react-native";
+import { MealCardProps, NutrientRowProps } from "../types/MealCardTypes";
 import { globalStyles } from "../src/styles/globalStyles"
-
-type Props = {
-  food: FoodItem;
-  onDelete: (foodId: string) => void;
-  onToggleFavorite: (food: FoodItem) => void;
-  onPress?: () => void;
-};
-
-type NutrientRowProps = {
-  label: string;
-  value: number | string;
-  unit: string;
-  color: string;
-  barPercent?: number;
-};
 
 function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowProps) {
   return (
@@ -42,7 +27,7 @@ function NutrientRow({ label, value, unit, color, barPercent = 0 }: NutrientRowP
   );
 }
 
-export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: Props) {
+export default function MealCard({ food, onDelete, onToggleFavorite, onPress }: MealCardProps) {
   const refValues = { carbs: 130, protein: 50, fat: 78 };
 
   return (
