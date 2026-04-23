@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { collection, query, where, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getAuth } from "firebase/auth";
@@ -12,30 +12,20 @@ import { globalStyles } from "../src/styles/globalStyles"
 import { resolveDailyCarbTarget } from "../src/utils/carbTarget";
 import GramsPopup from "../components/GramsPopup";
 import WeeklyCarbSummary from "../components/WeeklyCarbSummary";
-
-type Meal = {
-  id: string;
-  mealType: string;
-  dateString: string;
-  foods: FoodItem[];
-  totalEnergy?: number;
-  totalCarbohydrates?: number;
-  totalProtein?: number;
-  totalFat?: number;
-  timestamp?: any;
-};
-
-const getDayKey = (date = new Date()) => {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
+import { MealRecord } from "../types/MealTypes";
+import { getDayKey } from "../src/utils/dateUtils";
+import {
+  aggregateCarbsByDate,
+  calculateDailyTotalsFromMeals,
+  calculateFoodTotals,
+  calculateMealTypeNutrition,
+  groupMealsByType,
+} from "../src/utils/mealNutritionUtils";
 
 export default function FoodDiaryScreen() {
   const user = getAuth().currentUser;
 
-  const [meals, setMeals] = useState<Meal[]>([]);
+  const [meals, setMeals] = useState<MealRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [targetCarbs, setTargetCarbs] = useState<number | null>(null);
   const [targetReason, setTargetReason] = useState<string | null>(null);
@@ -148,32 +138,13 @@ export default function FoodDiaryScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => doc.data() as Meal);
-
-      const groupedByDay: Record<string, number> = {};
-      dates.forEach((d) => (groupedByDay[d] = 0));
-
-      data.forEach((meal) => {
-        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
-      });
-
-      const result = dates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
-
-      setWeeklyCarbEntries(result);
+      const data = snapshot.docs.map((doc) => doc.data() as MealRecord);
+      setWeeklyCarbEntries(aggregateCarbsByDate(dates, data));
     });
 
     const previousUnsubscribe = onSnapshot(previousQ, (snapshot) => {
-      const data = snapshot.docs.map((doc) => doc.data() as Meal);
-
-      const groupedByDay: Record<string, number> = {};
-      previousDates.forEach((d) => (groupedByDay[d] = 0));
-
-      data.forEach((meal) => {
-        groupedByDay[meal.dateString] += meal.totalCarbohydrates ?? 0;
-      });
-
-      const result = previousDates.map((d) => ({ date: d, carbs: groupedByDay[d] }));
-      setPreviousWeeklyCarbEntries(result);
+      const data = snapshot.docs.map((doc) => doc.data() as MealRecord);
+      setPreviousWeeklyCarbEntries(aggregateCarbsByDate(previousDates, data));
     });
 
     return () => {
@@ -191,8 +162,8 @@ export default function FoodDiaryScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: Meal[] = snapshot.docs.map((doc) => ({
-        ...(doc.data() as Meal),
+      const data: MealRecord[] = snapshot.docs.map((doc) => ({
+        ...(doc.data() as MealRecord),
         id: doc.id,
       }));
 
@@ -244,43 +215,11 @@ export default function FoodDiaryScreen() {
 
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
-  const grouped: Record<string, Meal[]> = {
-    Breakfast: [],
-    Lunch: [],
-    Dinner: [],
-    Snack: [],
-  };
+  const grouped = groupMealsByType(mealTypes, meals);
 
-  mealTypes.forEach((type) => {
-    grouped[type] = meals.filter((m) => m.mealType === type);
-  });
+  const dailyTotals = calculateDailyTotalsFromMeals(meals);
 
-  const dailyTotals = meals.reduce(
-    (acc, m) => ({
-      carbs: acc.carbs + (m.totalCarbohydrates ?? 0),
-      energy: acc.energy + (m.totalEnergy ?? 0),
-      protein: acc.protein + (m.totalProtein ?? 0),
-      fat: acc.fat + (m.totalFat ?? 0),
-    }),
-    { carbs: 0, energy: 0, protein: 0, fat: 0 }
-  );
-
-  const mealTypeNutrition = mealTypes.reduce((acc, type) => {
-    const mealsOfType = grouped[type];
-
-    const totals = mealsOfType.reduce(
-      (sum, m) => ({
-        carbs: sum.carbs + (m.totalCarbohydrates ?? 0),
-        protein: sum.protein + (m.totalProtein ?? 0),
-        fat: sum.fat + (m.totalFat ?? 0),
-        energy: sum.energy + (m.totalEnergy ?? 0),
-      }),
-      { carbs: 0, protein: 0, fat: 0, energy: 0 }
-    );
-
-    acc[type] = totals;
-    return acc;
-  }, {} as Record<string, { carbs: number; protein: number; fat: number; energy: number }>);
+  const mealTypeNutrition = calculateMealTypeNutrition(mealTypes, grouped);
 
   const goToPreviousDay = () => {
     const d = new Date(selectedDate);
@@ -321,18 +260,15 @@ export default function FoodDiaryScreen() {
       f.id === editingFoodId ? updatedFood : f
     );
 
-    const totalCarbs = updatedFoods.reduce((sum, f) => sum + (f.carbohydrates ?? 0), 0);
-    const totalEnergy = updatedFoods.reduce((sum, f) => sum + (f.energy ?? 0), 0);
-    const totalProtein = updatedFoods.reduce((sum, f) => sum + (f.protein ?? 0), 0);
-    const totalFat = updatedFoods.reduce((sum, f) => sum + (f.fat ?? 0), 0);
+    const totals = calculateFoodTotals(updatedFoods);
 
     const mealRef = doc(db, "meals", user.uid, "entries", mealId);
     await updateDoc(mealRef, {
       foods: updatedFoods,
-      totalCarbohydrates: totalCarbs,
-      totalEnergy,
-      totalProtein,
-      totalFat
+      totalCarbohydrates: totals.carbs,
+      totalEnergy: totals.energy,
+      totalProtein: totals.protein,
+      totalFat: totals.fat
     });
 
     setShowGramsPopup(false);

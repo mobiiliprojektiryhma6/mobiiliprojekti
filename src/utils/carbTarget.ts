@@ -1,9 +1,4 @@
-type NumericInput = string | number | null | undefined
-
-type CarbRecommendationResult = {
-    target: number | null;
-    reason?: string;
-}
+import { ActivityLevel, CarbRecommendationResult, DailyCarbTargetSettings, NumericInput } from "../../types/CarbTargetTypes"
 
 const parsePositiveNumber = (value: NumericInput): number | null => {
     if (value === null || value === undefined) return null
@@ -16,7 +11,7 @@ export const calculateRecommendedCarbTarget = (
     weightInput: NumericInput,
     heightInput: NumericInput,
     ageInput: NumericInput = 30,
-    activityLevel: "sedentary" | "light" | "moderate" | "very_active" = "moderate"
+    activityLevel: ActivityLevel = "moderate"
 ): CarbRecommendationResult => {
     const weightKg = parsePositiveNumber(weightInput)
     const heightCm = parsePositiveNumber(heightInput)
@@ -43,15 +38,6 @@ export const calculateRecommendedCarbTarget = (
     const clamped = Math.min(350, Math.max(100, carbsFromCalories))
 
     return { target: Math.round(clamped) }
-}
-
-type DailyCarbTargetSettings = {
-    useManualCarbTarget?: boolean;
-    dailyCarbTarget?: NumericInput;
-    weight?: NumericInput;
-    height?: NumericInput;
-    age?: NumericInput;
-    activityLevel?: "sedentary" | "light" | "moderate" | "very_active";
 }
 
 export const resolveDailyCarbTarget = (settings: DailyCarbTargetSettings): CarbRecommendationResult & { source: "manual" | "recommended" | "missing" } => {

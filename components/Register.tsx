@@ -29,7 +29,7 @@ const Register = () => {
                 displayName: values.displayName,
             })
 
-            console.log("User registered:", userCredential.user)
+            console.log(`New account: ${values.displayName} created!`)
         } catch (err: any) {
             setError(err.message)
         } finally {

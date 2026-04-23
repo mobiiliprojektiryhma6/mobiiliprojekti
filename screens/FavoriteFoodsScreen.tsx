@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { getFavoriteFoods, removeFavoriteFood } from "../firebase/favorites";
 import { FoodItem } from "../types/FoodItem";
+import { useFavoriteFoods } from "../src/hooks/useFavoriteFoods";
 
 export default function FavoriteFoodsScreen() {
     const navigation = useNavigation<any>();
@@ -12,39 +12,24 @@ export default function FavoriteFoodsScreen() {
     const editingFoodId = route.params?.editingFoodId;
     const mealId = route.params?.mealId;
 
-    const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+    const { favoriteFoods, deleteFavorite } = useFavoriteFoods();
 
-    useEffect(() => {
-        const load = async () => {
-            const favs = await getFavoriteFoods();
-            setFavoriteFoods(favs);
-        };
-        load();
-    }, []);
-
-const selectFood = (food: FoodItem) => {
-    if (returnTo === "MealBuilder") {
-        navigation.goBack();   
-        setTimeout(() => {
-            navigation.navigate("MealBuilder", {
-                selectedFavoriteFood: food
+    const selectFood = (food: FoodItem) => {
+        if (returnTo === "MealBuilder") {
+            navigation.goBack();
+            setTimeout(() => {
+                navigation.navigate("MealBuilder", {
+                    selectedFavoriteFood: food
+                });
+            }, 0);
+        } else {
+            navigation.navigate("FoodDiary", {
+                selectedFavoriteFood: food,
+                editingFoodId,
+                mealId,
             });
-        }, 0);
-    } else {
-        navigation.navigate("FoodDiary", {
-            selectedFavoriteFood: food,
-            editingFoodId,
-            mealId,
-        });
-    }
-};
-
-
-    const deleteFavorite = async (food: FoodItem) => {
-        await removeFavoriteFood(food.id);
-        setFavoriteFoods(prev => prev.filter(f => f.id !== food.id));
+        }
     };
-
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Favorite Foods ⭐</Text>
@@ -63,7 +48,7 @@ const selectFood = (food: FoodItem) => {
                             <Text style={styles.info}>{item.carbohydrates} g carbs</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => deleteFavorite(item)}>
+                        <TouchableOpacity onPress={() => deleteFavorite(item.id)}>
                             <Text style={styles.delete}>🗑</Text>
                         </TouchableOpacity>
                     </View>
