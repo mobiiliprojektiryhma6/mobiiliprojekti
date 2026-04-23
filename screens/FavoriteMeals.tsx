@@ -1,19 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
-import { getFavoriteMeals } from "../firebase/favoriteMeals";
 import { useNavigation } from "@react-navigation/native";
+import { useFavoriteMeals } from "../src/hooks/useFavoriteMeals";
 
 export default function FavoriteMeals() {
-  const [meals, setMeals] = useState<any[]>([]);
+  const { meals } = useFavoriteMeals();
   const navigation = useNavigation<any>();
-
-  useEffect(() => {
-    const load = async () => {
-      const favs = await getFavoriteMeals();
-      setMeals(favs);
-    };
-    load();
-  }, []);
 
   return (
     <View style={styles.container}>
