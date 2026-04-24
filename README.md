@@ -1,6 +1,9 @@
 # GlugoMate
  
-A mobile application built with React Native and Expo, designed to help diabetic patients and health-conscious users track their daily food intake, monitor carbohydrate consumption, and manage their medications.
+A mobile application built with React Native, Expo, and Firebase, designed to help 
+diabetic patients and health-conscious users track their daily food intake, monitor 
+carbohydrate consumption, and manage their medications. User data is stored in 
+Firestore with real-time sync, and authentication is handled via Firebase Auth.
  
 ---
  
@@ -11,7 +14,7 @@ A mobile application built with React Native and Expo, designed to help diabetic
 - **Meal Builder** — Build a meal from scratch by searching the product database, picking from favorites, adding custom foods, or importing a previously saved favorite meal. Each food item supports gram-based serving size scaling.
 - **Food Search** — Dual search combining an instant local Firestore product database with a debounced Open Food Facts API search. Results are cached to Firestore automatically to speed up future searches.
 - **Barcode Scanner** — Scan product barcodes using the device camera. Previously scanned products are served from a Firestore cache to avoid redundant API calls.
-- **Favorites** — Mark individual food items or entire meals as favorites for quick reuse. Managed via dedicated `FavoriteFoodsScreen` and `FavoriteMeals` screens.
+- **Favorites** — Mark individual food items or entire meals as favorites for quick reuse.
 ### Dashboard
 - **Home Screen** — Displays today's carbohydrate consumption as a pie chart broken down by meal type, alongside a summary showing consumed, target, and remaining carbs for the day.
 - **Weekly Summary** — Line chart comparing current week carb intake against the same days of the previous week.
